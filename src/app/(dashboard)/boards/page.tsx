@@ -38,6 +38,12 @@ export default async function BoardsPage() {
           </h1>
           <div className="flex flex-col xs:flex-row gap-2 sm:gap-4">
             <Link
+              href="/organizations"
+              className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base text-center"
+            >
+              Manage Organizations
+            </Link>
+            <Link
               href="/organizations/new"
               className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base text-center"
             >
