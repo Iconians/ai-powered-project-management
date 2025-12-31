@@ -25,15 +25,25 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
+        console.error("Login error:", result.error);
+        setError(result.error === "CredentialsSignin" 
+          ? "Invalid email or password" 
+          : result.error || "Failed to sign in. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      if (!result?.ok) {
+        setError("Failed to sign in. Please try again.");
+        setLoading(false);
         return;
       }
 
       router.push("/boards");
       router.refresh();
     } catch (error) {
-      setError("An error occurred");
-    } finally {
+      console.error("Login exception:", error);
+      setError(error instanceof Error ? error.message : "An unexpected error occurred. Please try again.");
       setLoading(false);
     }
   };
@@ -48,8 +58,11 @@ export default function LoginPage() {
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded">
-              {error}
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded text-sm" role="alert">
+              <div className="flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{error}</span>
+              </div>
             </div>
           )}
           <div className="space-y-4">
