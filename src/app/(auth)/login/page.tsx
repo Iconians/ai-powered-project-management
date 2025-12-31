@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useState, useEffect } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -11,6 +11,14 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (status === "authenticated" && session) {
+      router.push("/boards");
+    }
+  }, [status, session, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,8 +47,28 @@ export default function LoginPage() {
         return;
       }
 
-      router.push("/boards");
-      router.refresh();
+      // Wait for session to be established by polling
+      // This ensures the middleware can read the session
+      let attempts = 0;
+      const maxAttempts = 20; // 2 seconds max wait
+      
+      const checkSession = setInterval(async () => {
+        attempts++;
+        const response = await fetch("/api/auth/session");
+        const session = await response.json();
+        
+        if (session?.user || attempts >= maxAttempts) {
+          clearInterval(checkSession);
+          if (session?.user) {
+            // Session is established, do a full page reload to ensure middleware sees it
+            window.location.href = "/boards";
+          } else {
+            setError("Session not established. Please try again.");
+            setLoading(false);
+          }
+        }
+      }, 100);
+      
     } catch (error) {
       console.error("Login exception:", error);
       setError(error instanceof Error ? error.message : "An unexpected error occurred. Please try again.");
