@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { signIn, useSession, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -47,27 +47,25 @@ export default function LoginPage() {
         return;
       }
 
-      // Wait for session to be established by polling
-      // This ensures the middleware can read the session
-      let attempts = 0;
-      const maxAttempts = 20; // 2 seconds max wait
-      
-      const checkSession = setInterval(async () => {
-        attempts++;
-        const response = await fetch("/api/auth/session");
-        const session = await response.json();
-        
-        if (session?.user || attempts >= maxAttempts) {
-          clearInterval(checkSession);
-          if (session?.user) {
-            // Session is established, do a full page reload to ensure middleware sees it
-            window.location.href = "/boards";
-          } else {
-            setError("Session not established. Please try again.");
-            setLoading(false);
-          }
+      // Wait for the session to be established
+      // Poll the session endpoint until we get a valid session
+      let sessionEstablished = false;
+      for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        const session = await getSession();
+        if (session?.user) {
+          sessionEstablished = true;
+          break;
         }
-      }, 100);
+      }
+
+      if (sessionEstablished) {
+        // Session is confirmed, do a full page reload
+        window.location.href = "/boards";
+      } else {
+        setError("Session not established. Please try again.");
+        setLoading(false);
+      }
       
     } catch (error) {
       console.error("Login exception:", error);
