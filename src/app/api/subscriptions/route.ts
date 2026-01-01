@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     if (!plan.stripePriceId) {
       // For free plan or plans without Stripe setup, just update the subscription directly
-      if (plan.price === 0) {
+      if (plan.price.toNumber() === 0) {
         // Free plan - update subscription directly without Stripe
         const subscription = await prisma.subscription.upsert({
           where: { organizationId },
@@ -228,13 +228,13 @@ export async function PATCH(request: NextRequest) {
                             : stripeSubscription.status === "past_due"
                             ? "PAST_DUE"
                             : "CANCELED",
-                        currentPeriodStart: stripeSubscription.current_period_start
-                          ? new Date(stripeSubscription.current_period_start * 1000)
+                        currentPeriodStart: (stripeSubscription as any).current_period_start
+                          ? new Date((stripeSubscription as any).current_period_start * 1000)
                           : null,
-                        currentPeriodEnd: stripeSubscription.current_period_end
-                          ? new Date(stripeSubscription.current_period_end * 1000)
+                        currentPeriodEnd: (stripeSubscription as any).current_period_end
+                          ? new Date((stripeSubscription as any).current_period_end * 1000)
                           : null,
-                        cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end || false,
+                        cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end || false,
                       },
                     });
                   }
@@ -278,9 +278,13 @@ export async function PATCH(request: NextRequest) {
                     : stripeSubscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-                currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-                cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+                currentPeriodStart: (stripeSubscription as any).current_period_start
+                  ? new Date((stripeSubscription as any).current_period_start * 1000)
+                  : null,
+                currentPeriodEnd: (stripeSubscription as any).current_period_end
+                  ? new Date((stripeSubscription as any).current_period_end * 1000)
+                  : null,
+                cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end ?? false,
               },
             });
           } catch (error) {
@@ -320,7 +324,7 @@ export async function PATCH(request: NextRequest) {
           where: { id: subscription.planId },
         });
         
-        if (plan && plan.price === 0) {
+        if (plan && plan.price.toNumber() === 0) {
           return NextResponse.json({
             message: "Free plan subscriptions don't require Stripe sync",
             subscription,
@@ -408,13 +412,13 @@ export async function PATCH(request: NextRequest) {
                           : stripeSubscription.status === "past_due"
                           ? "PAST_DUE"
                           : "CANCELED",
-                      currentPeriodStart: stripeSubscription.current_period_start
-                        ? new Date(stripeSubscription.current_period_start * 1000)
+                      currentPeriodStart: (stripeSubscription as any).current_period_start
+                        ? new Date((stripeSubscription as any).current_period_start * 1000)
                         : null,
-                      currentPeriodEnd: stripeSubscription.current_period_end
-                        ? new Date(stripeSubscription.current_period_end * 1000)
+                      currentPeriodEnd: (stripeSubscription as any).current_period_end
+                        ? new Date((stripeSubscription as any).current_period_end * 1000)
                         : null,
-                      cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end || false,
+                      cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end || false,
                     },
                     include: {
                       plan: true,
@@ -490,13 +494,13 @@ export async function PATCH(request: NextRequest) {
                 : stripeSubscription.status === "past_due"
                 ? "PAST_DUE"
                 : "CANCELED",
-            currentPeriodStart: stripeSubscription.current_period_start
-              ? new Date(stripeSubscription.current_period_start * 1000)
+            currentPeriodStart: (stripeSubscription as any).current_period_start
+              ? new Date((stripeSubscription as any).current_period_start * 1000)
               : null,
-            currentPeriodEnd: stripeSubscription.current_period_end
-              ? new Date(stripeSubscription.current_period_end * 1000)
+            currentPeriodEnd: (stripeSubscription as any).current_period_end
+              ? new Date((stripeSubscription as any).current_period_end * 1000)
               : null,
-            cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end || false,
+            cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end || false,
           },
           include: {
             plan: true,

@@ -59,6 +59,11 @@ export async function POST(request: NextRequest) {
         case "customer.subscription.created":
         case "customer.subscription.updated": {
           const subscription = event.data.object as Stripe.Subscription;
+          // Type guard to ensure we have the subscription properties
+          if (!('current_period_start' in subscription)) {
+            console.error("Subscription object missing expected properties");
+            break;
+          }
           let organizationId = subscription.metadata?.organizationId;
 
           // If no organizationId in metadata, try to find it by subscription ID
@@ -108,13 +113,13 @@ export async function POST(request: NextRequest) {
                     : subscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: subscription.current_period_start
-                  ? new Date(subscription.current_period_start * 1000)
+                currentPeriodStart: (subscription as any).current_period_start
+                  ? new Date((subscription as any).current_period_start * 1000)
                   : null,
-                currentPeriodEnd: subscription.current_period_end
-                  ? new Date(subscription.current_period_end * 1000)
+                currentPeriodEnd: (subscription as any).current_period_end
+                  ? new Date((subscription as any).current_period_end * 1000)
                   : null,
-                cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+                cancelAtPeriodEnd: (subscription as any).cancel_at_period_end ?? false,
               },
               create: {
                 organizationId,
@@ -129,13 +134,13 @@ export async function POST(request: NextRequest) {
                     : subscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: subscription.current_period_start
-                  ? new Date(subscription.current_period_start * 1000)
+                currentPeriodStart: (subscription as any).current_period_start
+                  ? new Date((subscription as any).current_period_start * 1000)
                   : null,
-                currentPeriodEnd: subscription.current_period_end
-                  ? new Date(subscription.current_period_end * 1000)
+                currentPeriodEnd: (subscription as any).current_period_end
+                  ? new Date((subscription as any).current_period_end * 1000)
                   : null,
-                cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+                cancelAtPeriodEnd: (subscription as any).cancel_at_period_end ?? false,
               },
             });
 
@@ -216,7 +221,9 @@ export async function POST(request: NextRequest) {
 
         case "invoice.payment_succeeded": {
           const invoice = event.data.object as Stripe.Invoice;
-          const subscriptionId = invoice.subscription as string;
+          const subscriptionId = typeof (invoice as any).subscription === 'string' 
+            ? (invoice as any).subscription 
+            : (invoice as any).subscription?.id || null;
 
           if (subscriptionId) {
             const subscription = await prisma.subscription.findUnique({
@@ -249,7 +256,9 @@ export async function POST(request: NextRequest) {
 
         case "invoice.payment_failed": {
           const invoice = event.data.object as Stripe.Invoice;
-          const subscriptionId = invoice.subscription as string;
+          const subscriptionId = typeof (invoice as any).subscription === 'string' 
+            ? (invoice as any).subscription 
+            : (invoice as any).subscription?.id || null;
 
           if (subscriptionId) {
             const subscription = await prisma.subscription.findUnique({
@@ -299,7 +308,7 @@ export async function POST(request: NextRequest) {
 
           try {
             // Retrieve the subscription from Stripe
-            const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+            const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription;
 
             // Find the plan by Stripe price ID
             const plan = await prisma.plan.findUnique({
@@ -326,9 +335,13 @@ export async function POST(request: NextRequest) {
                     : stripeSubscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-                currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-                cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+                currentPeriodStart: (stripeSubscription as any).current_period_start
+                  ? new Date((stripeSubscription as any).current_period_start * 1000)
+                  : null,
+                currentPeriodEnd: (stripeSubscription as any).current_period_end
+                  ? new Date((stripeSubscription as any).current_period_end * 1000)
+                  : null,
+                cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end ?? false,
               },
               create: {
                 organizationId,
@@ -343,9 +356,13 @@ export async function POST(request: NextRequest) {
                     : stripeSubscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-                currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
-                cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
+                currentPeriodStart: (stripeSubscription as any).current_period_start
+                  ? new Date((stripeSubscription as any).current_period_start * 1000)
+                  : null,
+                currentPeriodEnd: (stripeSubscription as any).current_period_end
+                  ? new Date((stripeSubscription as any).current_period_end * 1000)
+                  : null,
+                cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end ?? false,
               },
             });
 
