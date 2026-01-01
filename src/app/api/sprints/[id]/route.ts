@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember } from "@/lib/auth";
+import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 
@@ -37,7 +37,8 @@ export async function GET(
       return NextResponse.json({ error: "Sprint not found" }, { status: 404 });
     }
 
-    await requireMember(sprint.board.organizationId);
+    // Check board access - need at least VIEWER role to see sprints
+    await requireBoardAccess(sprint.boardId, "VIEWER");
 
     return NextResponse.json(sprint);
   } catch (error) {
@@ -142,7 +143,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Sprint not found" }, { status: 404 });
     }
 
-    await requireMember(sprint.board.organizationId);
+    // Check board access - need MEMBER role to delete sprints
+    await requireBoardAccess(sprint.boardId, "MEMBER");
 
     await prisma.sprint.delete({
       where: { id },

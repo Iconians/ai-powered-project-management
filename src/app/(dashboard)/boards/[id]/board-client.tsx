@@ -9,9 +9,10 @@ interface BoardPageClientProps {
   boardId: string;
   boardName: string;
   boardDescription: string | null;
+  userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
 }
 
-export function BoardPageClient({ boardId, boardName, boardDescription }: BoardPageClientProps) {
+export function BoardPageClient({ boardId, boardName, boardDescription, userBoardRole }: BoardPageClientProps) {
   const [activeTab, setActiveTab] = useState<"board" | "sprints">("board");
 
   return (
@@ -22,6 +23,7 @@ export function BoardPageClient({ boardId, boardName, boardDescription }: BoardP
         boardDescription={boardDescription}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        userBoardRole={userBoardRole}
       />
       <div className="flex-1 overflow-hidden">
         {activeTab === "board" ? (

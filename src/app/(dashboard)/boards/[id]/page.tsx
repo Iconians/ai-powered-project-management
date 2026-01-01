@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { requireBoardAccess } from "@/lib/auth";
 import { BoardPageClient } from "./board-client";
 
 export default async function BoardPage({
@@ -9,39 +8,21 @@ export default async function BoardPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login");
-  }
 
-  const board = await prisma.board.findUnique({
-    where: { id },
-    include: {
-      organization: true,
-    },
-  });
+  try {
+    // Check board access (requires both org membership and board access)
+    const { board, boardMember } = await requireBoardAccess(id);
 
-  if (!board) {
+    return (
+      <BoardPageClient
+        boardId={id}
+        boardName={board.name}
+        boardDescription={board.description}
+        userBoardRole={boardMember.role}
+      />
+    );
+  } catch (error) {
+    // Redirect if no access
     redirect("/boards");
   }
-
-  // Check if user is a member
-  const member = await prisma.member.findFirst({
-    where: {
-      userId: user.id,
-      organizationId: board.organizationId,
-    },
-  });
-
-  if (!member) {
-    redirect("/boards");
-  }
-
-  return (
-    <BoardPageClient
-      boardId={id}
-      boardName={board.name}
-      boardDescription={board.description}
-    />
-  );
 }

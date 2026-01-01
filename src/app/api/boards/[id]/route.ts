@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember } from "@/lib/auth";
+import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -43,7 +43,8 @@ export async function GET(
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    await requireMember(board.organizationId);
+    // Check board access (requires both org membership and board access)
+    await requireBoardAccess(id);
 
     return NextResponse.json(board);
   } catch (error) {
@@ -103,15 +104,14 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    const board = await prisma.board.findUnique({
-      where: { id },
-    });
-
-    if (!board) {
-      return NextResponse.json({ error: "Board not found" }, { status: 404 });
+    // Check board access - only org admins can delete board
+    const { orgMember } = await requireBoardAccess(id);
+    if (orgMember.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Only organization admins can delete boards" },
+        { status: 403 }
+      );
     }
-
-    await requireMember(board.organizationId, "ADMIN");
 
     await prisma.board.delete({
       where: { id },

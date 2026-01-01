@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember } from "@/lib/auth";
+import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 import { TaskStatus } from "@prisma/client";
@@ -48,7 +48,8 @@ export async function GET(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    await requireMember(task.board.organizationId);
+    // Check board access - need at least VIEWER role to see tasks
+    await requireBoardAccess(task.boardId, "VIEWER");
 
     return NextResponse.json(task);
   } catch (error) {
@@ -161,7 +162,8 @@ export async function DELETE(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    await requireMember(task.board.organizationId);
+    // Check board access - need MEMBER role to delete tasks
+    await requireBoardAccess(task.boardId, "MEMBER");
 
     await prisma.task.delete({
       where: { id },

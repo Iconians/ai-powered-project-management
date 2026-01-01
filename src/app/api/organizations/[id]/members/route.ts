@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMember } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { requireLimit } from "@/lib/limits";
 
 export async function POST(
   request: NextRequest,
@@ -20,6 +21,16 @@ export async function POST(
 
     // Check if user is an ADMIN of the organization
     await requireMember(id, "ADMIN");
+
+    // Check member limit
+    try {
+      await requireLimit(id, "members");
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Member limit reached" },
+        { status: 403 }
+      );
+    }
 
     // Find the user by email
     const user = await prisma.user.findUnique({

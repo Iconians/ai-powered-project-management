@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember } from "@/lib/auth";
+import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 import { TaskStatus } from "@prisma/client";
+import { requireLimit } from "@/lib/limits";
 
 export async function POST(request: NextRequest) {
   try {
@@ -123,7 +124,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    await requireMember(board.organizationId);
+    // Check board access - need at least VIEWER role to see tasks
+    await requireBoardAccess(boardId, "VIEWER");
 
     const tasks = await prisma.task.findMany({
       where: {

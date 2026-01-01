@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember } from "@/lib/auth";
+import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 
@@ -95,7 +95,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    await requireMember(board.organizationId);
+    // Check board access - need at least VIEWER role to see sprints
+    await requireBoardAccess(boardId, "VIEWER");
 
     const sprints = await prisma.sprint.findMany({
       where: {
