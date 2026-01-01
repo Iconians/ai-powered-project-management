@@ -13,6 +13,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
+    // Verify the user exists in the database
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+    });
+
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: "User not found in database. Please sign in again." },
+        { status: 404 }
+      );
+    }
+
     const slug = slugify(name);
     const existingOrg = await prisma.organization.findUnique({
       where: { slug },
@@ -22,6 +34,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Organization with this name already exists" },
         { status: 409 }
+      );
+    }
+
+    // Get the free plan for new organizations
+    const freePlan = await prisma.plan.findFirst({
+      where: { name: "Free" },
+    });
+
+    if (!freePlan) {
+      return NextResponse.json(
+        { error: "Free plan not found. Please run database seed." },
+        { status: 500 }
       );
     }
 
@@ -35,11 +59,31 @@ export async function POST(request: NextRequest) {
             role: "ADMIN",
           },
         },
+        subscriptions: {
+          create: {
+            planId: freePlan.id,
+            status: "ACTIVE",
+          },
+        },
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     });
 
     return NextResponse.json(organization, { status: 201 });
   } catch (error) {
+    console.error("Error creating organization:", error);
     const message = error instanceof Error ? error.message : "Failed to create organization";
     return NextResponse.json(
       { error: message },
@@ -62,19 +106,34 @@ export async function GET(request: NextRequest) {
       },
       include: {
         members: {
-          where: {
-            userId: user.id,
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
           },
         },
       },
     });
 
-    return NextResponse.json(organizations);
+    // Filter members to only show the current user's membership
+    const filteredOrganizations = organizations.map((org) => ({
+      ...org,
+      members: org.members.filter((m) => m.userId === user.id),
+    }));
+
+    return NextResponse.json(filteredOrganizations);
   } catch (error) {
+    console.error("Error fetching organizations:", error);
     const message = error instanceof Error ? error.message : "Failed to fetch organizations";
+    // Return 401 for auth errors, 500 for others
+    const status = error instanceof Error && error.message === "Unauthorized" ? 401 : 500;
     return NextResponse.json(
       { error: message },
-      { status: 500 }
+      { status }
     );
   }
 }

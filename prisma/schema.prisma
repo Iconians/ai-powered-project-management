@@ -16,6 +16,24 @@ enum MemberRole {
   VIEWER
 }
 
+enum BoardRole {
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  TRIALING
+}
+
+enum PlanInterval {
+  MONTHLY
+  YEARLY
+}
+
 enum TaskPriority {
   LOW
   MEDIUM
@@ -72,9 +90,11 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  teams   Team[]
-  members Member[]
-  boards  Board[]
+  teams        Team[]
+  members      Member[]
+  boards       Board[]
+  subscriptions Subscription[]
+  usage        Usage[]
 
   @@index([slug])
 }
@@ -106,6 +126,7 @@ model Member {
   team          Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   assignedTasks Task[]       @relation("TaskAssignee")
+  boardMembers  BoardMember[]
 
   @@unique([userId, organizationId])
   @@index([userId])
@@ -127,6 +148,7 @@ model Board {
   sprints      Sprint[]
   tasks        Task[]
   statuses     TaskStatusColumn[]
+  boardMembers BoardMember[]
 
   @@index([organizationId])
   @@index([teamId])
@@ -272,5 +294,75 @@ model Reminder {
   @@index([taskId])
   @@index([userId])
   @@index([remindAt, isSent])
+}
+
+model BoardMember {
+  id        String    @id @default(cuid())
+  boardId   String
+  memberId  String
+  role      BoardRole @default(VIEWER)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  board  Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([boardId, memberId])
+  @@index([boardId])
+  @@index([memberId])
+}
+
+model Plan {
+  id            String         @id @default(cuid())
+  name          String
+  stripePriceId String?        @unique
+  price         Decimal
+  interval      PlanInterval
+  maxBoards     Int
+  maxMembers    Int
+  maxTasks      Int?
+  features      Json?          // Feature flags
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  subscriptions Subscription[]
+
+  @@index([isActive])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  organizationId        String             @unique
+  planId                String
+  stripeCustomerId      String?            @unique
+  stripeSubscriptionId  String?            @unique
+  status                SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean            @default(false)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan         Plan         @relation(fields: [planId], references: [id])
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model Usage {
+  id             String   @id @default(cuid())
+  organizationId String
+  metric         String   // "boards", "members", "tasks", etc.
+  count          Int      @default(0)
+  period         String   // "2024-01" for monthly
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, metric, period])
+  @@index([organizationId])
 }
 

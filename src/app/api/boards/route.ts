@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember } from "@/lib/auth";
+import { requireMember, getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TaskStatus } from "@prisma/client";
+import { requireLimit } from "@/lib/limits";
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,7 +16,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await requireMember(organizationId);
+    const member = await requireMember(organizationId);
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Check board limit
+    try {
+      await requireLimit(organizationId, "boards");
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "Board limit reached" },
+        { status: 403 }
+      );
+    }
 
     const board = await prisma.board.create({
       data: {
@@ -30,6 +45,12 @@ export async function POST(request: NextRequest) {
             { name: "In Review", status: TaskStatus.IN_REVIEW, order: 2 },
             { name: "Done", status: TaskStatus.DONE, order: 3 },
           ],
+        },
+        boardMembers: {
+          create: {
+            memberId: member.id,
+            role: "ADMIN", // Creator gets admin access
+          },
         },
       },
       include: {
@@ -58,9 +79,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    await requireMember(organizationId);
+    const member = await requireMember(organizationId);
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    const boards = await prisma.board.findMany({
+    // Get all boards in the organization
+    const allBoards = await prisma.board.findMany({
       where: {
         organizationId,
         ...(teamId ? { teamId } : {}),
@@ -72,11 +98,19 @@ export async function GET(request: NextRequest) {
         _count: {
           select: { tasks: true },
         },
+        boardMembers: {
+          where: {
+            memberId: member.id,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    return NextResponse.json(boards);
+    // Filter to only boards the user has access to
+    const accessibleBoards = allBoards.filter((board) => board.boardMembers.length > 0);
+
+    return NextResponse.json(accessibleBoards);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to fetch boards";

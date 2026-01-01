@@ -11,7 +11,10 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "migrate:grant-board-access": "bun prisma/migrations/grant_existing_board_access.ts",
+    "db:seed": "bun prisma/seed.ts",
+    "update-stripe-prices": "bun scripts/update-stripe-prices.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.0",
@@ -36,6 +39,7 @@
     "react-datepicker": "^9.1.0",
     "react-dom": "19.2.1",
     "react-hook-form": "^7.51.0",
+    "stripe": "^20.1.0",
     "tailwind-merge": "^2.2.1",
     "zod": "^3.22.4",
     "zustand": "^4.5.0"
