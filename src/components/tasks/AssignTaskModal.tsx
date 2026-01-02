@@ -3,6 +3,22 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+interface BoardMember {
+  id: string;
+  memberId: string;
+  role: string;
+  member: {
+    id: string;
+    userId: string;
+    role: string;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+    };
+  };
+}
+
 interface Member {
   id: string;
   userId: string;
@@ -25,7 +41,7 @@ export function AssignTaskModal({ taskId, boardId, currentAssigneeId, onClose }:
   const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(currentAssigneeId);
   const queryClient = useQueryClient();
 
-  const { data: members, isLoading } = useQuery<Member[]>({
+  const { data: boardMembers, isLoading } = useQuery<BoardMember[]>({
     queryKey: ["members", boardId],
     queryFn: async () => {
       const res = await fetch(`/api/boards/${boardId}/members`);
@@ -33,6 +49,9 @@ export function AssignTaskModal({ taskId, boardId, currentAssigneeId, onClose }:
       return res.json();
     },
   });
+
+  // Transform boardMembers to members for the dropdown
+  const members: Member[] | undefined = boardMembers?.map((bm) => bm.member);
 
   const assignTaskMutation = useMutation({
     mutationFn: async (assigneeId: string | null) => {
