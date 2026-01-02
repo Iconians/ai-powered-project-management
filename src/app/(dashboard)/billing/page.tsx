@@ -164,6 +164,14 @@ export default function BillingPage() {
       });
       // Also update the query data directly if we got subscription data back
       if (data?.subscription) {
+        // Ensure plan is included before setting query data
+        if (!data.subscription.plan) {
+          // If plan is missing, just invalidate and refetch
+          queryClient.invalidateQueries({
+            queryKey: ["subscription", selectedOrgId],
+          });
+          return;
+        }
         queryClient.setQueryData(
           ["subscription", selectedOrgId],
           data.subscription
@@ -209,7 +217,7 @@ export default function BillingPage() {
   useEffect(() => {
     if (
       subscription?.stripeSubscriptionId &&
-      subscription.plan.name === "Free" &&
+      subscription.plan?.name === "Free" && // Add optional chaining
       selectedOrgId &&
       !syncSubscriptionMutation.isPending &&
       !syncSubscriptionMutation.isSuccess
@@ -221,8 +229,9 @@ export default function BillingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     subscription?.stripeSubscriptionId,
-    subscription?.plan.name,
+    subscription?.plan?.name, // Add optional chaining
     selectedOrgId,
+    syncSubscriptionMutation,
   ]);
 
   if (!organizations || organizations.length === 0) {
@@ -292,10 +301,10 @@ export default function BillingPage() {
         ) : (
           <>
             {/* Current Subscription */}
-            {subscription && (
+            {subscription && subscription.plan && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Current Plan: {currentPlan?.name}
+                  Current Plan: {subscription.plan.name}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                   <div>

@@ -325,9 +325,17 @@ export async function PATCH(request: NextRequest) {
         });
         
         if (plan && plan.price.toNumber() === 0) {
+          // Re-fetch subscription with plan relation to ensure it's included
+          const subscriptionWithPlan = await prisma.subscription.findUnique({
+            where: { organizationId },
+            include: {
+              plan: true,
+            },
+          });
+          
           return NextResponse.json({
             message: "Free plan subscriptions don't require Stripe sync",
-            subscription,
+            subscription: subscriptionWithPlan,
           });
         }
         
