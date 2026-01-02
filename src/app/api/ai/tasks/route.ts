@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember } from "@/lib/auth";
+import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 import { generateWithAI } from "@/lib/ai/client";
@@ -25,7 +25,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    await requireMember(board.organizationId);
+    // Check board access - need MEMBER role to generate tasks
+    const { boardMember } = await requireBoardAccess(boardId, "MEMBER");
 
     const systemPrompt = `You are a project management assistant. Given a project description or requirements, break it down into actionable tasks. 
 Return a JSON array of tasks, each with:

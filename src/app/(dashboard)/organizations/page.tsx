@@ -38,3 +38,4 @@ export default async function OrganizationsPage() {
   return <OrganizationsList organizations={organizations} currentUserId={user.id} />;
 }
 
+

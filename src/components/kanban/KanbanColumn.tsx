@@ -38,9 +38,10 @@ interface KanbanColumnProps {
   status: Status;
   tasks: Task[];
   boardId: string;
+  userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
 }
 
-export function KanbanColumn({ id, status, tasks, boardId }: KanbanColumnProps) {
+export function KanbanColumn({ id, status, tasks, boardId, userBoardRole }: KanbanColumnProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
     id,
@@ -58,17 +59,19 @@ export function KanbanColumn({ id, status, tasks, boardId }: KanbanColumnProps) 
           <h3 className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white truncate flex-1">
             {status.name}
           </h3>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-xs sm:text-sm font-medium ml-2 flex-shrink-0"
-          >
-            + Add
-          </button>
+          {userBoardRole !== "VIEWER" && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400 text-xs sm:text-sm font-medium ml-2 flex-shrink-0"
+            >
+              + Add
+            </button>
+          )}
         </div>
         <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2 min-h-[200px] flex-1">
             {tasks.map((task) => (
-              <TaskCard key={task.id} task={task} boardId={boardId} />
+              <TaskCard key={task.id} task={task} boardId={boardId} userBoardRole={userBoardRole} />
             ))}
             {tasks.length === 0 && (
               <div className="text-gray-400 text-sm text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded">

@@ -35,7 +35,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    await requireMember(board.organizationId);
+    // Check board access - need MEMBER role to create tasks
+    await requireBoardAccess(boardId, "MEMBER");
 
     const taskStatus = status || TaskStatus.TODO;
 

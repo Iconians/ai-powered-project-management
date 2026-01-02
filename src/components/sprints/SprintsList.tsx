@@ -25,9 +25,10 @@ interface Sprint {
 
 interface SprintsListProps {
   boardId: string;
+  userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
 }
 
-export function SprintsList({ boardId }: SprintsListProps) {
+export function SprintsList({ boardId, userBoardRole }: SprintsListProps) {
   const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
   const [deletingSprintId, setDeletingSprintId] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -165,21 +166,23 @@ export function SprintsList({ boardId }: SprintsListProps) {
                   </h3>
                   {statusBadge}
                 </div>
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <button
-                    onClick={() => setEditingSprint(sprint)}
-                    className="text-xs px-2 py-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
-                  >
-                    ✏️ Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(sprint.id)}
-                    disabled={deleteSprintMutation.isPending && deletingSprintId === sprint.id}
-                    className="text-xs px-2 py-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-50"
-                  >
-                    🗑️ Delete
-                  </button>
-                </div>
+                {userBoardRole !== "VIEWER" && (
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <button
+                      onClick={() => setEditingSprint(sprint)}
+                      className="text-xs px-2 py-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded"
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(sprint.id)}
+                      disabled={deleteSprintMutation.isPending && deletingSprintId === sprint.id}
+                      className="text-xs px-2 py-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-50"
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                )}
                 {sprint.description && (
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                     {sprint.description}

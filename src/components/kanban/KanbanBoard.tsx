@@ -50,17 +50,21 @@ interface Board {
 
 interface KanbanBoardProps {
   boardId: string;
+  userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
 }
 
-export function KanbanBoard({ boardId }: KanbanBoardProps) {
+export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
+  // Disable drag/drop for VIEWERs
+  const isViewer = userBoardRole === "VIEWER";
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
       },
+      disabled: isViewer, // Disable drag for viewers
     })
   );
 
@@ -157,6 +161,11 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
+
+    // Prevent drag/drop for VIEWERs
+    if (isViewer) {
+      return;
+    }
 
     if (!over || !board) {
       return;
@@ -255,13 +264,14 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
               status={status}
               tasks={columnTasks}
               boardId={boardId}
+              userBoardRole={userBoardRole}
             />
           );
         })}
       </div>
       <DragOverlay>
         {activeTask ? (
-          <TaskCard task={activeTask} isDragging boardId={boardId} />
+          <TaskCard task={activeTask} isDragging boardId={boardId} userBoardRole={userBoardRole} />
         ) : null}
       </DragOverlay>
     </DndContext>

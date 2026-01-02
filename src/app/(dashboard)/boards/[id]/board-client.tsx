@@ -27,10 +27,10 @@ export function BoardPageClient({ boardId, boardName, boardDescription, userBoar
       />
       <div className="flex-1 overflow-hidden">
         {activeTab === "board" ? (
-          <KanbanBoard boardId={boardId} />
+          <KanbanBoard boardId={boardId} userBoardRole={userBoardRole} />
         ) : (
           <div className="h-full overflow-y-auto">
-            <SprintsView boardId={boardId} />
+            <SprintsView boardId={boardId} userBoardRole={userBoardRole} />
           </div>
         )}
       </div>
