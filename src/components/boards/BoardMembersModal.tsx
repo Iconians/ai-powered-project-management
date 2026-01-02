@@ -183,7 +183,7 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
                     <div className="flex items-center gap-3">
                       <select
                         value={boardMember.role}
-                        onChange={(e) => handleRoleChange(boardMember.id, e.target.value)}
+                        onChange={(e) => handleRoleChange(boardMember.member.id, e.target.value)}
                         className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
                         <option value="VIEWER">Viewer</option>
@@ -191,7 +191,7 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
                         <option value="ADMIN">Admin</option>
                       </select>
                       <button
-                        onClick={() => handleRemove(boardMember.id, boardMember.member.user.email)}
+                        onClick={() => handleRemove(boardMember.member.id, boardMember.member.user.email)}
                         disabled={removeMemberMutation.isPending}
                         className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm disabled:opacity-50"
                       >
