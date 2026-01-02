@@ -23,7 +23,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    await requireMember(board.organizationId);
+    // Check board access - need MEMBER role to create sprints
+    await requireBoardAccess(boardId, "MEMBER");
 
     // If this is set as active, deactivate other active sprints on this board
     const isActive = body.isActive === true;

@@ -84,7 +84,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    await requireMember(task.board.organizationId);
+    // Check board access - need MEMBER role to update tasks (including status changes and assignments)
+    await requireBoardAccess(task.boardId, "MEMBER");
 
     // Handle status change - update status column
     let statusColumnId = task.statusColumnId;

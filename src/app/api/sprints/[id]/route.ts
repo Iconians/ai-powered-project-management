@@ -69,7 +69,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Sprint not found" }, { status: 404 });
     }
 
-    await requireMember(sprint.board.organizationId);
+    // Check board access - need MEMBER role to update sprints
+    await requireBoardAccess(sprint.boardId, "MEMBER");
 
     // If activating this sprint, deactivate others
     if (body.isActive === true && !sprint.isActive) {

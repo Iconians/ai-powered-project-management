@@ -29,6 +29,7 @@ interface TaskCardProps {
   task: Task;
   isDragging?: boolean;
   boardId: string;
+  userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
 }
 
 const priorityColors = {
@@ -38,7 +39,7 @@ const priorityColors = {
   URGENT: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
-export function TaskCard({ task, isDragging = false, boardId }: TaskCardProps) {
+export function TaskCard({ task, isDragging = false, boardId, userBoardRole }: TaskCardProps) {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const {
     attributes,
@@ -57,22 +58,23 @@ export function TaskCard({ task, isDragging = false, boardId }: TaskCardProps) {
 
   const showAssignee = (task.status === "IN_PROGRESS" || task.status === "IN_REVIEW") && task.assignee;
   const assigneeName = task.assignee?.user?.name || task.assignee?.user?.email?.split("@")[0] || "Unassigned";
-  const canAssign = task.status === "IN_PROGRESS" || task.status === "IN_REVIEW";
+  const canAssign = (task.status === "IN_PROGRESS" || task.status === "IN_REVIEW") && userBoardRole !== "VIEWER";
 
   const handleAssigneeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowAssignModal(true);
   };
 
+  const isViewer = userBoardRole === "VIEWER";
+  
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className={`bg-white dark:bg-gray-700 rounded-lg p-3 shadow-sm cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
+      {...(isViewer ? {} : { ...attributes, ...listeners })}
+      className={`bg-white dark:bg-gray-700 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
         isDragging ? "opacity-50" : ""
-      }`}
+      } ${isViewer ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}
     >
       <div className="flex items-start justify-between mb-2">
         <h4 className="font-medium text-gray-900 dark:text-white text-sm">
