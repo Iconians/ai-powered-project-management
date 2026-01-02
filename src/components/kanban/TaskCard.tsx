@@ -39,7 +39,12 @@ const priorityColors = {
   URGENT: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
 };
 
-export function TaskCard({ task, isDragging = false, boardId, userBoardRole }: TaskCardProps) {
+export function TaskCard({
+  task,
+  isDragging = false,
+  boardId,
+  userBoardRole,
+}: TaskCardProps) {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const {
     attributes,
@@ -56,9 +61,16 @@ export function TaskCard({ task, isDragging = false, boardId, userBoardRole }: T
     opacity: isSortableDragging ? 0.5 : 1,
   };
 
-  const showAssignee = (task.status === "IN_PROGRESS" || task.status === "IN_REVIEW") && task.assignee;
-  const assigneeName = task.assignee?.user?.name || task.assignee?.user?.email?.split("@")[0] || "Unassigned";
-  const canAssign = (task.status === "IN_PROGRESS" || task.status === "IN_REVIEW") && userBoardRole !== "VIEWER";
+  const showAssignee =
+    (task.status === "IN_PROGRESS" || task.status === "IN_REVIEW") &&
+    task.assignee;
+  const assigneeName =
+    task.assignee?.user?.name ||
+    task.assignee?.user?.email?.split("@")[0] ||
+    "Unassigned";
+  const canAssign =
+    (task.status === "IN_PROGRESS" || task.status === "IN_REVIEW") &&
+    userBoardRole !== "VIEWER";
 
   const handleAssigneeClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -66,15 +78,24 @@ export function TaskCard({ task, isDragging = false, boardId, userBoardRole }: T
   };
 
   const isViewer = userBoardRole === "VIEWER";
-  
+
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        touchAction: isViewer ? "auto" : "none", // Prevent default touch behaviors for dragging
+      }}
       {...(isViewer ? {} : { ...attributes, ...listeners })}
       className={`bg-white dark:bg-gray-700 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
         isDragging ? "opacity-50" : ""
       } ${isViewer ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}
+      onTouchStart={(e) => {
+        // Prevent default touch behaviors that might interfere
+        if (!isViewer) {
+          e.stopPropagation();
+        }
+      }}
     >
       <div className="flex items-start justify-between mb-2">
         <h4 className="font-medium text-gray-900 dark:text-white text-sm">
@@ -95,6 +116,7 @@ export function TaskCard({ task, isDragging = false, boardId, userBoardRole }: T
             {showAssignee ? (
               <button
                 onClick={handleAssigneeClick}
+                onTouchStart={(e) => e.stopPropagation()} // Prevent drag when touching button
                 className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 flex items-center gap-1 hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors cursor-pointer"
                 title="Click to change assignee"
               >
@@ -104,6 +126,7 @@ export function TaskCard({ task, isDragging = false, boardId, userBoardRole }: T
             ) : (
               <button
                 onClick={handleAssigneeClick}
+                onTouchStart={(e) => e.stopPropagation()} // Prevent drag when touching button
                 className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-800 transition-colors cursor-pointer"
                 title="Click to assign"
               >
@@ -125,4 +148,3 @@ export function TaskCard({ task, isDragging = false, boardId, userBoardRole }: T
     </div>
   );
 }
-
