@@ -72,10 +72,14 @@ export async function POST(request: NextRequest) {
       },
       include: {
         assignee: {
-          select: {
-            id: true,
-            userId: true,
-            role: true,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         statusColumn: true,
@@ -135,10 +139,14 @@ export async function GET(request: NextRequest) {
       },
       include: {
         assignee: {
-          select: {
-            id: true,
-            userId: true,
-            role: true,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         },
         statusColumn: true,
