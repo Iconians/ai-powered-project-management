@@ -30,7 +30,10 @@ interface BoardMembersModalProps {
   onClose: () => void;
 }
 
-export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) {
+export function BoardMembersModal({
+  boardId,
+  onClose,
+}: BoardMembersModalProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const queryClient = useQueryClient();
 
@@ -51,9 +54,11 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
       const boardRes = await fetch(`/api/boards/${boardId}`);
       if (!boardRes.ok) throw new Error("Failed to fetch board");
       const board = await boardRes.json();
-      
+
       // Then get organization members
-      const orgRes = await fetch(`/api/organizations/${board.organizationId}/members`);
+      const orgRes = await fetch(
+        `/api/organizations/${board.organizationId}/members`
+      );
       if (!orgRes.ok) throw new Error("Failed to fetch organization members");
       return orgRes.json();
     },
@@ -71,13 +76,21 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["board", boardId, "members"] });
+      queryClient.invalidateQueries({
+        queryKey: ["board", boardId, "members"],
+      });
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
     },
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ memberId, role }: { memberId: string; role: string }) => {
+    mutationFn: async ({
+      memberId,
+      role,
+    }: {
+      memberId: string;
+      role: string;
+    }) => {
       const res = await fetch(`/api/boards/${boardId}/members/${memberId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -90,12 +103,20 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["board", boardId, "members"] });
+      queryClient.invalidateQueries({
+        queryKey: ["board", boardId, "members"],
+      });
     },
   });
 
   const addMemberMutation = useMutation({
-    mutationFn: async ({ memberId, role }: { memberId: string; role: string }) => {
+    mutationFn: async ({
+      memberId,
+      role,
+    }: {
+      memberId: string;
+      role: string;
+    }) => {
       const res = await fetch(`/api/boards/${boardId}/members`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,14 +129,20 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["board", boardId, "members"] });
-      queryClient.invalidateQueries({ queryKey: ["board", boardId, "org-members"] });
+      queryClient.invalidateQueries({
+        queryKey: ["board", boardId, "members"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["board", boardId, "org-members"],
+      });
       setShowAddModal(false);
     },
   });
 
   const handleRemove = (memberId: string, memberEmail: string) => {
-    if (confirm(`Are you sure you want to remove ${memberEmail} from this board?`)) {
+    if (
+      confirm(`Are you sure you want to remove ${memberEmail} from this board?`)
+    ) {
       removeMemberMutation.mutate(memberId);
     }
   };
@@ -125,15 +152,18 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
   };
 
   // Get members not yet added to board
-  const availableMembers = orgMembers?.filter(
-    (orgMember) => !boardMembers?.some((bm) => bm.member.id === orgMember.id)
-  ) || [];
+  const availableMembers =
+    orgMembers?.filter(
+      (orgMember) => !boardMembers?.some((bm) => bm.member.id === orgMember.id)
+    ) || [];
 
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-2xl">
-          <div className="text-center text-gray-600 dark:text-gray-400">Loading...</div>
+          <div className="text-center text-gray-600 dark:text-gray-400">
+            Loading...
+          </div>
         </div>
       </div>
     );
@@ -174,7 +204,8 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
                   >
                     <div className="flex-1">
                       <div className="font-medium text-gray-900 dark:text-white">
-                        {boardMember.member.user.name || boardMember.member.user.email}
+                        {boardMember.member.user.name ||
+                          boardMember.member.user.email}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
                         {boardMember.member.user.email}
@@ -183,7 +214,12 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
                     <div className="flex items-center gap-3">
                       <select
                         value={boardMember.role}
-                        onChange={(e) => handleRoleChange(boardMember.member.id, e.target.value)}
+                        onChange={(e) =>
+                          handleRoleChange(
+                            boardMember.member.id,
+                            e.target.value
+                          )
+                        }
                         className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
                         <option value="VIEWER">Viewer</option>
@@ -191,7 +227,12 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
                         <option value="ADMIN">Admin</option>
                       </select>
                       <button
-                        onClick={() => handleRemove(boardMember.member.id, boardMember.member.user.email)}
+                        onClick={() =>
+                          handleRemove(
+                            boardMember.member.id,
+                            boardMember.member.user.email
+                          )
+                        }
                         disabled={removeMemberMutation.isPending}
                         className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm disabled:opacity-50"
                       >
@@ -252,7 +293,9 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
                       </select>
                       <button
                         onClick={() => {
-                          const roleSelect = document.getElementById(`role-${member.id}`) as HTMLSelectElement;
+                          const roleSelect = document.getElementById(
+                            `role-${member.id}`
+                          ) as HTMLSelectElement;
                           addMemberMutation.mutate({
                             memberId: member.id,
                             role: roleSelect.value,
@@ -271,14 +314,16 @@ export function BoardMembersModal({ boardId, onClose }: BoardMembersModalProps) 
           </div>
         )}
 
-        {(removeMemberMutation.isError || updateRoleMutation.isError || addMemberMutation.isError) && (
+        {(removeMemberMutation.isError ||
+          updateRoleMutation.isError ||
+          addMemberMutation.isError) && (
           <div className="mt-4 text-red-600 dark:text-red-400 text-sm">
-            {removeMemberMutation.error?.message || updateRoleMutation.error?.message || addMemberMutation.error?.message}
+            {removeMemberMutation.error?.message ||
+              updateRoleMutation.error?.message ||
+              addMemberMutation.error?.message}
           </div>
         )}
       </div>
     </div>
   );
 }
-
-
