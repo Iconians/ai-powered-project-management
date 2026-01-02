@@ -7,11 +7,15 @@ import {
   DragOverlay,
   DragStartEvent,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   rectIntersection,
 } from "@dnd-kit/core";
-import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
 import { KanbanColumn } from "./KanbanColumn";
@@ -65,8 +69,24 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
         distance: 8,
       },
       disabled: isViewer, // Disable drag for viewers
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 5,
+      },
+      disabled: isViewer, // Disable drag for viewers
     })
   );
+  // const isViewer = userBoardRole === "VIEWER";
+  // const sensors = useSensors(
+  //   useSensor(PointerSensor, {
+  //     activationConstraint: {
+  //       distance: 8,
+  //     },
+  //     disabled: isViewer, // Disable drag for viewers
+  //   })
+  // );
 
   const { data: board, isLoading } = useQuery<Board>({
     queryKey: ["board", boardId],
@@ -117,7 +137,15 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, status, order }: { taskId: string; status: TaskStatus; order: number }) => {
+    mutationFn: async ({
+      taskId,
+      status,
+      order,
+    }: {
+      taskId: string;
+      status: TaskStatus;
+      order: number;
+    }) => {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -129,7 +157,7 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
     onMutate: async ({ taskId, status, order }) => {
       await queryClient.cancelQueries({ queryKey: ["board", boardId] });
       const previousBoard = queryClient.getQueryData<Board>(["board", boardId]);
-      
+
       if (previousBoard) {
         queryClient.setQueryData<Board>(["board", boardId], (old) => {
           if (!old) return old;
@@ -141,7 +169,7 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
           };
         });
       }
-      
+
       return { previousBoard };
     },
     onError: (err, variables, context) => {
@@ -173,15 +201,17 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
 
     const taskId = active.id as string;
     const overId = over.id as string;
-    
+
     // Check if dropped on a status column (droppable)
     const statusColumn = board.statuses.find((s) => s.id === overId);
-    
+
     // If dropped on another task, find which column that task belongs to
     if (!statusColumn) {
       const droppedOnTask = board.tasks.find((t) => t.id === overId);
       if (droppedOnTask) {
-        const targetStatus = board.statuses.find((s) => s.status === droppedOnTask.status);
+        const targetStatus = board.statuses.find(
+          (s) => s.status === droppedOnTask.status
+        );
         if (targetStatus) {
           const task = board.tasks.find((t) => t.id === taskId);
           if (task && task.status !== targetStatus.status) {
@@ -205,7 +235,7 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
     if (!task) {
       return;
     }
-    
+
     if (task.status === statusColumn.status) {
       // Task is already in this column, might be reordering within column
       // This is handled by the SortableContext
@@ -226,11 +256,19 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
   };
 
   if (isLoading) {
-    return <div className="p-8 text-gray-600 dark:text-gray-400">Loading board...</div>;
+    return (
+      <div className="p-8 text-gray-600 dark:text-gray-400">
+        Loading board...
+      </div>
+    );
   }
 
   if (!board) {
-    return <div className="p-8 text-gray-600 dark:text-gray-400">Board not found</div>;
+    return (
+      <div className="p-8 text-gray-600 dark:text-gray-400">
+        Board not found
+      </div>
+    );
   }
 
   const sortedStatuses = [...board.statuses].sort((a, b) => a.order - b.order);
@@ -271,10 +309,14 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
       </div>
       <DragOverlay>
         {activeTask ? (
-          <TaskCard task={activeTask} isDragging boardId={boardId} userBoardRole={userBoardRole} />
+          <TaskCard
+            task={activeTask}
+            isDragging
+            boardId={boardId}
+            userBoardRole={userBoardRole}
+          />
         ) : null}
       </DragOverlay>
     </DndContext>
   );
 }
-
