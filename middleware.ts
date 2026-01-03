@@ -24,7 +24,9 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      * - api/auth (NextAuth routes)
+     * - api/github/webhook (GitHub webhooks - no auth required)
+     * - api/stripe/webhook (Stripe webhooks - no auth required)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/auth|login|signup).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/auth|api/github/webhook|api/stripe/webhook|login|signup).*)",
   ],
 };
