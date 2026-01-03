@@ -14,7 +14,8 @@ const smtpConfig = {
 
 const fromEmail =
   process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@example.com";
-const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+// Normalize NEXTAUTH_URL to remove trailing slash
+const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(/\/$/, "");
 
 // Create transporter
 const transporter = nodemailer.createTransport(smtpConfig);
