@@ -72,7 +72,8 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        distance: 10, // Use distance instead of delay for more immediate response on mobile
+        delay: 150, // Short delay to distinguish from taps but allow quick dragging
+        tolerance: 8, // Allow more movement during delay for better mobile experience
       },
       disabled: isViewer, // Disable drag for viewers
     })

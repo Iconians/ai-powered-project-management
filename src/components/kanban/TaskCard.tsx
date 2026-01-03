@@ -85,17 +85,14 @@ export function TaskCard({
       style={{
         ...style,
         touchAction: isViewer ? "auto" : "none", // Prevent default touch behaviors for dragging
+        WebkitTouchCallout: "none", // Prevent iOS callout menu
+        WebkitUserSelect: "none", // Prevent text selection on iOS
+        userSelect: "none", // Prevent text selection
       }}
       {...(isViewer ? {} : { ...attributes, ...listeners })}
       className={`bg-white dark:bg-gray-700 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
         isDragging ? "opacity-50" : ""
       } ${isViewer ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}
-      onTouchStart={(e) => {
-        // Prevent default touch behaviors that might interfere
-        if (!isViewer) {
-          e.stopPropagation();
-        }
-      }}
     >
       <div className="flex items-start justify-between mb-2">
         <h4 className="font-medium text-gray-900 dark:text-white text-sm">
