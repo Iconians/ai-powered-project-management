@@ -23,5 +23,3 @@ declare module "next-auth/jwt" {
     email: string;
   }
 }
-
-

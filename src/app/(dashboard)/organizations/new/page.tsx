@@ -57,7 +57,10 @@ export default function NewOrganizationPage() {
               </div>
             )}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Organization Name
               </label>
               <input
@@ -91,4 +94,3 @@ export default function NewOrganizationPage() {
     </div>
   );
 }
-

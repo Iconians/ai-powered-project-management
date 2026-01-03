@@ -1,17 +1,29 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn, useSession, getSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (searchParams.get("verified") === "true") {
+      setSuccess("Email verified successfully! You can now log in.");
+    }
+    const message = searchParams.get("message");
+    if (message) {
+      setSuccess(decodeURIComponent(message));
+    }
+  }, [searchParams]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -34,9 +46,11 @@ export default function LoginPage() {
 
       if (result?.error) {
         console.error("Login error:", result.error);
-        setError(result.error === "CredentialsSignin" 
-          ? "Invalid email or password" 
-          : result.error || "Failed to sign in. Please try again.");
+        setError(
+          result.error === "CredentialsSignin"
+            ? "Invalid email or password"
+            : result.error || "Failed to sign in. Please try again."
+        );
         setLoading(false);
         return;
       }
@@ -51,7 +65,7 @@ export default function LoginPage() {
       // Poll the session endpoint until we get a valid session
       let sessionEstablished = false;
       for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
         const session = await getSession();
         if (session?.user) {
           sessionEstablished = true;
@@ -66,10 +80,13 @@ export default function LoginPage() {
         setError("Session not established. Please try again.");
         setLoading(false);
       }
-      
     } catch (error) {
       console.error("Login exception:", error);
-      setError(error instanceof Error ? error.message : "An unexpected error occurred. Please try again.");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred. Please try again."
+      );
       setLoading(false);
     }
   };
@@ -83,8 +100,22 @@ export default function LoginPage() {
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
+          {success && (
+            <div
+              className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-600 dark:text-green-400 px-4 py-3 rounded text-sm"
+              role="alert"
+            >
+              <div className="flex items-center gap-2">
+                <span>✅</span>
+                <span>{success}</span>
+              </div>
+            </div>
+          )}
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded text-sm" role="alert">
+            <div
+              className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded text-sm"
+              role="alert"
+            >
               <div className="flex items-center gap-2">
                 <span>⚠️</span>
                 <span>{error}</span>
@@ -93,7 +124,10 @@ export default function LoginPage() {
           )}
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Email address
               </label>
               <input
@@ -108,7 +142,10 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Password
               </label>
               <input
@@ -134,7 +171,13 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="text-center">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Link
+              href="/forgot-password"
+              className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
+            >
+              Forgot your password?
+            </Link>
             <Link
               href="/signup"
               className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
@@ -148,3 +191,16 @@ export default function LoginPage() {
   );
 }
 
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+          <div className="text-gray-600 dark:text-gray-400">Loading...</div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}

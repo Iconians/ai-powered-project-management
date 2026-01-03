@@ -12,10 +12,7 @@ export async function PATCH(
     const { role } = body;
 
     if (!role) {
-      return NextResponse.json(
-        { error: "role is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "role is required" }, { status: 400 });
     }
 
     // Check if user is an ADMIN of the organization
@@ -30,10 +27,7 @@ export async function PATCH(
     });
 
     if (!member) {
-      return NextResponse.json(
-        { error: "Member not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
     if (member.organizationId !== id) {
@@ -79,11 +73,9 @@ export async function PATCH(
 
     return NextResponse.json(updatedMember);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update member role";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to update member role";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -93,7 +85,7 @@ export async function DELETE(
 ) {
   try {
     const { id, memberId } = await params;
-    
+
     // Check if user is an ADMIN of the organization
     await requireMember(id, "ADMIN");
 
@@ -106,10 +98,7 @@ export async function DELETE(
     });
 
     if (!member) {
-      return NextResponse.json(
-        { error: "Member not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Member not found" }, { status: 404 });
     }
 
     if (member.organizationId !== id) {
@@ -140,12 +129,8 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to remove member";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to remove member";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
-

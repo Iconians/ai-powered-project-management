@@ -67,11 +67,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(sprint, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create sprint";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to create sprint";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -122,11 +120,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(sprints);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch sprints";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch sprints";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

@@ -55,13 +55,13 @@ export default async function BoardsPage() {
   for (const org of organizations) {
     const userOrgMember = org.members.find((m) => m.userId === user.id);
     const isOrgAdmin = userOrgMember?.role === "ADMIN";
-    
+
     for (const board of org.boards) {
       // Check if user has board access
       const boardMember = board.boardMembers.find(
         (bm) => bm.member && bm.member.userId === user.id
       );
-      
+
       // Organization admins can see all boards, even if not explicitly added
       if (boardMember || isOrgAdmin) {
         accessibleBoards.push({
@@ -132,13 +132,15 @@ export default async function BoardsPage() {
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
                     {board.name}
                   </h3>
-                  <span className={`text-xs px-2 py-1 rounded ${
-                    board.userBoardRole === "ADMIN"
-                      ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-                      : board.userBoardRole === "MEMBER"
-                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                      : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
-                  }`}>
+                  <span
+                    className={`text-xs px-2 py-1 rounded ${
+                      board.userBoardRole === "ADMIN"
+                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                        : board.userBoardRole === "MEMBER"
+                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                    }`}
+                  >
                     {board.userBoardRole}
                   </span>
                 </div>
@@ -163,4 +165,3 @@ export default async function BoardsPage() {
     </div>
   );
 }
-

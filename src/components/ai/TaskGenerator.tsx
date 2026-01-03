@@ -132,6 +132,19 @@ export function TaskGenerator({ boardId, onClose }: TaskGeneratorProps) {
             <p className="text-red-500 dark:text-red-500 text-xs mt-1">
               {generateTasksMutation.error?.message || "Failed to generate tasks. Please try again."}
             </p>
+            {generateTasksMutation.error?.message?.includes("paid subscription") && (
+              <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800">
+                <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                  AI features require a Pro or Enterprise subscription.
+                </p>
+                <a
+                  href="/billing"
+                  className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
+                >
+                  Upgrade to Pro or Enterprise
+                </a>
+              </div>
+            )}
           </div>
         )}
       </div>

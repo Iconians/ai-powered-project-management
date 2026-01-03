@@ -19,7 +19,10 @@ interface OrganizationMembersProps {
   isAdmin: boolean;
 }
 
-export function OrganizationMembers({ organizationId, isAdmin }: OrganizationMembersProps) {
+export function OrganizationMembers({
+  organizationId,
+  isAdmin,
+}: OrganizationMembersProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const queryClient = useQueryClient();
 
@@ -34,27 +37,41 @@ export function OrganizationMembers({ organizationId, isAdmin }: OrganizationMem
 
   const removeMemberMutation = useMutation({
     mutationFn: async (memberId: string) => {
-      const res = await fetch(`/api/organizations/${organizationId}/members/${memberId}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `/api/organizations/${organizationId}/members/${memberId}`,
+        {
+          method: "DELETE",
+        }
+      );
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Failed to remove member");
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organization", organizationId, "members"] });
+      queryClient.invalidateQueries({
+        queryKey: ["organization", organizationId, "members"],
+      });
       queryClient.invalidateQueries({ queryKey: ["organizations"] });
     },
   });
 
   const updateRoleMutation = useMutation({
-    mutationFn: async ({ memberId, role }: { memberId: string; role: string }) => {
-      const res = await fetch(`/api/organizations/${organizationId}/members/${memberId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role }),
-      });
+    mutationFn: async ({
+      memberId,
+      role,
+    }: {
+      memberId: string;
+      role: string;
+    }) => {
+      const res = await fetch(
+        `/api/organizations/${organizationId}/members/${memberId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ role }),
+        }
+      );
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Failed to update role");
@@ -62,13 +79,19 @@ export function OrganizationMembers({ organizationId, isAdmin }: OrganizationMem
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organization", organizationId, "members"] });
+      queryClient.invalidateQueries({
+        queryKey: ["organization", organizationId, "members"],
+      });
       queryClient.invalidateQueries({ queryKey: ["organizations"] });
     },
   });
 
   const handleRemove = (memberId: string, memberEmail: string) => {
-    if (confirm(`Are you sure you want to remove ${memberEmail} from this organization?`)) {
+    if (
+      confirm(
+        `Are you sure you want to remove ${memberEmail} from this organization?`
+      )
+    ) {
       removeMemberMutation.mutate(memberId);
     }
   };
@@ -78,7 +101,11 @@ export function OrganizationMembers({ organizationId, isAdmin }: OrganizationMem
   };
 
   if (isLoading) {
-    return <div className="text-sm text-gray-500 dark:text-gray-400">Loading members...</div>;
+    return (
+      <div className="text-sm text-gray-500 dark:text-gray-400">
+        Loading members...
+      </div>
+    );
   }
 
   return (
@@ -116,7 +143,9 @@ export function OrganizationMembers({ organizationId, isAdmin }: OrganizationMem
                   {isAdmin ? (
                     <select
                       value={member.role}
-                      onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                      onChange={(e) =>
+                        handleRoleChange(member.id, e.target.value)
+                      }
                       className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                     >
                       <option value="VIEWER">Viewer</option>
@@ -124,13 +153,15 @@ export function OrganizationMembers({ organizationId, isAdmin }: OrganizationMem
                       <option value="ADMIN">Admin</option>
                     </select>
                   ) : (
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      member.role === "ADMIN"
-                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
-                        : member.role === "MEMBER"
-                        ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                        : "bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200"
-                    }`}>
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${
+                        member.role === "ADMIN"
+                          ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                          : member.role === "MEMBER"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                          : "bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200"
+                      }`}
+                    >
                       {member.role}
                     </span>
                   )}
@@ -163,11 +194,10 @@ export function OrganizationMembers({ organizationId, isAdmin }: OrganizationMem
 
       {(removeMemberMutation.isError || updateRoleMutation.isError) && (
         <div className="mt-4 text-red-600 dark:text-red-400 text-sm">
-          {removeMemberMutation.error?.message || updateRoleMutation.error?.message}
+          {removeMemberMutation.error?.message ||
+            updateRoleMutation.error?.message}
         </div>
       )}
     </>
   );
 }
-
-

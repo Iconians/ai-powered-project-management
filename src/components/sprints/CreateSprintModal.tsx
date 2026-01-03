@@ -11,7 +11,11 @@ interface CreateSprintModalProps {
   onSprintCreated?: (sprintId: string) => void;
 }
 
-export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateSprintModalProps) {
+export function CreateSprintModal({
+  boardId,
+  onClose,
+  onSprintCreated,
+}: CreateSprintModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -26,7 +30,7 @@ export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateS
     today.setHours(0, 0, 0, 0);
     const twoWeeksFromNow = new Date(today);
     twoWeeksFromNow.setDate(today.getDate() + 14);
-    
+
     setStartDate((prev) => prev || today);
     setEndDate((prev) => prev || twoWeeksFromNow);
   }, []);
@@ -68,12 +72,12 @@ export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateS
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !startDate || !endDate) return;
-    
+
     if (endDate <= startDate) {
       alert("End date must be after start date");
       return;
     }
-    
+
     createSprintMutation.mutate();
   };
 
@@ -85,7 +89,10 @@ export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateS
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Sprint Name *
             </label>
             <input
@@ -99,7 +106,10 @@ export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateS
             />
           </div>
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Description
             </label>
             <textarea
@@ -113,7 +123,10 @@ export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateS
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="startDate"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Start Date *
               </label>
               <DatePicker
@@ -130,7 +143,10 @@ export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateS
               />
             </div>
             <div>
-              <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="endDate"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 End Date *
               </label>
               <DatePicker
@@ -149,7 +165,10 @@ export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateS
             </div>
           </div>
           <div>
-            <label htmlFor="goal" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="goal"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Sprint Goal
             </label>
             <input
@@ -169,7 +188,10 @@ export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateS
               onChange={(e) => setIsActive(e.target.checked)}
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
-            <label htmlFor="isActive" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="isActive"
+              className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+            >
               Set as active sprint
             </label>
           </div>
@@ -183,7 +205,12 @@ export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateS
             </button>
             <button
               type="submit"
-              disabled={createSprintMutation.isPending || !name.trim() || !startDate || !endDate}
+              disabled={
+                createSprintMutation.isPending ||
+                !name.trim() ||
+                !startDate ||
+                !endDate
+              }
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {createSprintMutation.isPending ? "Creating..." : "Create Sprint"}
@@ -199,4 +226,3 @@ export function CreateSprintModal({ boardId, onClose, onSprintCreated }: CreateS
     </div>
   );
 }
-

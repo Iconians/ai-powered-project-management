@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 import Stripe from "stripe";
 import { pusherServer } from "@/lib/pusher";
+import {
+  sendSubscriptionWelcomeEmail,
+  sendPaymentFailedEmail,
+  sendSubscriptionCancelledEmail,
+} from "@/lib/email";
 
 // Disable body parsing for this route - we need the raw body for signature verification
 export const runtime = "nodejs";
@@ -20,10 +25,7 @@ export async function POST(request: NextRequest) {
 
     if (!signature) {
       console.error("Webhook error: No signature header found");
-      return NextResponse.json(
-        { error: "No signature" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No signature" }, { status: 400 });
     }
 
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
@@ -47,7 +49,10 @@ export async function POST(request: NextRequest) {
       console.error("Webhook signature verification failed:", error.message);
       console.error("Body length:", body.length);
       console.error("Signature:", signature.substring(0, 20) + "...");
-      console.error("Webhook secret configured:", !!process.env.STRIPE_WEBHOOK_SECRET);
+      console.error(
+        "Webhook secret configured:",
+        !!process.env.STRIPE_WEBHOOK_SECRET
+      );
       return NextResponse.json(
         { error: `Webhook Error: ${error.message}` },
         { status: 400 }
@@ -60,7 +65,7 @@ export async function POST(request: NextRequest) {
         case "customer.subscription.updated": {
           const subscription = event.data.object as Stripe.Subscription;
           // Type guard to ensure we have the subscription properties
-          if (!('current_period_start' in subscription)) {
+          if (!("current_period_start" in subscription)) {
             console.error("Subscription object missing expected properties");
             break;
           }
@@ -75,7 +80,9 @@ export async function POST(request: NextRequest) {
             if (existing) {
               organizationId = existing.organizationId;
             } else {
-              console.error("No organizationId in subscription metadata and not found in database");
+              console.error(
+                "No organizationId in subscription metadata and not found in database"
+              );
               break;
             }
           }
@@ -93,7 +100,12 @@ export async function POST(request: NextRequest) {
 
           if (!plan) {
             console.error("Plan not found for price ID:", priceId);
-            console.error("Available plans:", await prisma.plan.findMany({ select: { name: true, stripePriceId: true } }));
+            console.error(
+              "Available plans:",
+              await prisma.plan.findMany({
+                select: { name: true, stripePriceId: true },
+              })
+            );
             break;
           }
 
@@ -119,7 +131,8 @@ export async function POST(request: NextRequest) {
                 currentPeriodEnd: (subscription as any).current_period_end
                   ? new Date((subscription as any).current_period_end * 1000)
                   : null,
-                cancelAtPeriodEnd: (subscription as any).cancel_at_period_end ?? false,
+                cancelAtPeriodEnd:
+                  (subscription as any).cancel_at_period_end ?? false,
               },
               create: {
                 organizationId,
@@ -140,9 +153,43 @@ export async function POST(request: NextRequest) {
                 currentPeriodEnd: (subscription as any).current_period_end
                   ? new Date((subscription as any).current_period_end * 1000)
                   : null,
-                cancelAtPeriodEnd: (subscription as any).cancel_at_period_end ?? false,
+                cancelAtPeriodEnd:
+                  (subscription as any).cancel_at_period_end ?? false,
               },
             });
+
+            // Send subscription welcome email if subscription is newly created and active
+            if (
+              event.type === "customer.subscription.created" &&
+              updatedSubscription.status === "ACTIVE" &&
+              plan.price.toNumber() > 0
+            ) {
+              try {
+                const organization = await prisma.organization.findUnique({
+                  where: { id: organizationId },
+                  include: {
+                    members: {
+                      where: { role: "ADMIN" },
+                      include: { user: true },
+                      take: 1,
+                    },
+                  },
+                });
+                if (organization && organization.members.length > 0) {
+                  await sendSubscriptionWelcomeEmail(
+                    organization.members[0].user,
+                    organization,
+                    plan
+                  );
+                }
+              } catch (emailError) {
+                console.error(
+                  "Failed to send subscription welcome email:",
+                  emailError
+                );
+                // Don't fail the webhook if email fails
+              }
+            }
 
             // Trigger Pusher event for real-time update
             try {
@@ -159,7 +206,10 @@ export async function POST(request: NextRequest) {
               // Don't fail the webhook if Pusher fails
             }
           } catch (error) {
-            console.error("Error upserting subscription in customer.subscription.created/updated:", error);
+            console.error(
+              "Error upserting subscription in customer.subscription.created/updated:",
+              error
+            );
             console.error("Organization ID:", organizationId);
             console.error("Plan ID:", plan.id);
             console.error("Stripe Subscription ID:", subscription.id);
@@ -173,16 +223,49 @@ export async function POST(request: NextRequest) {
           const organizationId = subscription.metadata?.organizationId;
 
           let updatedSubscription;
+          let finalOrganizationId = organizationId;
           if (!organizationId) {
             // Try to find by subscription ID
             const existing = await prisma.subscription.findUnique({
               where: { stripeSubscriptionId: subscription.id },
+              include: { plan: true },
             });
             if (existing) {
+              finalOrganizationId = existing.organizationId;
               updatedSubscription = await prisma.subscription.update({
                 where: { id: existing.id },
                 data: { status: "CANCELED" },
+                include: { plan: true },
               });
+              // Send cancellation email
+              try {
+                const organization = await prisma.organization.findUnique({
+                  where: { id: existing.organizationId },
+                  include: {
+                    members: {
+                      where: { role: "ADMIN" },
+                      include: { user: true },
+                      take: 1,
+                    },
+                  },
+                });
+                if (
+                  organization &&
+                  organization.members.length > 0 &&
+                  existing.plan
+                ) {
+                  await sendSubscriptionCancelledEmail(
+                    organization.members[0].user,
+                    organization,
+                    existing.plan
+                  );
+                }
+              } catch (emailError) {
+                console.error(
+                  "Failed to send subscription cancelled email:",
+                  emailError
+                );
+              }
               // Trigger Pusher event
               try {
                 await pusherServer.trigger(
@@ -198,10 +281,44 @@ export async function POST(request: NextRequest) {
               }
             }
           } else {
+            const existingSub = await prisma.subscription.findUnique({
+              where: { organizationId },
+              include: { plan: true },
+            });
             updatedSubscription = await prisma.subscription.update({
               where: { organizationId },
               data: { status: "CANCELED" },
+              include: { plan: true },
             });
+            // Send cancellation email
+            try {
+              const organization = await prisma.organization.findUnique({
+                where: { id: organizationId },
+                include: {
+                  members: {
+                    where: { role: "ADMIN" },
+                    include: { user: true },
+                    take: 1,
+                  },
+                },
+              });
+              if (
+                organization &&
+                organization.members.length > 0 &&
+                existingSub?.plan
+              ) {
+                await sendSubscriptionCancelledEmail(
+                  organization.members[0].user,
+                  organization,
+                  existingSub.plan
+                );
+              }
+            } catch (emailError) {
+              console.error(
+                "Failed to send subscription cancelled email:",
+                emailError
+              );
+            }
             // Trigger Pusher event
             try {
               await pusherServer.trigger(
@@ -221,9 +338,10 @@ export async function POST(request: NextRequest) {
 
         case "invoice.payment_succeeded": {
           const invoice = event.data.object as Stripe.Invoice;
-          const subscriptionId = typeof (invoice as any).subscription === 'string' 
-            ? (invoice as any).subscription 
-            : (invoice as any).subscription?.id || null;
+          const subscriptionId =
+            typeof (invoice as any).subscription === "string"
+              ? (invoice as any).subscription
+              : (invoice as any).subscription?.id || null;
 
           if (subscriptionId) {
             const subscription = await prisma.subscription.findUnique({
@@ -256,9 +374,10 @@ export async function POST(request: NextRequest) {
 
         case "invoice.payment_failed": {
           const invoice = event.data.object as Stripe.Invoice;
-          const subscriptionId = typeof (invoice as any).subscription === 'string' 
-            ? (invoice as any).subscription 
-            : (invoice as any).subscription?.id || null;
+          const subscriptionId =
+            typeof (invoice as any).subscription === "string"
+              ? (invoice as any).subscription
+              : (invoice as any).subscription?.id || null;
 
           if (subscriptionId) {
             const subscription = await prisma.subscription.findUnique({
@@ -270,6 +389,32 @@ export async function POST(request: NextRequest) {
                 where: { id: subscription.id },
                 data: { status: "PAST_DUE" },
               });
+
+              // Send payment failed email
+              try {
+                const organization = await prisma.organization.findUnique({
+                  where: { id: subscription.organizationId },
+                  include: {
+                    members: {
+                      where: { role: "ADMIN" },
+                      include: { user: true },
+                      take: 1,
+                    },
+                  },
+                });
+                if (organization && organization.members.length > 0) {
+                  await sendPaymentFailedEmail(
+                    organization.members[0].user,
+                    organization,
+                    updatedSubscription
+                  );
+                }
+              } catch (emailError) {
+                console.error(
+                  "Failed to send payment failed email:",
+                  emailError
+                );
+              }
 
               // Trigger Pusher event
               try {
@@ -308,15 +453,22 @@ export async function POST(request: NextRequest) {
 
           try {
             // Retrieve the subscription from Stripe
-            const stripeSubscription = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription;
+            const stripeSubscription = (await stripe.subscriptions.retrieve(
+              subscriptionId
+            )) as Stripe.Subscription;
 
             // Find the plan by Stripe price ID
             const plan = await prisma.plan.findUnique({
-              where: { stripePriceId: stripeSubscription.items.data[0]?.price.id },
+              where: {
+                stripePriceId: stripeSubscription.items.data[0]?.price.id,
+              },
             });
 
             if (!plan) {
-              console.error("Plan not found for price ID:", stripeSubscription.items.data[0]?.price.id);
+              console.error(
+                "Plan not found for price ID:",
+                stripeSubscription.items.data[0]?.price.id
+              );
               break;
             }
 
@@ -335,13 +487,19 @@ export async function POST(request: NextRequest) {
                     : stripeSubscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: (stripeSubscription as any).current_period_start
-                  ? new Date((stripeSubscription as any).current_period_start * 1000)
+                currentPeriodStart: (stripeSubscription as any)
+                  .current_period_start
+                  ? new Date(
+                      (stripeSubscription as any).current_period_start * 1000
+                    )
                   : null,
                 currentPeriodEnd: (stripeSubscription as any).current_period_end
-                  ? new Date((stripeSubscription as any).current_period_end * 1000)
+                  ? new Date(
+                      (stripeSubscription as any).current_period_end * 1000
+                    )
                   : null,
-                cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end ?? false,
+                cancelAtPeriodEnd:
+                  (stripeSubscription as any).cancel_at_period_end ?? false,
               },
               create: {
                 organizationId,
@@ -356,13 +514,19 @@ export async function POST(request: NextRequest) {
                     : stripeSubscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: (stripeSubscription as any).current_period_start
-                  ? new Date((stripeSubscription as any).current_period_start * 1000)
+                currentPeriodStart: (stripeSubscription as any)
+                  .current_period_start
+                  ? new Date(
+                      (stripeSubscription as any).current_period_start * 1000
+                    )
                   : null,
                 currentPeriodEnd: (stripeSubscription as any).current_period_end
-                  ? new Date((stripeSubscription as any).current_period_end * 1000)
+                  ? new Date(
+                      (stripeSubscription as any).current_period_end * 1000
+                    )
                   : null,
-                cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end ?? false,
+                cancelAtPeriodEnd:
+                  (stripeSubscription as any).cancel_at_period_end ?? false,
               },
             });
 
@@ -380,7 +544,10 @@ export async function POST(request: NextRequest) {
               console.error("Failed to trigger Pusher event:", error);
             }
           } catch (error) {
-            console.error("Error processing checkout.session.completed:", error);
+            console.error(
+              "Error processing checkout.session.completed:",
+              error
+            );
           }
           break;
         }
@@ -405,4 +572,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

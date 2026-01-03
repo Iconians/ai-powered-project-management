@@ -1,6 +1,10 @@
 import { prisma } from "./prisma";
 
-export async function getUsage(organizationId: string, metric: string, period?: string) {
+export async function getUsage(
+  organizationId: string,
+  metric: string,
+  period?: string
+) {
   const currentPeriod = period || getCurrentPeriod();
 
   const usage = await prisma.usage.findUnique({
@@ -16,7 +20,11 @@ export async function getUsage(organizationId: string, metric: string, period?: 
   return usage || { count: 0 };
 }
 
-export async function incrementUsage(organizationId: string, metric: string, amount: number = 1) {
+export async function incrementUsage(
+  organizationId: string,
+  metric: string,
+  amount: number = 1
+) {
   const period = getCurrentPeriod();
 
   const usage = await prisma.usage.upsert({
@@ -43,7 +51,11 @@ export async function incrementUsage(organizationId: string, metric: string, amo
   return usage;
 }
 
-export async function decrementUsage(organizationId: string, metric: string, amount: number = 1) {
+export async function decrementUsage(
+  organizationId: string,
+  metric: string,
+  amount: number = 1
+) {
   const period = getCurrentPeriod();
 
   const usage = await prisma.usage.findUnique({
@@ -123,5 +135,3 @@ export async function getActualCounts(organizationId: string) {
     tasks: taskCount,
   };
 }
-
-

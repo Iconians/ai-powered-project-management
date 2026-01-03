@@ -38,9 +38,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: "Invalid channel" }, { status: 400 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to authenticate";
+    const message =
+      error instanceof Error ? error.message : "Failed to authenticate";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-
-

@@ -20,7 +20,7 @@ export async function POST(
 
     // Check that requester is org admin (only org admins can add board members)
     const { board, orgMember } = await requireBoardAccess(boardId);
-    
+
     if (orgMember.role !== "ADMIN") {
       return NextResponse.json(
         { error: "Only organization admins can add board members" },
@@ -81,11 +81,9 @@ export async function POST(
 
     return NextResponse.json(boardMember, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to add board member";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to add board member";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -95,7 +93,7 @@ export async function GET(
 ) {
   try {
     const { id: boardId } = await params;
-    
+
     // Check board access
     await requireBoardAccess(boardId);
 
@@ -123,10 +121,8 @@ export async function GET(
 
     return NextResponse.json(boardMembers);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch board members";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch board members";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

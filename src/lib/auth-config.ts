@@ -37,6 +37,13 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid email or password");
           }
 
+          // Check if email is verified
+          if (!user.emailVerified) {
+            throw new Error(
+              "Please verify your email address before logging in. Check your inbox for the verification email."
+            );
+          }
+
           return {
             id: user.id,
             email: user.email,
@@ -77,7 +84,9 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   cookies: {
     sessionToken: {
-      name: `${process.env.NODE_ENV === "production" ? "__Secure-" : ""}next-auth.session-token`,
+      name: `${
+        process.env.NODE_ENV === "production" ? "__Secure-" : ""
+      }next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: "lax",
@@ -88,4 +97,3 @@ export const authOptions: NextAuthOptions = {
   },
   debug: process.env.NODE_ENV === "development",
 };
-

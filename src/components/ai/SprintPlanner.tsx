@@ -23,7 +23,11 @@ interface SprintSuggestion {
   reasoning: string;
 }
 
-export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps) {
+export function SprintPlanner({
+  boardId,
+  sprintId,
+  onClose,
+}: SprintPlannerProps) {
   const [capacity, setCapacity] = useState("40");
   const [isPlanning, setIsPlanning] = useState(false);
   const [suggestion, setSuggestion] = useState<SprintSuggestion | null>(null);
@@ -86,7 +90,9 @@ export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps
           .map((f) => (f.status === "rejected" ? f.reason?.message : ""))
           .filter(Boolean);
         throw new Error(
-          `Failed to update ${failures.length} task(s): ${errorMessages.join(", ")}`
+          `Failed to update ${failures.length} task(s): ${errorMessages.join(
+            ", "
+          )}`
         );
       }
 
@@ -157,13 +163,18 @@ export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps
         </div>
 
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          AI will analyze your backlog and suggest which tasks to include in this sprint based on priority, estimated hours, and your team capacity.
+          AI will analyze your backlog and suggest which tasks to include in
+          this sprint based on priority, estimated hours, and your team
+          capacity.
         </p>
 
         {!suggestion ? (
           <form onSubmit={handlePlan} className="space-y-4">
             <div>
-              <label htmlFor="capacity" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="capacity"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Team Capacity (hours) *
               </label>
               <input
@@ -184,7 +195,9 @@ export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps
             {isPlanning && (
               <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                <span>AI is analyzing your backlog and planning the sprint...</span>
+                <span>
+                  AI is analyzing your backlog and planning the sprint...
+                </span>
               </div>
             )}
 
@@ -219,8 +232,12 @@ export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps
         ) : (
           <div className="space-y-4">
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">Sprint Goal</h3>
-              <p className="text-blue-800 dark:text-blue-300">{suggestion.goal}</p>
+              <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">
+                Sprint Goal
+              </h3>
+              <p className="text-blue-800 dark:text-blue-300">
+                {suggestion.goal}
+              </p>
             </div>
 
             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
@@ -232,17 +249,23 @@ export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps
               </p>
               {suggestion.taskIds.length === 0 ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400 italic">
-                  No tasks selected. The backlog might be empty or tasks don't fit the capacity.
+                  No tasks selected. The backlog might be empty or tasks don't
+                  fit the capacity.
                 </p>
               ) : (
                 <div className="space-y-2">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    {suggestion.taskIds.length} task{suggestion.taskIds.length !== 1 ? "s" : ""} will be added to this sprint:
+                    {suggestion.taskIds.length} task
+                    {suggestion.taskIds.length !== 1 ? "s" : ""} will be added
+                    to this sprint:
                   </p>
                   {suggestion.tasks && suggestion.tasks.length > 0 ? (
                     <ul className="space-y-1 list-disc list-inside">
                       {suggestion.tasks.map((task) => (
-                        <li key={task.id} className="text-sm text-gray-700 dark:text-gray-300">
+                        <li
+                          key={task.id}
+                          className="text-sm text-gray-700 dark:text-gray-300"
+                        >
                           <span className="font-medium">{task.title}</span>
                           {task.estimatedHours && (
                             <span className="text-gray-500 dark:text-gray-400 ml-2">
@@ -259,7 +282,9 @@ export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps
                   )}
                   {applySuggestionMutation.isSuccess && (
                     <p className="text-sm text-green-600 dark:text-green-400 font-medium mt-2">
-                      ✓ Successfully assigned {suggestion.taskIds.length} task{suggestion.taskIds.length !== 1 ? "s" : ""} to the sprint!
+                      ✓ Successfully assigned {suggestion.taskIds.length} task
+                      {suggestion.taskIds.length !== 1 ? "s" : ""} to the
+                      sprint!
                     </p>
                   )}
                 </div>
@@ -284,10 +309,15 @@ export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps
               </button>
               <button
                 onClick={handleApply}
-                disabled={applySuggestionMutation.isPending || suggestion.taskIds.length === 0}
+                disabled={
+                  applySuggestionMutation.isPending ||
+                  suggestion.taskIds.length === 0
+                }
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
               >
-                {applySuggestionMutation.isPending ? "Applying..." : "Apply to Sprint"}
+                {applySuggestionMutation.isPending
+                  ? "Applying..."
+                  : "Apply to Sprint"}
               </button>
             </div>
 
@@ -297,7 +327,8 @@ export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps
                   Error applying sprint plan
                 </p>
                 <p className="text-red-500 dark:text-red-500 text-xs mt-1">
-                  {applySuggestionMutation.error?.message || "Failed to assign tasks to sprint. Please try again."}
+                  {applySuggestionMutation.error?.message ||
+                    "Failed to assign tasks to sprint. Please try again."}
                 </p>
               </div>
             )}
@@ -310,7 +341,8 @@ export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps
               Error planning sprint
             </p>
             <p className="text-red-500 dark:text-red-500 text-xs mt-1">
-              {planSprintMutation.error?.message || "Failed to plan sprint. Please try again."}
+              {planSprintMutation.error?.message ||
+                "Failed to plan sprint. Please try again."}
             </p>
           </div>
         )}
@@ -318,4 +350,3 @@ export function SprintPlanner({ boardId, sprintId, onClose }: SprintPlannerProps
     </div>
   );
 }
-

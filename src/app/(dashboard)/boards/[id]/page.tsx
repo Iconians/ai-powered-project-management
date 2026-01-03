@@ -19,6 +19,7 @@ export default async function BoardPage({
         boardName={board.name}
         boardDescription={board.description}
         userBoardRole={boardMember.role}
+        organizationId={board.organizationId}
       />
     );
   } catch (error) {

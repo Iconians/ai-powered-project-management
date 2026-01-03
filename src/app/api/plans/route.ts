@@ -15,11 +15,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(plans);
   } catch (error) {
     console.error("Error fetching plans:", error);
-    const message = error instanceof Error ? error.message : "Failed to fetch plans";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch plans";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

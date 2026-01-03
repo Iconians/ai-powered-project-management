@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember } from "@/lib/auth";
+import { requireMember, requirePaidSubscription } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateWithAI } from "@/lib/ai/client";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { boardId, sprintId, capacity, provider = process.env.AI_PROVIDER || "gemini" } = body;
+    const {
+      boardId,
+      sprintId,
+      capacity,
+      provider = process.env.AI_PROVIDER || "gemini",
+    } = body;
 
     if (!boardId || !sprintId || !capacity) {
       return NextResponse.json(
@@ -21,6 +26,20 @@ export async function POST(request: NextRequest) {
 
     if (!board) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
+    }
+
+    // Check if organization has a paid subscription
+    try {
+      await requirePaidSubscription(board.organizationId);
+    } catch (error: any) {
+      return NextResponse.json(
+        {
+          error:
+            error.message ||
+            "AI features require a paid subscription (Pro or Enterprise)",
+        },
+        { status: 403 }
+      );
     }
 
     await requireMember(board.organizationId);
@@ -74,7 +93,9 @@ Example:
     const tasksDescription = backlogTasks
       .map(
         (t) =>
-          `ID: ${t.id}, Title: ${t.title}, Priority: ${t.priority}, Estimated: ${t.estimatedHours || "N/A"} hours`
+          `ID: ${t.id}, Title: ${t.title}, Priority: ${
+            t.priority
+          }, Estimated: ${t.estimatedHours || "N/A"} hours`
       )
       .join("\n");
 
@@ -93,7 +114,7 @@ Example:
       const selectedTasks = backlogTasks
         .filter((t) => (t.estimatedHours || 0) <= capacity)
         .slice(0, Math.floor(capacity / 8)); // Rough estimate: 8 hours per task
-      
+
       return NextResponse.json({
         goal: `Complete ${selectedTasks.length} high-priority tasks`,
         taskIds: selectedTasks.map((t) => t.id),
@@ -121,7 +142,7 @@ Example:
       const selectedTasks = backlogTasks
         .filter((t) => (t.estimatedHours || 0) <= capacity)
         .slice(0, Math.floor(capacity / 8));
-      
+
       return NextResponse.json({
         goal: `Complete ${selectedTasks.length} high-priority tasks`,
         taskIds: selectedTasks.map((t) => t.id),
@@ -136,7 +157,9 @@ Example:
     }
 
     // Validate task IDs exist and get task details
-    const validTasks = backlogTasks.filter((t) => suggestion.taskIds?.includes(t.id));
+    const validTasks = backlogTasks.filter((t) =>
+      suggestion.taskIds?.includes(t.id)
+    );
 
     return NextResponse.json({
       goal: suggestion.goal || "Complete selected backlog items",
@@ -147,7 +170,8 @@ Example:
         priority: t.priority,
         estimatedHours: t.estimatedHours,
       })),
-      reasoning: suggestion.reasoning || "Tasks selected based on priority and capacity",
+      reasoning:
+        suggestion.reasoning || "Tasks selected based on priority and capacity",
     });
   } catch (error: any) {
     return NextResponse.json(
@@ -156,4 +180,3 @@ Example:
     );
   }
 }
-

@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { TaskCard } from "./TaskCard";
 import { CreateTaskModal } from "../tasks/CreateTaskModal";
 import type { TaskStatus } from "@prisma/client";
@@ -42,7 +45,13 @@ interface KanbanColumnProps {
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
 }
 
-export function KanbanColumn({ id, status, tasks, boardId, userBoardRole }: KanbanColumnProps) {
+export function KanbanColumn({
+  id,
+  status,
+  tasks,
+  boardId,
+  userBoardRole,
+}: KanbanColumnProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
     id,
@@ -69,10 +78,18 @@ export function KanbanColumn({ id, status, tasks, boardId, userBoardRole }: Kanb
             </button>
           )}
         </div>
-        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-2 min-h-[200px] flex-1">
+        <SortableContext
+          items={tasks.map((t) => t.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-2 max-h-[80vh] overflow-y-auto flex-1 scroll-smooth">
             {tasks.map((task) => (
-              <TaskCard key={task.id} task={task} boardId={boardId} userBoardRole={userBoardRole} />
+              <TaskCard
+                key={task.id}
+                task={task}
+                boardId={boardId}
+                userBoardRole={userBoardRole}
+              />
             ))}
             {tasks.length === 0 && (
               <div className="text-gray-400 text-sm text-center py-8 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded">
@@ -92,4 +109,3 @@ export function KanbanColumn({ id, status, tasks, boardId, userBoardRole }: Kanb
     </>
   );
 }
-
