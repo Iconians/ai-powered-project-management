@@ -35,6 +35,7 @@ interface Board {
   tasks: Array<{
     id: string;
     title: string;
+    description: string | null;
     status: TaskStatus;
     priority: string;
     assigneeId: string | null;

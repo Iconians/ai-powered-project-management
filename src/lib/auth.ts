@@ -130,7 +130,34 @@ export async function requireBoardAccess(
   const orgMember = await requireMember(board.organizationId);
 
   // Check board access
-  const boardMember = await getBoardMember(boardId, user.id);
+  let boardMember = await getBoardMember(boardId, user.id);
+
+  // Organization admins have access to all boards in their organization
+  // If they don't have explicit board access, grant them ADMIN access
+  if (!boardMember && orgMember.role === "ADMIN") {
+    // Get the user for the virtual board member
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+    });
+    
+    if (!dbUser) {
+      throw new Error("User not found");
+    }
+
+    // Create a virtual board member for organization admins
+    boardMember = {
+      id: `org-admin-${boardId}`,
+      boardId,
+      memberId: orgMember.id,
+      role: "ADMIN" as const,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      member: {
+        ...orgMember,
+        user: dbUser,
+      },
+    } as any;
+  }
 
   if (!boardMember) {
     throw new Error("No access to this board");

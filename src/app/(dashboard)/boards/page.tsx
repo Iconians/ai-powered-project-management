@@ -50,17 +50,23 @@ export default async function BoardsPage() {
   });
 
   // Filter boards to only show those the user has access to
+  // Organization admins see all boards in their organization
   const accessibleBoards = [];
   for (const org of organizations) {
+    const userOrgMember = org.members.find((m) => m.userId === user.id);
+    const isOrgAdmin = userOrgMember?.role === "ADMIN";
+    
     for (const board of org.boards) {
       // Check if user has board access
       const boardMember = board.boardMembers.find(
         (bm) => bm.member && bm.member.userId === user.id
       );
-      if (boardMember) {
+      
+      // Organization admins can see all boards, even if not explicitly added
+      if (boardMember || isOrgAdmin) {
         accessibleBoards.push({
           ...board,
-          userBoardRole: boardMember.role,
+          userBoardRole: boardMember?.role || (isOrgAdmin ? "ADMIN" : "VIEWER"),
           organization: org,
         });
       }
