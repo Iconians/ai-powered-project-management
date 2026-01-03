@@ -201,22 +201,23 @@ model Sprint {
 }
 
 model Task {
-  id             String       @id @default(cuid())
-  title          String
-  description    String?
-  boardId        String
-  sprintId       String?
-  status         TaskStatus   @default(TODO)
-  priority       TaskPriority @default(MEDIUM)
-  assigneeId     String?
-  statusColumnId String?
-  dueDate        DateTime?
-  estimatedHours Float?
-  actualHours    Float?
-  order          Int          @default(0)
-  version        Int          @default(1) // For optimistic locking
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                String       @id @default(cuid())
+  title             String
+  description       String?
+  boardId           String
+  sprintId          String?
+  status            TaskStatus   @default(TODO)
+  priority          TaskPriority @default(MEDIUM)
+  assigneeId        String?
+  statusColumnId    String?
+  dueDate           DateTime?
+  estimatedHours    Float?
+  actualHours       Float?
+  order             Int          @default(0)
+  version           Int          @default(1) // For optimistic locking
+  githubIssueNumber Int? // GitHub issue number for bidirectional sync
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
   board        Board             @relation(fields: [boardId], references: [id], onDelete: Cascade)
   sprint       Sprint?           @relation(fields: [sprintId], references: [id], onDelete: SetNull)
