@@ -6,6 +6,7 @@ import { TaskGenerator } from "../ai/TaskGenerator";
 import { SprintPlanner } from "../ai/SprintPlanner";
 import { CreateSprintModal } from "../sprints/CreateSprintModal";
 import { BoardMembersModal } from "./BoardMembersModal";
+import { GitHubRepoModal } from "./GitHubRepoModal";
 
 interface BoardHeaderProps {
   boardId: string;
@@ -30,6 +31,7 @@ export function BoardHeader({
   const [showSprintPlanner, setShowSprintPlanner] = useState(false);
   const [showCreateSprint, setShowCreateSprint] = useState(false);
   const [showBoardMembers, setShowBoardMembers] = useState(false);
+  const [showGitHubRepo, setShowGitHubRepo] = useState(false);
 
   // Fetch active sprint
   const { data: activeSprint } = useQuery({
@@ -98,6 +100,8 @@ export function BoardHeader({
   const hasPaidSubscription = priceValue > 0 && isSubscriptionActive;
   const isGitHubConnected =
     board?.githubSyncEnabled && board?.githubAccessToken;
+  // Check if GitHub is connected but repo name is not set
+  const needsRepoName = board?.githubSyncEnabled && board?.githubAccessToken && !board?.githubRepoName;
 
   return (
     <>
@@ -124,22 +128,33 @@ export function BoardHeader({
                   <span>👥</span>
                   <span className="hidden sm:inline">Members</span>
                 </button>
-                <a
-                  href={`/api/github/connect?boardId=${boardId}`}
-                  className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm ${
-                    isGitHubConnected
-                      ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
-                      : "bg-gray-700 text-white hover:bg-gray-800 focus:ring-gray-500"
-                  }`}
-                  title={
-                    isGitHubConnected ? "GitHub Connected" : "Connect GitHub"
-                  }
-                >
-                  <span>🔗</span>
-                  <span className="hidden sm:inline">
-                    {isGitHubConnected ? "GitHub" : "Connect GitHub"}
-                  </span>
-                </a>
+                {needsRepoName ? (
+                  <button
+                    onClick={() => setShowGitHubRepo(true)}
+                    className="px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500"
+                    title="Set GitHub Repository"
+                  >
+                    <span>🔗</span>
+                    <span className="hidden sm:inline">Set GitHub Repo</span>
+                  </button>
+                ) : (
+                  <a
+                    href={`/api/github/connect?boardId=${boardId}`}
+                    className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm ${
+                      isGitHubConnected
+                        ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                        : "bg-gray-700 text-white hover:bg-gray-800 focus:ring-gray-500"
+                    }`}
+                    title={
+                      isGitHubConnected ? "GitHub Connected" : "Connect GitHub"
+                    }
+                  >
+                    <span>🔗</span>
+                    <span className="hidden sm:inline">
+                      {isGitHubConnected ? "GitHub" : "Connect GitHub"}
+                    </span>
+                  </a>
+                )}
               </>
             )}
             {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
@@ -235,6 +250,14 @@ export function BoardHeader({
         <BoardMembersModal
           boardId={boardId}
           onClose={() => setShowBoardMembers(false)}
+        />
+      )}
+
+      {showGitHubRepo && (
+        <GitHubRepoModal
+          boardId={boardId}
+          currentRepoName={board?.githubRepoName}
+          onClose={() => setShowGitHubRepo(false)}
         />
       )}
     </>

@@ -3,6 +3,7 @@ import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { triggerPusherEvent } from "@/lib/pusher";
 import { sendTaskAssignmentEmail } from "@/lib/email";
+import { syncTaskToGitHub } from "@/lib/github-sync";
 import { TaskStatus } from "@prisma/client";
 
 export async function GET(
@@ -75,7 +76,14 @@ export async function PATCH(
     const task = await prisma.task.findUnique({
       where: { id },
       include: {
-        board: true,
+        board: {
+          select: {
+            id: true,
+            githubSyncEnabled: true,
+            githubAccessToken: true,
+            githubRepoName: true,
+          },
+        },
       },
     });
 
@@ -137,6 +145,9 @@ export async function PATCH(
           select: {
             id: true,
             name: true,
+            githubSyncEnabled: true,
+            githubAccessToken: true,
+            githubRepoName: true,
           },
         },
       },
@@ -166,6 +177,16 @@ export async function PATCH(
     } catch (pusherError) {
       // Error already logged in triggerPusherEvent
       // Don't fail the request if Pusher fails
+    }
+
+    // Sync to GitHub if board has GitHub sync enabled
+    if (updatedTask.board.githubSyncEnabled && updatedTask.board.githubAccessToken && updatedTask.board.githubRepoName && updatedTask.githubIssueNumber) {
+      try {
+        await syncTaskToGitHub(updatedTask.id);
+      } catch (githubError) {
+        console.error("Failed to sync task to GitHub:", githubError);
+        // Don't fail the request if GitHub sync fails
+      }
     }
 
     return NextResponse.json(updatedTask);

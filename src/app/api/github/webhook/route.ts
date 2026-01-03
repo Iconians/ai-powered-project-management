@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getGitHubClient, syncGitHubToBoard } from "@/lib/github";
+import { syncGitHubIssueToTask } from "@/lib/github-sync";
 import crypto from "crypto";
 
 // Ensure this route handles POST requests correctly
@@ -68,12 +68,27 @@ export async function POST(request: NextRequest) {
 
         // Update task based on issue
         if (action === "opened" || action === "closed" || action === "edited") {
-          // Find or create task for this issue
-          // This is simplified - you'd want to track issue numbers
-          const taskStatus = issue.state === "closed" ? "DONE" : "TODO";
-
-          // Update task if it exists, or create new one
-          // In production, you'd track GitHub issue numbers in tasks
+          try {
+            const task = await syncGitHubIssueToTask(
+              issue,
+              repository,
+              board.id
+            );
+            return NextResponse.json({ 
+              received: true, 
+              event: "issues",
+              action,
+              taskId: task.id,
+              issueNumber: issue.number,
+            });
+          } catch (error) {
+            console.error("Failed to sync GitHub issue to task:", error);
+            return NextResponse.json({ 
+              received: true, 
+              event: "issues",
+              error: "Failed to sync issue to task",
+            });
+          }
         }
 
         return NextResponse.json({ received: true, event: "issues" });

@@ -89,11 +89,19 @@ export async function GET(request: NextRequest) {
         await requireBoardAccess(state);
         const encryptedToken = encryptToken(accessToken);
 
+        // Get the board to check if we need to set the repo name
+        const board = await prisma.board.findUnique({
+          where: { id: state },
+        });
+
+        // If no repo name is set, try to get it from the board name or prompt user
+        // For now, we'll require the user to set it manually or via a separate endpoint
         await prisma.board.update({
           where: { id: state },
           data: {
             githubAccessToken: encryptedToken,
             githubSyncEnabled: true,
+            // githubRepoName will be set separately via UI or API
           },
         });
 

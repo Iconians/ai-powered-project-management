@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { triggerPusherEvent } from "@/lib/pusher";
+import { getGitHubClient } from "@/lib/github";
 import { TaskStatus } from "@prisma/client";
 import { requireLimit } from "@/lib/limits";
 
@@ -29,6 +30,12 @@ export async function POST(request: NextRequest) {
 
     const board = await prisma.board.findUnique({
       where: { id: boardId },
+      select: {
+        id: true,
+        githubSyncEnabled: true,
+        githubAccessToken: true,
+        githubRepoName: true,
+      },
     });
 
     if (!board) {
@@ -84,8 +91,43 @@ export async function POST(request: NextRequest) {
           },
         },
         statusColumn: true,
+        board: {
+          select: {
+            id: true,
+            githubSyncEnabled: true,
+            githubAccessToken: true,
+            githubRepoName: true,
+          },
+        },
       },
     });
+
+    // Sync to GitHub if board has GitHub sync enabled
+    if (board.githubSyncEnabled && board.githubAccessToken && board.githubRepoName) {
+      try {
+        const githubClient = getGitHubClient(board.githubAccessToken);
+        const [owner, repo] = board.githubRepoName.split("/");
+        
+        const issueResponse = await githubClient.rest.issues.create({
+          owner,
+          repo,
+          title: task.title,
+          body: task.description || "",
+          state: task.status === "DONE" ? "closed" : "open",
+        });
+
+        // Update task with GitHub issue number
+        await prisma.task.update({
+          where: { id: task.id },
+          data: {
+            githubIssueNumber: issueResponse.data.number,
+          },
+        });
+      } catch (githubError) {
+        console.error("Failed to create GitHub issue for task:", githubError);
+        // Don't fail the request if GitHub sync fails
+      }
+    }
 
     // Emit Pusher event for real-time updates
     try {
