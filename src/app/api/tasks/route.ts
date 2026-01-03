@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { pusherServer } from "@/lib/pusher";
+import { triggerPusherEvent } from "@/lib/pusher";
 import { TaskStatus } from "@prisma/client";
 import { requireLimit } from "@/lib/limits";
 
@@ -89,11 +89,13 @@ export async function POST(request: NextRequest) {
 
     // Emit Pusher event for real-time updates
     try {
-      await pusherServer.trigger(`board-${boardId}`, "task-created", {
-        task,
+      await triggerPusherEvent(`board-${boardId}`, "task-created", {
+        taskId: task.id,
+        boardId: task.boardId,
+        status: task.status,
       });
     } catch (pusherError) {
-      console.error("Pusher error:", pusherError);
+      // Error already logged in triggerPusherEvent
       // Don't fail the request if Pusher fails
     }
 

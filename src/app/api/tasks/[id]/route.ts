@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { pusherServer } from "@/lib/pusher";
+import { triggerPusherEvent } from "@/lib/pusher";
 import { TaskStatus } from "@prisma/client";
 
 export async function GET(
@@ -135,14 +135,13 @@ export async function PATCH(
 
     // Emit Pusher event for real-time updates
     try {
-      const channelName = `board-${task.boardId}`;
-      console.log(`📤 Triggering Pusher event: task-updated on ${channelName}`);
-      await pusherServer.trigger(channelName, "task-updated", {
-        task: updatedTask,
+      await triggerPusherEvent(`board-${task.boardId}`, "task-updated", {
+        taskId: updatedTask.id,
+        boardId: updatedTask.boardId,
+        status: updatedTask.status,
       });
-      console.log(`✅ Pusher event triggered successfully`);
     } catch (pusherError) {
-      console.error("❌ Pusher error:", pusherError);
+      // Error already logged in triggerPusherEvent
       // Don't fail the request if Pusher fails
     }
 
@@ -183,11 +182,11 @@ export async function DELETE(
 
     // Emit Pusher event for real-time updates
     try {
-      await pusherServer.trigger(`board-${task.boardId}`, "task-deleted", {
+      await triggerPusherEvent(`board-${task.boardId}`, "task-deleted", {
         taskId: id,
       });
     } catch (pusherError) {
-      console.error("Pusher error:", pusherError);
+      // Error already logged in triggerPusherEvent
       // Don't fail the request if Pusher fails
     }
 

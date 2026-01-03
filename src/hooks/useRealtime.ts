@@ -85,9 +85,22 @@ export function useRealtime({
 
     // Handler for subscription success
     const subscriptionHandler = () => {
-      console.log(`✅ Subscribed to channel: ${channelName}`);
+      console.log(
+        `✅ Subscribed to channel: ${channelName}, binding event: ${eventName}`
+      );
       // Bind to event after successful subscription
-      channel.bind(eventName, eventHandler);
+      try {
+        channel.bind(eventName, eventHandler);
+        console.log(`✅ Event ${eventName} bound to channel ${channelName}`);
+
+        // Verify binding by checking if channel has the event bound
+        // Note: This is a workaround - Pusher doesn't expose bound events directly
+        console.log(
+          `🔍 Channel ready to receive events. Listening for: ${eventName}`
+        );
+      } catch (error) {
+        console.error(`❌ Error binding event ${eventName}:`, error);
+      }
     };
 
     // Handler for subscription error
@@ -98,16 +111,36 @@ export function useRealtime({
       );
     };
 
-    // Check if already subscribed
+    // Always bind to subscription events first
+    channel.bind("pusher:subscription_succeeded", subscriptionHandler);
+    channel.bind("pusher:subscription_error", errorHandler);
+
+    // If already subscribed, bind immediately (but subscription handler will also fire)
     if (channel.subscribed) {
-      console.log(`✅ Channel ${channelName} already subscribed`);
-      channel.bind(eventName, eventHandler);
-    } else {
-      // Wait for subscription
-      channel.bind("pusher:subscription_succeeded", subscriptionHandler);
+      console.log(
+        `✅ Channel ${channelName} already subscribed, binding event: ${eventName}`
+      );
+      try {
+        channel.bind(eventName, eventHandler);
+        console.log(
+          `✅ Event ${eventName} bound to channel ${channelName} (already subscribed)`
+        );
+      } catch (error) {
+        console.error(
+          `❌ Error binding event ${eventName} (already subscribed):`,
+          error
+        );
+      }
     }
 
-    channel.bind("pusher:subscription_error", errorHandler);
+    // Debug: Log when channel state changes
+    console.log(
+      `🔍 Setting up listener for event "${eventName}" on channel "${channelName}"`
+    );
+    console.log(
+      `🔍 Channel subscription state:`,
+      channel.subscribed ? "subscribed" : "pending"
+    );
 
     return () => {
       if (channelRef.current) {
