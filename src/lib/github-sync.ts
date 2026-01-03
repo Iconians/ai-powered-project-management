@@ -60,9 +60,67 @@ export async function syncTaskToGitHub(taskId: string) {
     });
 
     // Update assignee if task has one
-    // Note: Assignee syncing requires matching GitHub usernames to app users
-    // For now, we'll skip assignee syncing as it requires additional user mapping
-    // In production, you'd want to store GitHub usernames in the User model
+    if (task.assignee?.user?.githubUsername) {
+      try {
+        // Get current assignees
+        const { data: issue } = await githubClient.rest.issues.get({
+          owner,
+          repo,
+          issue_number: task.githubIssueNumber,
+        });
+
+        const currentAssignees = issue.assignees?.map((a) => a.login) || [];
+        const shouldAssign = !currentAssignees.includes(task.assignee.user.githubUsername);
+
+        if (shouldAssign) {
+          // Remove existing assignees and add new one
+          if (currentAssignees.length > 0) {
+            await githubClient.rest.issues.removeAssignees({
+              owner,
+              repo,
+              issue_number: task.githubIssueNumber,
+              assignees: currentAssignees,
+            });
+          }
+          
+          await githubClient.rest.issues.addAssignees({
+            owner,
+            repo,
+            issue_number: task.githubIssueNumber,
+            assignees: [task.assignee.user.githubUsername],
+          });
+          console.log(`✅ Assigned GitHub user ${task.assignee.user.githubUsername} to issue #${task.githubIssueNumber}`);
+        }
+      } catch (error) {
+        console.error("Failed to assign GitHub user:", error);
+        // Continue even if assignee sync fails
+      }
+    } else if (task.assignee) {
+      // Task has assignee but no GitHub username - log warning
+      console.warn(`⚠️ Task ${task.id} has assignee ${task.assignee.user.email} but no GitHub username`);
+    } else {
+      // Task has no assignee - remove any GitHub assignees
+      try {
+        const { data: issue } = await githubClient.rest.issues.get({
+          owner,
+          repo,
+          issue_number: task.githubIssueNumber,
+        });
+
+        const currentAssignees = issue.assignees?.map((a) => a.login) || [];
+        if (currentAssignees.length > 0) {
+          await githubClient.rest.issues.removeAssignees({
+            owner,
+            repo,
+            issue_number: task.githubIssueNumber,
+            assignees: currentAssignees,
+          });
+          console.log(`✅ Removed assignees from issue #${task.githubIssueNumber}`);
+        }
+      } catch (error) {
+        console.error("Failed to remove GitHub assignees:", error);
+      }
+    }
 
     // Update labels to reflect status column
     if (task.statusColumn) {
@@ -126,6 +184,23 @@ export async function syncTaskToGitHub(taskId: string) {
     }
 
     await githubClient.rest.issues.update(updateData);
+
+    // Sync to GitHub Project if project ID is set
+    if (task.board.githubProjectId) {
+      try {
+        const { syncTaskToGitHubProject } = await import("@/lib/github-project-sync");
+        await syncTaskToGitHubProject(
+          githubClient,
+          task.githubIssueNumber,
+          task.board.githubProjectId,
+          task.status,
+          task.board.githubRepoName
+        );
+      } catch (projectError) {
+        console.error("Failed to sync to GitHub Project:", projectError);
+        // Don't fail if project sync fails
+      }
+    }
   } catch (error) {
     console.error("Failed to sync task to GitHub:", error);
     // Don't throw - sync failures shouldn't break the app

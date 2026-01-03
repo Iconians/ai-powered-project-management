@@ -72,6 +72,7 @@ model User {
   email                         String    @unique
   password                      String // bcrypt hashed
   name                          String?
+  githubUsername                String?   // GitHub username for assignee syncing
   emailVerified                 Boolean   @default(false)
   emailVerificationToken        String?   @unique
   emailVerificationTokenExpires DateTime?

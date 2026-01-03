@@ -10,19 +10,28 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { githubRepoName } = body;
+    const { githubRepoName, githubProjectId } = body;
 
-    if (!githubRepoName) {
+    // Validate that at least one field is provided
+    if (!githubRepoName && githubProjectId === undefined) {
       return NextResponse.json(
-        { error: "githubRepoName is required" },
+        { error: "Either githubRepoName or githubProjectId is required" },
         { status: 400 }
       );
     }
 
-    // Validate format: owner/repo
-    if (!/^[\w\-\.]+\/[\w\-\.]+$/.test(githubRepoName)) {
+    // Validate repo name format if provided
+    if (githubRepoName && !/^[\w\-\.]+\/[\w\-\.]+$/.test(githubRepoName)) {
       return NextResponse.json(
         { error: "Invalid repository format. Use 'owner/repo'" },
+        { status: 400 }
+      );
+    }
+
+    // Validate project ID if provided
+    if (githubProjectId !== undefined && (typeof githubProjectId !== "number" || githubProjectId <= 0)) {
+      return NextResponse.json(
+        { error: "githubProjectId must be a positive number" },
         { status: 400 }
       );
     }
@@ -30,11 +39,17 @@ export async function PATCH(
     // Check board access - need ADMIN role to configure GitHub
     await requireBoardAccess(id, "ADMIN");
 
+    const updateData: any = {};
+    if (githubRepoName !== undefined) {
+      updateData.githubRepoName = githubRepoName;
+    }
+    if (githubProjectId !== undefined) {
+      updateData.githubProjectId = githubProjectId;
+    }
+
     const board = await prisma.board.update({
       where: { id },
-      data: {
-        githubRepoName,
-      },
+      data: updateData,
     });
 
     return NextResponse.json(board);

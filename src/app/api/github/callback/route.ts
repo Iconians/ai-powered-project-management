@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, requireBoardAccess } from "@/lib/auth";
+import { requireAuth, requireBoardAccess, getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { encryptToken } from "@/lib/github";
 
@@ -81,6 +81,23 @@ export async function GET(request: NextRequest) {
       },
     });
     const githubUser = await userResponse.json();
+
+    // Update the current user's GitHub username
+    const currentUser = await getCurrentUser();
+    if (currentUser?.email) {
+      try {
+        await prisma.user.update({
+          where: { email: currentUser.email },
+          data: {
+            githubUsername: githubUser.login,
+          },
+        });
+        console.log(`✅ Updated GitHub username for user ${currentUser.email}: ${githubUser.login}`);
+      } catch (error) {
+        console.error("Failed to update GitHub username:", error);
+        // Don't fail the OAuth flow if this fails
+      }
+    }
 
     // If state is a boardId, update that board
     if (state && state.length > 10) {
