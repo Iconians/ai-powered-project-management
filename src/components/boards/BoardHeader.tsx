@@ -257,6 +257,7 @@ export function BoardHeader({
         <GitHubRepoModal
           boardId={boardId}
           currentRepoName={board?.githubRepoName}
+          currentProjectId={board?.githubProjectId}
           onClose={() => setShowGitHubRepo(false)}
         />
       )}

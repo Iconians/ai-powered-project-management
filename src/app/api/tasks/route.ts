@@ -35,6 +35,7 @@ export async function POST(request: NextRequest) {
         githubSyncEnabled: true,
         githubAccessToken: true,
         githubRepoName: true,
+        githubProjectId: true,
       },
     });
 
@@ -132,6 +133,26 @@ export async function POST(request: NextRequest) {
         });
         
         console.log(`✅ Created GitHub issue #${issueResponse.data.number} for task ${task.id}`);
+
+        // Sync to GitHub Project if project ID is set
+        // Note: This requires the board to have githubProjectId set
+        // The project ID should be the numeric ID from GitHub Project settings
+        if (board.githubProjectId) {
+          try {
+            const { syncTaskToGitHubProject } = await import("@/lib/github-project-sync");
+            await syncTaskToGitHubProject(
+              githubClient,
+              issueResponse.data.number,
+              board.githubProjectId,
+              task.status,
+              board.githubRepoName
+            );
+            console.log(`✅ Added issue #${issueResponse.data.number} to GitHub Project ${board.githubProjectId}`);
+          } catch (projectError) {
+            console.error("❌ Failed to sync to GitHub Project:", projectError);
+            // Don't fail if project sync fails
+          }
+        }
       } catch (githubError) {
         console.error("❌ Failed to create GitHub issue for task:", githubError);
         // Log more details for debugging
