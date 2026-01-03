@@ -135,11 +135,14 @@ export async function PATCH(
 
     // Emit Pusher event for real-time updates
     try {
-      await pusherServer.trigger(`board-${task.boardId}`, "task-updated", {
+      const channelName = `board-${task.boardId}`;
+      console.log(`📤 Triggering Pusher event: task-updated on ${channelName}`);
+      await pusherServer.trigger(channelName, "task-updated", {
         task: updatedTask,
       });
+      console.log(`✅ Pusher event triggered successfully`);
     } catch (pusherError) {
-      console.error("Pusher error:", pusherError);
+      console.error("❌ Pusher error:", pusherError);
       // Don't fail the request if Pusher fails
     }
 
