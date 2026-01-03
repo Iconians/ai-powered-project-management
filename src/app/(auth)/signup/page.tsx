@@ -34,20 +34,14 @@ export default function SignupPage() {
         throw new Error(data.error || "Failed to create account");
       }
 
-      // Auto-login after signup
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-      });
-
-      if (result?.error) {
-        router.push("/login?message=Account created. Please sign in.");
-        return;
-      }
-
-      router.push("/boards");
-      router.refresh();
+      // Show success message and redirect to login
+      const data = await res.json();
+      router.push(
+        `/login?message=${encodeURIComponent(
+          data.message ||
+            "Account created. Please check your email to verify your account."
+        )}`
+      );
     } catch (error: any) {
       setError(error.message || "An error occurred");
     } finally {
@@ -71,7 +65,10 @@ export default function SignupPage() {
           )}
           <div className="space-y-4">
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Name
               </label>
               <input
@@ -85,7 +82,10 @@ export default function SignupPage() {
               />
             </div>
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Email address
               </label>
               <input
@@ -100,7 +100,10 @@ export default function SignupPage() {
               />
             </div>
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Password
               </label>
               <input
@@ -139,4 +142,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

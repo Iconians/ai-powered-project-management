@@ -68,17 +68,22 @@ enum AutomationAction {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // bcrypt hashed
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                            String    @id @default(cuid())
+  email                         String    @unique
+  password                      String // bcrypt hashed
+  name                          String?
+  emailVerified                 Boolean   @default(false)
+  emailVerificationToken        String?   @unique
+  emailVerificationTokenExpires DateTime?
+  passwordResetToken            String?   @unique
+  passwordResetTokenExpires     DateTime?
+  createdAt                     DateTime  @default(now())
+  updatedAt                     DateTime  @updatedAt
 
-  members      Member[]
-  comments     Comment[]
-  attachments  Attachment[]
-  reminders    Reminder[]
+  members     Member[]
+  comments    Comment[]
+  attachments Attachment[]
+  reminders   Reminder[]
 
   @@index([email])
 }
@@ -90,11 +95,11 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  teams        Team[]
-  members      Member[]
-  boards       Board[]
+  teams         Team[]
+  members       Member[]
+  boards        Board[]
   subscriptions Subscription[]
-  usage        Usage[]
+  usage         Usage[]
 
   @@index([slug])
 }
@@ -122,10 +127,10 @@ model Member {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
-  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  team          Team?        @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assignedTasks Task[]       @relation("TaskAssignee")
+  organization  Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  team          Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignedTasks Task[]        @relation("TaskAssignee")
   boardMembers  BoardMember[]
 
   @@unique([userId, organizationId])
@@ -135,13 +140,18 @@ model Member {
 }
 
 model Board {
-  id             String   @id @default(cuid())
-  name           String
-  description    String?
-  organizationId String
-  teamId         String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                String   @id @default(cuid())
+  name              String
+  description       String?
+  organizationId    String
+  teamId            String?
+  githubRepoId      String?
+  githubRepoName    String?
+  githubProjectId   Int?
+  githubAccessToken String? // Encrypted OAuth token
+  githubSyncEnabled Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   team         Team?              @relation(fields: [teamId], references: [id], onDelete: SetNull)
@@ -255,8 +265,8 @@ model Attachment {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  user      User @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
 
   @@index([taskId])
 }
@@ -313,18 +323,18 @@ model BoardMember {
 }
 
 model Plan {
-  id            String         @id @default(cuid())
+  id            String       @id @default(cuid())
   name          String
-  stripePriceId String?        @unique
+  stripePriceId String?      @unique
   price         Decimal
   interval      PlanInterval
   maxBoards     Int
   maxMembers    Int
   maxTasks      Int?
-  features      Json?          // Feature flags
-  isActive      Boolean        @default(true)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  features      Json? // Feature flags
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   subscriptions Subscription[]
 
@@ -333,16 +343,16 @@ model Plan {
 
 model Subscription {
   id                   String             @id @default(cuid())
-  organizationId        String             @unique
-  planId                String
-  stripeCustomerId      String?            @unique
-  stripeSubscriptionId  String?            @unique
-  status                SubscriptionStatus @default(ACTIVE)
-  currentPeriodStart    DateTime?
-  currentPeriodEnd      DateTime?
-  cancelAtPeriodEnd     Boolean            @default(false)
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
+  organizationId       String             @unique
+  planId               String
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   plan         Plan         @relation(fields: [planId], references: [id])
@@ -354,9 +364,9 @@ model Subscription {
 model Usage {
   id             String   @id @default(cuid())
   organizationId String
-  metric         String   // "boards", "members", "tasks", etc.
+  metric         String // "boards", "members", "tasks", etc.
   count          Int      @default(0)
-  period         String   // "2024-01" for monthly
+  period         String // "2024-01" for monthly
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -365,4 +375,3 @@ model Usage {
   @@unique([organizationId, metric, period])
   @@index([organizationId])
 }
-

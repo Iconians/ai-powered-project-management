@@ -19,7 +19,10 @@ interface OrganizationsListProps {
   currentUserId: string;
 }
 
-export function OrganizationsList({ organizations, currentUserId }: OrganizationsListProps) {
+export function OrganizationsList({
+  organizations,
+  currentUserId,
+}: OrganizationsListProps) {
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null);
 
   if (organizations.length === 0) {
@@ -73,9 +76,15 @@ export function OrganizationsList({ organizations, currentUserId }: Organization
                       {org.name}
                     </h2>
                     <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                      <span>{org._count.members} member{org._count.members !== 1 ? "s" : ""}</span>
+                      <span>
+                        {org._count.members} member
+                        {org._count.members !== 1 ? "s" : ""}
+                      </span>
                       <span>•</span>
-                      <span>{org._count.boards} board{org._count.boards !== 1 ? "s" : ""}</span>
+                      <span>
+                        {org._count.boards} board
+                        {org._count.boards !== 1 ? "s" : ""}
+                      </span>
                       {isAdmin && (
                         <>
                           <span>•</span>
@@ -110,5 +119,3 @@ export function OrganizationsList({ organizations, currentUserId }: Organization
     </div>
   );
 }
-
-

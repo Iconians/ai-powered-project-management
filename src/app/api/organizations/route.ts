@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { sendWelcomeEmail, sendSubscriptionRequiredEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,14 +82,24 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Send welcome email and subscription required email
+    try {
+      const adminMember = organization.members.find((m) => m.role === "ADMIN");
+      if (adminMember && adminMember.user) {
+        await sendWelcomeEmail(adminMember.user, organization);
+        await sendSubscriptionRequiredEmail(adminMember.user, organization);
+      }
+    } catch (emailError) {
+      console.error("Failed to send welcome emails:", emailError);
+      // Don't fail organization creation if email fails
+    }
+
     return NextResponse.json(organization, { status: 201 });
   } catch (error) {
     console.error("Error creating organization:", error);
-    const message = error instanceof Error ? error.message : "Failed to create organization";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to create organization";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -128,13 +139,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(filteredOrganizations);
   } catch (error) {
     console.error("Error fetching organizations:", error);
-    const message = error instanceof Error ? error.message : "Failed to fetch organizations";
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch organizations";
     // Return 401 for auth errors, 500 for others
-    const status = error instanceof Error && error.message === "Unauthorized" ? 401 : 500;
-    return NextResponse.json(
-      { error: message },
-      { status }
-    );
+    const status =
+      error instanceof Error && error.message === "Unauthorized" ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
-

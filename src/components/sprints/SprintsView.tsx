@@ -45,4 +45,3 @@ export function SprintsView({ boardId, userBoardRole }: SprintsViewProps) {
     </div>
   );
 }
-

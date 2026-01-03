@@ -37,8 +37,15 @@ interface AssignTaskModalProps {
   onClose: () => void;
 }
 
-export function AssignTaskModal({ taskId, boardId, currentAssigneeId, onClose }: AssignTaskModalProps) {
-  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(currentAssigneeId);
+export function AssignTaskModal({
+  taskId,
+  boardId,
+  currentAssigneeId,
+  onClose,
+}: AssignTaskModalProps) {
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState<string | null>(
+    currentAssigneeId
+  );
   const queryClient = useQueryClient();
 
   const { data: boardMembers, isLoading } = useQuery<BoardMember[]>({
@@ -85,11 +92,16 @@ export function AssignTaskModal({ taskId, boardId, currentAssigneeId, onClose }:
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="assignee" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              htmlFor="assignee"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Assign to
             </label>
             {isLoading ? (
-              <div className="text-sm text-gray-500 dark:text-gray-400">Loading members...</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Loading members...
+              </div>
             ) : (
               <select
                 id="assignee"
@@ -132,4 +144,3 @@ export function AssignTaskModal({ taskId, boardId, currentAssigneeId, onClose }:
     </div>
   );
 }
-

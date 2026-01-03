@@ -8,7 +8,10 @@ interface AddMemberModalProps {
   onClose: () => void;
 }
 
-export function AddMemberModal({ organizationId, onClose }: AddMemberModalProps) {
+export function AddMemberModal({
+  organizationId,
+  onClose,
+}: AddMemberModalProps) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"ADMIN" | "MEMBER" | "VIEWER">("MEMBER");
   const queryClient = useQueryClient();
@@ -27,7 +30,9 @@ export function AddMemberModal({ organizationId, onClose }: AddMemberModalProps)
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["organization", organizationId, "members"] });
+      queryClient.invalidateQueries({
+        queryKey: ["organization", organizationId, "members"],
+      });
       queryClient.invalidateQueries({ queryKey: ["organizations"] });
       onClose();
     },
@@ -47,7 +52,10 @@ export function AddMemberModal({ organizationId, onClose }: AddMemberModalProps)
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Email Address *
             </label>
             <input
@@ -64,13 +72,18 @@ export function AddMemberModal({ organizationId, onClose }: AddMemberModalProps)
             </p>
           </div>
           <div>
-            <label htmlFor="role" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="role"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Role
             </label>
             <select
               id="role"
               value={role}
-              onChange={(e) => setRole(e.target.value as "ADMIN" | "MEMBER" | "VIEWER")}
+              onChange={(e) =>
+                setRole(e.target.value as "ADMIN" | "MEMBER" | "VIEWER")
+              }
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="VIEWER">Viewer - Can view only</option>
@@ -104,5 +117,3 @@ export function AddMemberModal({ organizationId, onClose }: AddMemberModalProps)
     </div>
   );
 }
-
-

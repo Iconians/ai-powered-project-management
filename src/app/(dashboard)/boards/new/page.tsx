@@ -126,7 +126,10 @@ export default function NewBoardPage() {
               </div>
             )}
             <div>
-              <label htmlFor="organization" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="organization"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Organization
               </label>
               <select
@@ -144,7 +147,10 @@ export default function NewBoardPage() {
               </select>
             </div>
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Board Name
               </label>
               <input
@@ -158,7 +164,10 @@ export default function NewBoardPage() {
               />
             </div>
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Description (optional)
               </label>
               <textarea
@@ -191,4 +200,3 @@ export default function NewBoardPage() {
     </div>
   );
 }
-

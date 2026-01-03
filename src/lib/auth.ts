@@ -139,7 +139,7 @@ export async function requireBoardAccess(
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
     });
-    
+
     if (!dbUser) {
       throw new Error("User not found");
     }
@@ -169,4 +169,39 @@ export async function requireBoardAccess(
   }
 
   return { boardMember, orgMember, board };
+}
+
+export async function requirePaidSubscription(organizationId: string) {
+  const subscription = await prisma.subscription.findUnique({
+    where: { organizationId },
+    include: {
+      plan: true,
+    },
+  });
+
+  if (!subscription) {
+    throw new Error("No subscription found for this organization");
+  }
+
+  // Check if plan is paid (price > 0)
+  if (subscription.plan.price.toNumber() === 0) {
+    throw new Error(
+      "AI features require a paid subscription (Pro or Enterprise)"
+    );
+  }
+
+  // Check if subscription is still active (either ACTIVE, or CANCELED but period hasn't ended)
+  const isActive = subscription.status === "ACTIVE" || 
+    subscription.status === "TRIALING" ||
+    (subscription.status === "CANCELED" && 
+     subscription.currentPeriodEnd && 
+     subscription.currentPeriodEnd > new Date());
+
+  if (!isActive) {
+    throw new Error(
+      "AI features require an active paid subscription. Your subscription has expired."
+    );
+  }
+
+  return subscription;
 }

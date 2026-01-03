@@ -10,7 +10,11 @@ interface CreateTaskModalProps {
   onClose: () => void;
 }
 
-export function CreateTaskModal({ boardId, defaultStatus, onClose }: CreateTaskModalProps) {
+export function CreateTaskModal({
+  boardId,
+  defaultStatus,
+  onClose,
+}: CreateTaskModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("MEDIUM");
@@ -52,7 +56,10 @@ export function CreateTaskModal({ boardId, defaultStatus, onClose }: CreateTaskM
         </h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Title *
             </label>
             <input
@@ -66,7 +73,10 @@ export function CreateTaskModal({ boardId, defaultStatus, onClose }: CreateTaskM
             />
           </div>
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Description
             </label>
             <textarea
@@ -79,7 +89,10 @@ export function CreateTaskModal({ boardId, defaultStatus, onClose }: CreateTaskM
             />
           </div>
           <div>
-            <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label
+              htmlFor="priority"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
               Priority
             </label>
             <select
@@ -120,4 +133,3 @@ export function CreateTaskModal({ boardId, defaultStatus, onClose }: CreateTaskM
     </div>
   );
 }
-

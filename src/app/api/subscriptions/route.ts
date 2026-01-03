@@ -16,7 +16,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    await requireMember(organizationId, "ADMIN");
+    // Allow MEMBER role to check subscription status (needed for AI feature visibility)
+    await requireMember(organizationId);
 
     const subscription = await prisma.subscription.findUnique({
       where: { organizationId },
@@ -86,11 +87,58 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get or create Stripe customer
+    // Get existing subscription
     const existingSubscription = await prisma.subscription.findUnique({
       where: { organizationId },
+      include: {
+        plan: true,
+      },
     });
 
+    // Check if upgrading/downgrading to a different plan
+    if (existingSubscription && existingSubscription.planId !== planId) {
+      // If there's an active Stripe subscription, cancel it first
+      if (existingSubscription.stripeSubscriptionId && existingSubscription.status === "ACTIVE") {
+        try {
+          await stripe.subscriptions.cancel(existingSubscription.stripeSubscriptionId);
+          
+          // Update database subscription status to CANCELED
+          await prisma.subscription.update({
+            where: { organizationId },
+            data: {
+              status: "CANCELED",
+            },
+          });
+
+          // Trigger Pusher event for subscription change
+          try {
+            await pusherServer.trigger(
+              `organization-${organizationId}`,
+              "subscription-updated",
+              {
+                subscriptionId: existingSubscription.id,
+                organizationId,
+              }
+            );
+          } catch (error) {
+            console.error("Failed to trigger Pusher event:", error);
+          }
+        } catch (error) {
+          console.error("Error canceling subscription:", error);
+          // Continue with new subscription creation even if cancellation fails
+        }
+      }
+    }
+
+    // If selecting the same plan, return error
+    if (existingSubscription && existingSubscription.planId === planId) {
+      return NextResponse.json(
+        { error: "You are already subscribed to this plan" },
+        { status: 400 }
+      );
+    }
+
+    // Get or create Stripe customer
     let customerId: string;
 
     if (existingSubscription?.stripeCustomerId) {

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember, requireBoardAccess } from "@/lib/auth";
+import {
+  requireMember,
+  requireBoardAccess,
+  requirePaidSubscription,
+} from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 import { generateWithAI } from "@/lib/ai/client";
@@ -8,7 +12,11 @@ import { TaskStatus } from "@prisma/client";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { description, boardId, provider = process.env.AI_PROVIDER || "gemini" } = body;
+    const {
+      description,
+      boardId,
+      provider = process.env.AI_PROVIDER || "gemini",
+    } = body;
 
     if (!description || !boardId) {
       return NextResponse.json(
@@ -23,6 +31,20 @@ export async function POST(request: NextRequest) {
 
     if (!board) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
+    }
+
+    // Check if organization has a paid subscription
+    try {
+      await requirePaidSubscription(board.organizationId);
+    } catch (error: any) {
+      return NextResponse.json(
+        {
+          error:
+            error.message ||
+            "AI features require a paid subscription (Pro or Enterprise)",
+        },
+        { status: 403 }
+      );
     }
 
     // Check board access - need MEMBER role to generate tasks
@@ -61,7 +83,10 @@ Example format:
         aiResponse = await generateWithAI("demo", userPrompt, systemPrompt);
       } catch (fallbackError) {
         return NextResponse.json(
-          { error: "AI generation failed. Please check your API key and try again." },
+          {
+            error:
+              "AI generation failed. Please check your API key and try again.",
+          },
           { status: 500 }
         );
       }
@@ -151,4 +176,3 @@ Example format:
     );
   }
 }
-

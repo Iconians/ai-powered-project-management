@@ -50,3 +50,7 @@ export async function createPortalSession(customerId: string) {
     return_url: `${process.env.NEXTAUTH_URL}/billing`,
   });
 }
+
+export async function cancelSubscription(subscriptionId: string) {
+  return await stripe.subscriptions.cancel(subscriptionId);
+}

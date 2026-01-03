@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireMember, requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { triggerPusherEvent } from "@/lib/pusher";
+import { sendTaskAssignmentEmail } from "@/lib/email";
 import { TaskStatus } from "@prisma/client";
 
 export async function GET(
@@ -57,11 +58,9 @@ export async function GET(
 
     return NextResponse.json(task);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch task";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch task";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -99,6 +98,10 @@ export async function PATCH(
       statusColumnId = statusColumn?.id || null;
     }
 
+    // Check if assignee changed
+    const assigneeChanged =
+      body.assigneeId !== undefined && body.assigneeId !== task.assigneeId;
+
     const updatedTask = await prisma.task.update({
       where: { id },
       data: {
@@ -130,8 +133,28 @@ export async function PATCH(
           },
         },
         statusColumn: true,
+        board: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
+
+    // Send email notification if task was assigned
+    if (assigneeChanged && updatedTask.assignee && updatedTask.assignee.user) {
+      try {
+        await sendTaskAssignmentEmail(
+          updatedTask.assignee.user,
+          { title: updatedTask.title },
+          { name: updatedTask.board.name }
+        );
+      } catch (emailError) {
+        console.error("Failed to send task assignment email:", emailError);
+        // Don't fail the request if email fails
+      }
+    }
 
     // Emit Pusher event for real-time updates
     try {
@@ -147,11 +170,9 @@ export async function PATCH(
 
     return NextResponse.json(updatedTask);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update task";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to update task";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -192,11 +213,8 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to delete task";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to delete task";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

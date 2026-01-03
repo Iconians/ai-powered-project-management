@@ -88,7 +88,11 @@ export function SprintsList({ boardId, userBoardRole }: SprintsListProps) {
   });
 
   const handleDelete = (sprintId: string) => {
-    if (confirm("Are you sure you want to delete this sprint? Tasks assigned to this sprint will not be deleted, but will be removed from the sprint.")) {
+    if (
+      confirm(
+        "Are you sure you want to delete this sprint? Tasks assigned to this sprint will not be deleted, but will be removed from the sprint."
+      )
+    ) {
       setDeletingSprintId(sprintId);
       deleteSprintMutation.mutate(sprintId);
     }
@@ -141,13 +145,22 @@ export function SprintsList({ boardId, userBoardRole }: SprintsListProps) {
           </span>
         );
 
-        const completedTasks = sprint.tasks.filter((t) => t.status === "DONE").length;
+        const completedTasks = sprint.tasks.filter(
+          (t) => t.status === "DONE"
+        ).length;
         const totalTasks = sprint.tasks.length;
-        const progressPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-        
+        const progressPercentage =
+          totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+
         // Calculate total estimated and actual hours
-        const totalEstimatedHours = sprint.tasks.reduce((sum, task) => sum + (task.estimatedHours || 0), 0);
-        const totalActualHours = sprint.tasks.reduce((sum, task) => sum + (task.actualHours || 0), 0);
+        const totalEstimatedHours = sprint.tasks.reduce(
+          (sum, task) => sum + (task.estimatedHours || 0),
+          0
+        );
+        const totalActualHours = sprint.tasks.reduce(
+          (sum, task) => sum + (task.actualHours || 0),
+          0
+        );
 
         return (
           <div
@@ -176,7 +189,10 @@ export function SprintsList({ boardId, userBoardRole }: SprintsListProps) {
                     </button>
                     <button
                       onClick={() => handleDelete(sprint.id)}
-                      disabled={deleteSprintMutation.isPending && deletingSprintId === sprint.id}
+                      disabled={
+                        deleteSprintMutation.isPending &&
+                        deletingSprintId === sprint.id
+                      }
                       className="text-xs px-2 py-1 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 rounded disabled:opacity-50"
                     >
                       🗑️ Delete
@@ -199,11 +215,13 @@ export function SprintsList({ boardId, userBoardRole }: SprintsListProps) {
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">
                 <span className="whitespace-nowrap">
-                  📅 {format(startDate, "MMM d")} - {format(endDate, "MMM d, yyyy")}
+                  📅 {format(startDate, "MMM d")} -{" "}
+                  {format(endDate, "MMM d, yyyy")}
                 </span>
                 <span className="hidden sm:inline">•</span>
                 <span className="whitespace-nowrap">
-                  {totalTasks} task{totalTasks !== 1 ? "s" : ""} ({completedTasks} done)
+                  {totalTasks} task{totalTasks !== 1 ? "s" : ""} (
+                  {completedTasks} done)
                 </span>
                 {totalEstimatedHours > 0 && (
                   <>
@@ -218,17 +236,33 @@ export function SprintsList({ boardId, userBoardRole }: SprintsListProps) {
 
               {sprint.tasks.length > 0 && (
                 <div className="mt-2 space-y-1">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Tasks:</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    Tasks:
+                  </p>
                   <ul className="space-y-1">
                     {sprint.tasks.map((task) => (
-                      <li key={task.id} className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                        <span className={`inline-block w-2 h-2 rounded-full ${
-                          task.status === "DONE" ? "bg-green-500" :
-                          task.status === "IN_PROGRESS" ? "bg-blue-500" :
-                          task.status === "BLOCKED" ? "bg-red-500" :
-                          "bg-gray-400"
-                        }`} />
-                        <span className={task.status === "DONE" ? "line-through text-gray-400" : ""}>
+                      <li
+                        key={task.id}
+                        className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-2"
+                      >
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full ${
+                            task.status === "DONE"
+                              ? "bg-green-500"
+                              : task.status === "IN_PROGRESS"
+                              ? "bg-blue-500"
+                              : task.status === "BLOCKED"
+                              ? "bg-red-500"
+                              : "bg-gray-400"
+                          }`}
+                        />
+                        <span
+                          className={
+                            task.status === "DONE"
+                              ? "line-through text-gray-400"
+                              : ""
+                          }
+                        >
                           {task.title}
                         </span>
                         {task.estimatedHours && (
@@ -269,11 +303,11 @@ export function SprintsList({ boardId, userBoardRole }: SprintsListProps) {
             Error deleting sprint
           </p>
           <p className="text-red-500 dark:text-red-500 text-xs mt-1">
-            {deleteSprintMutation.error?.message || "Failed to delete sprint. Please try again."}
+            {deleteSprintMutation.error?.message ||
+              "Failed to delete sprint. Please try again."}
           </p>
         </div>
       )}
     </div>
   );
 }
-

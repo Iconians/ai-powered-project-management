@@ -14,9 +14,18 @@ interface BoardHeaderProps {
   activeTab?: "board" | "sprints";
   onTabChange?: (tab: "board" | "sprints") => void;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
+  organizationId?: string;
 }
 
-export function BoardHeader({ boardId, boardName, boardDescription, activeTab = "board", onTabChange, userBoardRole }: BoardHeaderProps) {
+export function BoardHeader({
+  boardId,
+  boardName,
+  boardDescription,
+  activeTab = "board",
+  onTabChange,
+  userBoardRole,
+  organizationId,
+}: BoardHeaderProps) {
   const [showTaskGenerator, setShowTaskGenerator] = useState(false);
   const [showSprintPlanner, setShowSprintPlanner] = useState(false);
   const [showCreateSprint, setShowCreateSprint] = useState(false);
@@ -32,6 +41,63 @@ export function BoardHeader({ boardId, boardName, boardDescription, activeTab = 
       return sprints.length > 0 ? sprints[0] : null;
     },
   });
+
+  // Fetch subscription to check if AI features are available
+  const { data: subscription, error: subscriptionError } = useQuery({
+    queryKey: ["subscription", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+      try {
+        const res = await fetch(
+          `/api/subscriptions?organizationId=${organizationId}`
+        );
+        if (!res.ok) {
+          return null;
+        }
+        return await res.json();
+      } catch (error) {
+        return null;
+      }
+    },
+    enabled: !!organizationId,
+    retry: false, // Don't retry on auth errors
+  });
+
+  // Fetch board to check GitHub connection
+  const { data: board } = useQuery({
+    queryKey: ["board", boardId],
+    queryFn: async () => {
+      const res = await fetch(`/api/boards/${boardId}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  // Handle price - can be Decimal (server), number, or string (JSON serialized Decimal)
+  const planPrice = subscription?.plan?.price;
+  const priceValue = typeof planPrice === 'object' && planPrice !== null && 'toNumber' in planPrice
+    ? (planPrice as any).toNumber()
+    : typeof planPrice === 'number'
+    ? planPrice
+    : typeof planPrice === 'string'
+    ? parseFloat(planPrice) || 0
+    : 0;
+  
+  // Check if subscription is still active (either ACTIVE, or CANCELED but period hasn't ended)
+  let isSubscriptionActive = false;
+  if (subscription) {
+    if (subscription.status === "ACTIVE" || subscription.status === "TRIALING") {
+      isSubscriptionActive = true;
+    } else if (subscription.status === "CANCELED" && subscription.currentPeriodEnd) {
+      const periodEnd = new Date(subscription.currentPeriodEnd);
+      const now = new Date();
+      isSubscriptionActive = periodEnd > now;
+    }
+  }
+  
+  const hasPaidSubscription = priceValue > 0 && isSubscriptionActive;
+  const isGitHubConnected =
+    board?.githubSyncEnabled && board?.githubAccessToken;
 
   return (
     <>
@@ -49,14 +115,32 @@ export function BoardHeader({ boardId, boardName, boardDescription, activeTab = 
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {userBoardRole === "ADMIN" && (
-              <button
-                onClick={() => setShowBoardMembers(true)}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
-                title="Manage Board Members"
-              >
-                <span>👥</span>
-                <span className="hidden sm:inline">Members</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowBoardMembers(true)}
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  title="Manage Board Members"
+                >
+                  <span>👥</span>
+                  <span className="hidden sm:inline">Members</span>
+                </button>
+                <a
+                  href={`/api/github/connect?boardId=${boardId}`}
+                  className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm ${
+                    isGitHubConnected
+                      ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
+                      : "bg-gray-700 text-white hover:bg-gray-800 focus:ring-gray-500"
+                  }`}
+                  title={
+                    isGitHubConnected ? "GitHub Connected" : "Connect GitHub"
+                  }
+                >
+                  <span>🔗</span>
+                  <span className="hidden sm:inline">
+                    {isGitHubConnected ? "GitHub" : "Connect GitHub"}
+                  </span>
+                </a>
+              </>
             )}
             {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
               <>
@@ -67,20 +151,26 @@ export function BoardHeader({ boardId, boardName, boardDescription, activeTab = 
                   <span>📅</span>
                   <span className="hidden xs:inline">Create Sprint</span>
                 </button>
-                <button
-                  onClick={() => setShowTaskGenerator(true)}
-                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
-                >
-                  <span>✨</span>
-                  <span className="hidden sm:inline">AI Generate Tasks</span>
-                </button>
-                <button
-                  onClick={() => setShowSprintPlanner(true)}
-                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
-                >
-                  <span>🚀</span>
-                  <span className="hidden sm:inline">AI Plan Sprint</span>
-                </button>
+                {hasPaidSubscription && (
+                  <>
+                    <button
+                      onClick={() => setShowTaskGenerator(true)}
+                      className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                    >
+                      <span>✨</span>
+                      <span className="hidden sm:inline">
+                        AI Generate Tasks
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setShowSprintPlanner(true)}
+                      className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                    >
+                      <span>🚀</span>
+                      <span className="hidden sm:inline">AI Plan Sprint</span>
+                    </button>
+                  </>
+                )}
               </>
             )}
             <a
@@ -91,7 +181,7 @@ export function BoardHeader({ boardId, boardName, boardDescription, activeTab = 
             </a>
           </div>
         </div>
-        
+
         {/* Tabs */}
         {onTabChange && (
           <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
@@ -150,4 +240,3 @@ export function BoardHeader({ boardId, boardName, boardDescription, activeTab = 
     </>
   );
 }
-
