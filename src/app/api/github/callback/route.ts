@@ -16,14 +16,6 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get("state");
     const error = searchParams.get("error");
 
-    // Debug logging
-    console.log("GitHub OAuth callback received:", {
-      hasCode: !!code,
-      hasState: !!state,
-      hasError: !!error,
-      NEXTAUTH_URL,
-    });
-
     if (error) {
       return NextResponse.redirect(
         `${NEXTAUTH_URL}/boards?error=${encodeURIComponent(error)}`
