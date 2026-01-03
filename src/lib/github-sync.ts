@@ -53,6 +53,12 @@ export async function syncTaskToGitHub(taskId: string) {
       state: mapStatusToGitHubState(task.status),
     };
 
+    console.log(`🔄 Syncing task ${task.id} to GitHub issue #${task.githubIssueNumber}`, {
+      title: task.title,
+      status: task.status,
+      hasDescription: !!task.description,
+    });
+
     // Update assignee if task has one
     // Note: Assignee syncing requires matching GitHub usernames to app users
     // For now, we'll skip assignee syncing as it requires additional user mapping
