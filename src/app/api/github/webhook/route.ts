@@ -3,7 +3,19 @@ import { prisma } from "@/lib/prisma";
 import { getGitHubClient, syncGitHubToBoard } from "@/lib/github";
 import crypto from "crypto";
 
+// Ensure this route handles POST requests correctly
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET;
+
+// GitHub webhooks only use POST, but add GET handler to prevent redirects
+export async function GET() {
+  return NextResponse.json(
+    { error: "This endpoint only accepts POST requests from GitHub webhooks" },
+    { status: 405 }
+  );
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,11 +76,48 @@ export async function POST(request: NextRequest) {
           // In production, you'd track GitHub issue numbers in tasks
         }
 
-        break;
+        return NextResponse.json({ received: true, event: "issues" });
       }
-    }
 
-    return NextResponse.json({ received: true });
+      case "issue_comment": {
+        const issue = event.issue;
+        const comment = event.comment;
+        const repository = event.repository;
+        const action = event.action;
+
+        // Find board by repository
+        const board = await prisma.board.findFirst({
+          where: {
+            githubRepoName: `${repository.owner.login}/${repository.name}`,
+            githubSyncEnabled: true,
+          },
+        });
+
+        if (!board || !board.githubAccessToken) {
+          return NextResponse.json({
+            message: "Board not found or sync disabled",
+          });
+        }
+
+        // Handle issue comment events
+        // For now, just acknowledge receipt
+        // In production, you might want to sync comments to tasks
+        return NextResponse.json({ 
+          received: true, 
+          event: "issue_comment",
+          action,
+          issueNumber: issue.number,
+        });
+      }
+
+      default:
+        // Acknowledge receipt of other event types
+        return NextResponse.json({ 
+          received: true, 
+          event: eventType,
+          message: "Event type not yet implemented",
+        });
+    }
   } catch (error) {
     console.error("GitHub webhook error:", error);
     const message =
