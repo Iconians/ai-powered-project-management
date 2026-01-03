@@ -9,11 +9,17 @@ interface RealtimeOptions {
   callback: (data: unknown) => void;
 }
 
-export function useRealtime({ channelName, eventName, callback }: RealtimeOptions) {
+// Shared Pusher instance across all hooks
+let globalPusher: Pusher | null = null;
+
+export function useRealtime({
+  channelName,
+  eventName,
+  callback,
+}: RealtimeOptions) {
   const [isConnected, setIsConnected] = useState(false);
   const callbackRef = useRef(callback);
-  const pusherRef = useRef<Pusher | null>(null);
-  const channelRef = useRef<any>(null);
+  const channelRef = useRef<ReturnType<Pusher["subscribe"]> | null>(null);
 
   useEffect(() => {
     callbackRef.current = callback;
@@ -26,38 +32,83 @@ export function useRealtime({ channelName, eventName, callback }: RealtimeOption
       return;
     }
 
-    // Initialize Pusher
-    if (!pusherRef.current) {
-      pusherRef.current = new Pusher(pusherKey, {
+    // Initialize shared Pusher instance
+    if (!globalPusher) {
+      globalPusher = new Pusher(pusherKey, {
         cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "us2",
         // Only use auth endpoint for private/presence channels
-        authEndpoint: channelName.startsWith("private-") || channelName.startsWith("presence-")
-          ? "/api/pusher/auth"
-          : undefined,
+        authEndpoint:
+          channelName.startsWith("private-") ||
+          channelName.startsWith("presence-")
+            ? "/api/pusher/auth"
+            : undefined,
+        enabledTransports: ["ws", "wss"], // Force WebSocket transport
       });
 
-      pusherRef.current.connection.bind("connected", () => {
+      // Connection state logging
+      globalPusher.connection.bind("connected", () => {
+        console.log("✅ Pusher connected");
         setIsConnected(true);
       });
 
-      pusherRef.current.connection.bind("disconnected", () => {
+      globalPusher.connection.bind("disconnected", () => {
+        console.log("❌ Pusher disconnected");
         setIsConnected(false);
       });
+
+      globalPusher.connection.bind("error", (err: Error) => {
+        console.error("Pusher connection error:", err);
+      });
+
+      globalPusher.connection.bind(
+        "state_change",
+        (states: { previous: string; current: string }) => {
+          console.log(
+            "Pusher state changed:",
+            states.previous,
+            "->",
+            states.current
+          );
+        }
+      );
     }
 
-    // Subscribe to channel (public channels don't need auth)
-    const channel = pusherRef.current.subscribe(channelName);
+    // Subscribe to channel and wait for subscription
+    const channel = globalPusher.subscribe(channelName);
     channelRef.current = channel;
 
-    // Bind to event
+    // Wait for subscription to succeed before binding events
+    channel.bind("pusher:subscription_succeeded", () => {
+      console.log(`✅ Subscribed to channel: ${channelName}`);
+
+      // Bind to event after successful subscription
+      channel.bind(eventName, (data: unknown) => {
+        console.log(`📨 Received event ${eventName} on ${channelName}:`, data);
+        callbackRef.current(data);
+      });
+    });
+
+    channel.bind("pusher:subscription_error", (status: number | Error) => {
+      console.error(
+        `❌ Subscription error for channel ${channelName}:`,
+        status
+      );
+    });
+
+    // Also bind immediately in case subscription already succeeded
     channel.bind(eventName, (data: unknown) => {
+      console.log(`📨 Received event ${eventName} on ${channelName}:`, data);
       callbackRef.current(data);
     });
 
     return () => {
       if (channelRef.current) {
+        console.log(`🔌 Unsubscribing from ${channelName}`);
         channelRef.current.unbind(eventName);
-        pusherRef.current?.unsubscribe(channelName);
+        channelRef.current.unbind("pusher:subscription_succeeded");
+        channelRef.current.unbind("pusher:subscription_error");
+        globalPusher?.unsubscribe(channelName);
+        channelRef.current = null;
       }
     };
   }, [channelName, eventName]);
