@@ -6,9 +6,7 @@ const pusherKey = process.env.PUSHER_KEY;
 const pusherSecret = process.env.PUSHER_SECRET;
 const pusherCluster = process.env.PUSHER_CLUSTER || "us2";
 
-if (!pusherAppId || !pusherKey || !pusherSecret) {
-  console.warn("⚠️ Pusher credentials missing. Real-time updates will be disabled.");
-}
+// Pusher configuration validation happens in triggerPusherEvent
 
 export const pusherServer = new Pusher({
   appId: pusherAppId || "",
@@ -25,36 +23,30 @@ export async function triggerPusherEvent(
   data: unknown
 ) {
   if (!pusherAppId || !pusherKey || !pusherSecret) {
-    console.warn("⚠️ Pusher not configured, skipping event trigger");
     return;
   }
 
   // Validate channel name (Pusher requirements)
   if (!/^[-a-zA-Z0-9_=@,.;]+$/.test(channelName)) {
-    console.error(`❌ Invalid channel name format: ${channelName}`);
+    console.error(`Invalid channel name format: ${channelName}`);
     return;
   }
 
   if (channelName.length > 164) {
-    console.error(`❌ Channel name too long: ${channelName.length} chars (max 164)`);
+    console.error(`Channel name too long: ${channelName.length} chars (max 164)`);
     return;
   }
 
   // Validate event name (Pusher requirements)
   if (!/^[-a-zA-Z0-9_=@,.;]+$/.test(eventName)) {
-    console.error(`❌ Invalid event name format: ${eventName}`);
+    console.error(`Invalid event name format: ${eventName}`);
     return;
   }
 
   try {
     await pusherServer.trigger(channelName, eventName, data);
-    console.log(`✅ Pusher event triggered: ${eventName} on ${channelName}`);
   } catch (error: any) {
-    console.error(`❌ Pusher trigger error for ${eventName} on ${channelName}:`, {
-      status: error?.status,
-      message: error?.message,
-      error: error,
-    });
+    console.error(`Pusher trigger error:`, error?.message || error);
     throw error;
   }
 }
