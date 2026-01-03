@@ -21,8 +21,9 @@ export async function GET(request: NextRequest) {
     const boardId = searchParams.get("boardId");
     const state = boardId || crypto.randomBytes(16).toString("hex");
 
-    // Store state in session/cookie for verification
-    const callbackUrl = `${NEXTAUTH_URL}/api/github/callback`;
+    // Normalize NEXTAUTH_URL to remove trailing slash
+    const baseUrl = NEXTAUTH_URL.replace(/\/$/, "");
+    const callbackUrl = `${baseUrl}/api/github/callback`;
     const redirectUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(
       callbackUrl
     )}&scope=repo,read:org&state=${state}`;
@@ -30,6 +31,7 @@ export async function GET(request: NextRequest) {
     // Debug logging
     console.log("GitHub OAuth redirect:", {
       NEXTAUTH_URL,
+      baseUrl,
       callbackUrl,
       redirectUri: encodeURIComponent(callbackUrl),
     });
