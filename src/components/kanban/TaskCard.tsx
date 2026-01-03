@@ -3,12 +3,14 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { TaskStatus } from "@prisma/client";
 import { AssignTaskModal } from "../tasks/AssignTaskModal";
 
 interface Task {
   id: string;
   title: string;
+  description: string | null;
   status: TaskStatus;
   priority: string;
   assigneeId: string | null;
@@ -46,6 +48,7 @@ export function TaskCard({
   userBoardRole,
 }: TaskCardProps) {
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const queryClient = useQueryClient();
   const {
     attributes,
     listeners,
@@ -77,7 +80,35 @@ export function TaskCard({
     setShowAssignModal(true);
   };
 
+  const deleteTaskMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to delete task");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+    },
+  });
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Are you sure you want to delete "${task.title}"?`)) {
+      deleteTaskMutation.mutate();
+    }
+  };
+
   const isViewer = userBoardRole === "VIEWER";
+  const isDone = task.status === "DONE";
+  const canDelete =
+    isDone &&
+    !isViewer &&
+    (userBoardRole === "ADMIN" || userBoardRole === "MEMBER");
 
   return (
     <div
@@ -95,9 +126,27 @@ export function TaskCard({
       } ${isViewer ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}
     >
       <div className="flex items-start justify-between mb-2">
-        <h4 className="font-medium text-gray-900 dark:text-white text-sm">
-          {task.title}
-        </h4>
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
+            {task.title}
+          </h4>
+          {task.description && (
+            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+              {task.description}
+            </p>
+          )}
+        </div>
+        {canDelete && (
+          <button
+            onClick={handleDelete}
+            onTouchStart={(e) => e.stopPropagation()}
+            disabled={deleteTaskMutation.isPending}
+            className="ml-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm disabled:opacity-50 flex-shrink-0"
+            title="Delete task"
+          >
+            🗑️
+          </button>
+        )}
       </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span

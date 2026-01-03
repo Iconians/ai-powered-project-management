@@ -10,6 +10,7 @@ import type { TaskStatus } from "@prisma/client";
 interface Task {
   id: string;
   title: string;
+  description: string | null;
   status: TaskStatus;
   priority: string;
   assigneeId: string | null;
