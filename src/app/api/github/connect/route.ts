@@ -22,9 +22,17 @@ export async function GET(request: NextRequest) {
     const state = boardId || crypto.randomBytes(16).toString("hex");
 
     // Store state in session/cookie for verification
+    const callbackUrl = `${NEXTAUTH_URL}/api/github/callback`;
     const redirectUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(
-      `${NEXTAUTH_URL}/api/github/callback`
+      callbackUrl
     )}&scope=repo,read:org&state=${state}`;
+
+    // Debug logging
+    console.log("GitHub OAuth redirect:", {
+      NEXTAUTH_URL,
+      callbackUrl,
+      redirectUri: encodeURIComponent(callbackUrl),
+    });
 
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
