@@ -77,36 +77,47 @@ export function useRealtime({
     const channel = globalPusher.subscribe(channelName);
     channelRef.current = channel;
 
-    // Wait for subscription to succeed before binding events
-    channel.bind("pusher:subscription_succeeded", () => {
+    // Handler for the event
+    const eventHandler = (data: unknown) => {
+      console.log(`📨 Received event ${eventName} on ${channelName}:`, data);
+      callbackRef.current(data);
+    };
+
+    // Handler for subscription success
+    const subscriptionHandler = () => {
       console.log(`✅ Subscribed to channel: ${channelName}`);
-
       // Bind to event after successful subscription
-      channel.bind(eventName, (data: unknown) => {
-        console.log(`📨 Received event ${eventName} on ${channelName}:`, data);
-        callbackRef.current(data);
-      });
-    });
+      channel.bind(eventName, eventHandler);
+    };
 
-    channel.bind("pusher:subscription_error", (status: number | Error) => {
+    // Handler for subscription error
+    const errorHandler = (status: number | Error) => {
       console.error(
         `❌ Subscription error for channel ${channelName}:`,
         status
       );
-    });
+    };
 
-    // Also bind immediately in case subscription already succeeded
-    channel.bind(eventName, (data: unknown) => {
-      console.log(`📨 Received event ${eventName} on ${channelName}:`, data);
-      callbackRef.current(data);
-    });
+    // Check if already subscribed
+    if (channel.subscribed) {
+      console.log(`✅ Channel ${channelName} already subscribed`);
+      channel.bind(eventName, eventHandler);
+    } else {
+      // Wait for subscription
+      channel.bind("pusher:subscription_succeeded", subscriptionHandler);
+    }
+
+    channel.bind("pusher:subscription_error", errorHandler);
 
     return () => {
       if (channelRef.current) {
         console.log(`🔌 Unsubscribing from ${channelName}`);
-        channelRef.current.unbind(eventName);
-        channelRef.current.unbind("pusher:subscription_succeeded");
-        channelRef.current.unbind("pusher:subscription_error");
+        channelRef.current.unbind(eventName, eventHandler);
+        channelRef.current.unbind(
+          "pusher:subscription_succeeded",
+          subscriptionHandler
+        );
+        channelRef.current.unbind("pusher:subscription_error", errorHandler);
         globalPusher?.unsubscribe(channelName);
         channelRef.current = null;
       }
