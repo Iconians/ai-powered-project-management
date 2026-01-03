@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { triggerPusherEvent } from "@/lib/pusher";
 import { sendTaskAssignmentEmail } from "@/lib/email";
 import { syncTaskToGitHub } from "@/lib/github-sync";
+import { getGitHubClient } from "@/lib/github";
 import { TaskStatus } from "@prisma/client";
 
 export async function GET(
@@ -180,12 +181,51 @@ export async function PATCH(
     }
 
     // Sync to GitHub if board has GitHub sync enabled
-    if (updatedTask.board.githubSyncEnabled && updatedTask.board.githubAccessToken && updatedTask.board.githubRepoName && updatedTask.githubIssueNumber) {
-      try {
-        await syncTaskToGitHub(updatedTask.id);
-      } catch (githubError) {
-        console.error("Failed to sync task to GitHub:", githubError);
-        // Don't fail the request if GitHub sync fails
+    // Always try to sync if GitHub is configured, even if githubIssueNumber doesn't exist yet
+    // (in case the initial creation failed but we want to retry)
+    if (updatedTask.board.githubSyncEnabled && updatedTask.board.githubAccessToken && updatedTask.board.githubRepoName) {
+      if (updatedTask.githubIssueNumber) {
+        // Task already has a GitHub issue, sync the update
+        try {
+          await syncTaskToGitHub(updatedTask.id);
+          console.log(`✅ Synced task ${updatedTask.id} to GitHub issue #${updatedTask.githubIssueNumber}`);
+        } catch (githubError) {
+          console.error("❌ Failed to sync task to GitHub:", githubError);
+          // Don't fail the request if GitHub sync fails
+        }
+      } else {
+        // Task doesn't have a GitHub issue yet, create one
+        try {
+          const githubClient = getGitHubClient(updatedTask.board.githubAccessToken);
+          const [owner, repo] = updatedTask.board.githubRepoName.split("/");
+          
+          const statusLabel = updatedTask.status === "DONE" ? "done" : 
+                             updatedTask.status === "IN_PROGRESS" ? "in-progress" :
+                             updatedTask.status === "IN_REVIEW" ? "in-review" :
+                             updatedTask.status === "BLOCKED" ? "blocked" : "todo";
+          
+          const issueResponse = await githubClient.rest.issues.create({
+            owner,
+            repo,
+            title: updatedTask.title,
+            body: updatedTask.description || "",
+            state: updatedTask.status === "DONE" ? "closed" : "open",
+            labels: [statusLabel],
+          });
+
+          // Update task with GitHub issue number
+          await prisma.task.update({
+            where: { id: updatedTask.id },
+            data: {
+              githubIssueNumber: issueResponse.data.number,
+            },
+          });
+          
+          console.log(`✅ Created GitHub issue #${issueResponse.data.number} for task ${updatedTask.id}`);
+        } catch (githubError) {
+          console.error("❌ Failed to create GitHub issue for task:", githubError);
+          // Don't fail the request if GitHub sync fails
+        }
       }
     }
 

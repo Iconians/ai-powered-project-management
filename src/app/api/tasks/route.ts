@@ -108,12 +108,19 @@ export async function POST(request: NextRequest) {
         const githubClient = getGitHubClient(board.githubAccessToken);
         const [owner, repo] = board.githubRepoName.split("/");
         
+        // Map status to label
+        const statusLabel = task.status === "DONE" ? "done" : 
+                           task.status === "IN_PROGRESS" ? "in-progress" :
+                           task.status === "IN_REVIEW" ? "in-review" :
+                           task.status === "BLOCKED" ? "blocked" : "todo";
+        
         const issueResponse = await githubClient.rest.issues.create({
           owner,
           repo,
           title: task.title,
           body: task.description || "",
           state: task.status === "DONE" ? "closed" : "open",
+          labels: [statusLabel], // Add status label when creating
         });
 
         // Update task with GitHub issue number
@@ -123,8 +130,19 @@ export async function POST(request: NextRequest) {
             githubIssueNumber: issueResponse.data.number,
           },
         });
+        
+        console.log(`✅ Created GitHub issue #${issueResponse.data.number} for task ${task.id}`);
       } catch (githubError) {
-        console.error("Failed to create GitHub issue for task:", githubError);
+        console.error("❌ Failed to create GitHub issue for task:", githubError);
+        // Log more details for debugging
+        if (githubError instanceof Error) {
+          console.error("Error details:", {
+            message: githubError.message,
+            stack: githubError.stack,
+            boardId: board.id,
+            repoName: board.githubRepoName,
+          });
+        }
         // Don't fail the request if GitHub sync fails
       }
     }
