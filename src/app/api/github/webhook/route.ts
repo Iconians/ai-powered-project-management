@@ -48,7 +48,8 @@ export async function POST(request: NextRequest) {
     // Log all incoming webhook events for debugging
     console.log(`📥 GitHub webhook received: ${eventType}`, {
       action: event.action,
-      issueNumber: event.issue?.number || event.projects_v2_item?.content?.number,
+      issueNumber:
+        event.issue?.number || event.projects_v2_item?.content?.number,
       projectNumber: event.projects_v2_item?.project?.number,
     });
 
@@ -77,23 +78,25 @@ export async function POST(request: NextRequest) {
         // Handle: opened, closed, edited, assigned, unassigned, labeled, unlabeled
         // Note: When items are moved in GitHub Projects, it may trigger "labeled" or "unlabeled" events
         if (
-          action === "opened" || 
-          action === "closed" || 
+          action === "opened" ||
+          action === "closed" ||
           action === "edited" ||
           action === "assigned" ||
           action === "unassigned" ||
           action === "labeled" ||
           action === "unlabeled"
         ) {
-          console.log(`🔄 Processing ${action} event for issue #${issue.number}`);
+          console.log(
+            `🔄 Processing ${action} event for issue #${issue.number}`
+          );
           try {
             const task = await syncGitHubIssueToTask(
               issue,
               repository,
               board.id
             );
-            return NextResponse.json({ 
-              received: true, 
+            return NextResponse.json({
+              received: true,
               event: "issues",
               action,
               taskId: task.id,
@@ -101,8 +104,8 @@ export async function POST(request: NextRequest) {
             });
           } catch (error) {
             console.error("Failed to sync GitHub issue to task:", error);
-            return NextResponse.json({ 
-              received: true, 
+            return NextResponse.json({
+              received: true,
               event: "issues",
               error: "Failed to sync issue to task",
             });
@@ -114,7 +117,6 @@ export async function POST(request: NextRequest) {
 
       case "issue_comment": {
         const issue = event.issue;
-        const comment = event.comment;
         const repository = event.repository;
         const action = event.action;
 
@@ -135,8 +137,8 @@ export async function POST(request: NextRequest) {
         // Handle issue comment events
         // For now, just acknowledge receipt
         // In production, you might want to sync comments to tasks
-        return NextResponse.json({ 
-          received: true, 
+        return NextResponse.json({
+          received: true,
           event: "issue_comment",
           action,
           issueNumber: issue.number,
@@ -150,8 +152,8 @@ export async function POST(request: NextRequest) {
 
         // Only handle edits/updates (when status changes)
         if (action !== "edited" && action !== "updated") {
-          return NextResponse.json({ 
-            received: true, 
+          return NextResponse.json({
+            received: true,
             event: "projects_v2_item",
             action,
             message: "Action not handled",
@@ -161,8 +163,8 @@ export async function POST(request: NextRequest) {
         // Get the content (issue) from the project item
         const content = projectItem?.content;
         if (!content || content.type !== "Issue") {
-          return NextResponse.json({ 
-            received: true, 
+          return NextResponse.json({
+            received: true,
             event: "projects_v2_item",
             message: "Content is not an issue",
           });
@@ -182,7 +184,9 @@ export async function POST(request: NextRequest) {
 
         if (project?.number) {
           const projectNumber = parseInt(project.number);
-          console.log(`🔍 Searching for board with githubProjectId: ${projectNumber}`);
+          console.log(
+            `🔍 Searching for board with githubProjectId: ${projectNumber}`
+          );
           board = await prisma.board.findFirst({
             where: {
               githubProjectId: projectNumber,
@@ -199,7 +203,9 @@ export async function POST(request: NextRequest) {
         // If not found by project ID, try to find by repository
         if (!board && event.repository) {
           const repository = event.repository;
-          const repoName = `${repository.owner?.login || repository.owner}/${repository.name}`;
+          const repoName = `${repository.owner?.login || repository.owner}/${
+            repository.name
+          }`;
           console.log(`🔍 Searching for board by repository: ${repoName}`);
           board = await prisma.board.findFirst({
             where: {
@@ -252,10 +258,12 @@ export async function POST(request: NextRequest) {
             status: task.status,
           });
 
-          console.log(`✅ Synced task ${task.id} from GitHub Project item update (issue #${issueNumber})`);
+          console.log(
+            `✅ Synced task ${task.id} from GitHub Project item update (issue #${issueNumber})`
+          );
 
-          return NextResponse.json({ 
-            received: true, 
+          return NextResponse.json({
+            received: true,
             event: "projects_v2_item",
             action,
             taskId: task.id,
@@ -263,8 +271,8 @@ export async function POST(request: NextRequest) {
           });
         } catch (error) {
           console.error("Failed to sync issue from project item:", error);
-          return NextResponse.json({ 
-            received: true, 
+          return NextResponse.json({
+            received: true,
             event: "projects_v2_item",
             error: "Failed to sync project item",
           });
@@ -279,8 +287,8 @@ export async function POST(request: NextRequest) {
           hasProjectItem: !!event.projects_v2_item,
         });
         // Acknowledge receipt of other event types
-        return NextResponse.json({ 
-          received: true, 
+        return NextResponse.json({
+          received: true,
           event: eventType,
           message: "Event type not yet implemented",
         });

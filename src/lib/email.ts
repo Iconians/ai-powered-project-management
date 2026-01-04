@@ -15,7 +15,10 @@ const smtpConfig = {
 const fromEmail =
   process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@example.com";
 // Normalize NEXTAUTH_URL to remove trailing slash
-const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(/\/$/, "");
+const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(
+  /\/$/,
+  ""
+);
 
 // Create transporter
 const transporter = nodemailer.createTransport(smtpConfig);
@@ -492,7 +495,7 @@ export async function sendOrganizationInvitationEmail(
 export async function sendPaymentFailedEmail(
   user: { email: string; name: string | null },
   organization: { name: string },
-  subscription: { id: string }
+  _subscription: { id: string }
 ) {
   const template = emailTemplates.paymentFailed(user.name, organization.name);
   await sendEmail(user.email, template.subject, template.html);

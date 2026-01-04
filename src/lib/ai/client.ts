@@ -202,17 +202,15 @@ async function generateWithGemini(
     const result = await model.generateContent(fullPrompt);
     const response = await result.response;
     return response.text();
-  } catch (error: any) {
+  } catch (error) {
     // Provide helpful error messages
-    if (error.message?.includes("API_KEY")) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes("API_KEY")) {
       throw new Error(
         "Invalid Gemini API key. Please check your GOOGLE_GEMINI_API_KEY."
       );
     }
-    if (
-      error.message?.includes("quota") ||
-      error.message?.includes("rate limit")
-    ) {
+    if (errorMessage.includes("quota") || errorMessage.includes("rate limit")) {
       throw new Error(
         "Gemini API rate limit reached. Free tier allows 15 requests per minute."
       );
@@ -226,7 +224,41 @@ async function generateWithOllama(
   prompt: string,
   systemPrompt?: string
 ): Promise<string> {
-  const ollamaUrl = process.env.OLLAMA_URL || "http://localhost:11434";
+  // Security: Validate OLLAMA_URL to prevent SSRF attacks
+  const rawOllamaUrl = process.env.OLLAMA_URL || "http://localhost:11434";
+  let ollamaUrl: string;
+
+  try {
+    const url = new URL(rawOllamaUrl);
+    // Only allow localhost, 127.0.0.1, or private network addresses
+    const hostname = url.hostname.toLowerCase();
+    const allowedHosts = ["localhost", "127.0.0.1", "::1", "0.0.0.0"];
+
+    // Check if hostname is localhost or private IP
+    const isLocalhost = allowedHosts.includes(hostname);
+    const isPrivateIP = /^10\.|^172\.(1[6-9]|2[0-9]|3[01])\.|^192\.168\./.test(
+      hostname
+    );
+
+    if (!isLocalhost && !isPrivateIP) {
+      throw new Error(
+        "OLLAMA_URL must be localhost or private network address"
+      );
+    }
+
+    // Only allow http/https protocols
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error("OLLAMA_URL must use http or https protocol");
+    }
+
+    ollamaUrl = rawOllamaUrl;
+  } catch (error) {
+    console.error("Invalid OLLAMA_URL:", error);
+    throw new Error(
+      "Invalid OLLAMA_URL configuration. Must be a valid localhost or private network URL."
+    );
+  }
+
   const model = process.env.OLLAMA_MODEL || "llama3";
 
   const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;

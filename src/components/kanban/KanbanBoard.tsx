@@ -3,7 +3,6 @@
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
   DragOverlay,
   DragStartEvent,
   PointerSensor,
@@ -12,12 +11,8 @@ import {
   useSensors,
   rectIntersection,
 } from "@dnd-kit/core";
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-} from "@dnd-kit/sortable";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { KanbanColumn } from "./KanbanColumn";
 import { TaskCard } from "./TaskCard";
 import { useRealtime } from "@/hooks/useRealtime";
@@ -173,7 +168,7 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
 
       return { previousBoard };
     },
-    onError: (err, variables, context) => {
+    onError: (_err, _variables, context) => {
       if (context?.previousBoard) {
         queryClient.setQueryData(["board", boardId], context.previousBoard);
       }
@@ -275,12 +270,9 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
   const sortedStatuses = [...board.statuses].sort((a, b) => a.order - b.order);
   const activeTask = board.tasks.find((t) => t.id === activeId);
 
-  const handleDragOver = (event: DragOverEvent) => {
+  const handleDragOver = () => {
     // This helps with visual feedback during drag
   };
-
-  // Collect all task IDs for the main sortable context
-  const allTaskIds = board.tasks.map((t) => t.id);
 
   return (
     <DndContext

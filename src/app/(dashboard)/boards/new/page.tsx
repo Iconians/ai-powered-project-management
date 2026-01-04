@@ -65,8 +65,8 @@ export default function NewBoardPage() {
       const board = await res.json();
       router.push(`/boards/${board.id}`);
       router.refresh();
-    } catch (error: any) {
-      setError(error.message || "An error occurred");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setLoading(false);
     }

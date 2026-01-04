@@ -29,7 +29,10 @@ export async function PATCH(
     }
 
     // Validate project ID if provided
-    if (githubProjectId !== undefined && (typeof githubProjectId !== "number" || githubProjectId <= 0)) {
+    if (
+      githubProjectId !== undefined &&
+      (typeof githubProjectId !== "number" || githubProjectId <= 0)
+    ) {
       return NextResponse.json(
         { error: "githubProjectId must be a positive number" },
         { status: 400 }
@@ -39,7 +42,10 @@ export async function PATCH(
     // Check board access - need ADMIN role to configure GitHub
     await requireBoardAccess(id, "ADMIN");
 
-    const updateData: any = {};
+    const updateData: {
+      githubRepoName?: string;
+      githubProjectId?: number;
+    } = {};
     if (githubRepoName !== undefined) {
       updateData.githubRepoName = githubRepoName;
     }
@@ -55,8 +61,9 @@ export async function PATCH(
     return NextResponse.json(board);
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Failed to update board GitHub settings";
+      error instanceof Error
+        ? error.message
+        : "Failed to update board GitHub settings";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

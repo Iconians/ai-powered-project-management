@@ -1,8 +1,20 @@
 import { prisma } from "./prisma";
 import { authOptions } from "./auth-config";
 import { getServerSession } from "next-auth";
+import type { BoardMember, Member, User } from "@prisma/client";
 
-export async function getCurrentUser() {
+// Type for BoardMember with includes (as returned by getBoardMember)
+type BoardMemberWithIncludes = BoardMember & {
+  member: Member & {
+    user: User;
+  };
+};
+
+export async function getCurrentUser(): Promise<{
+  id: string;
+  email: string;
+  name: string | null;
+} | null> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return null;
@@ -56,7 +68,10 @@ export async function requireMember(
   return member;
 }
 
-export async function getBoardMember(boardId: string, userId?: string) {
+export async function getBoardMember(
+  boardId: string,
+  userId?: string
+): Promise<BoardMemberWithIncludes | null> {
   const user = userId ? { id: userId } : await getCurrentUser();
   if (!user) return null;
 
@@ -145,6 +160,7 @@ export async function requireBoardAccess(
     }
 
     // Create a virtual board member for organization admins
+    // This is a synthetic BoardMember that represents org admin access
     boardMember = {
       id: `org-admin-${boardId}`,
       boardId,
@@ -156,7 +172,7 @@ export async function requireBoardAccess(
         ...orgMember,
         user: dbUser,
       },
-    } as any;
+    } as BoardMemberWithIncludes;
   }
 
   if (!boardMember) {
@@ -191,11 +207,12 @@ export async function requirePaidSubscription(organizationId: string) {
   }
 
   // Check if subscription is still active (either ACTIVE, or CANCELED but period hasn't ended)
-  const isActive = subscription.status === "ACTIVE" || 
+  const isActive =
+    subscription.status === "ACTIVE" ||
     subscription.status === "TRIALING" ||
-    (subscription.status === "CANCELED" && 
-     subscription.currentPeriodEnd && 
-     subscription.currentPeriodEnd > new Date());
+    (subscription.status === "CANCELED" &&
+      subscription.currentPeriodEnd &&
+      subscription.currentPeriodEnd > new Date());
 
   if (!isActive) {
     throw new Error(

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 
 export default function SignupPage() {
@@ -42,8 +41,8 @@ export default function SignupPage() {
             "Account created. Please check your email to verify your account."
         )}`
       );
-    } catch (error: any) {
-      setError(error.message || "An error occurred");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setLoading(false);
     }

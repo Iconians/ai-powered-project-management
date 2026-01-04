@@ -6,11 +6,14 @@ import { encryptToken } from "@/lib/github";
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 // Normalize NEXTAUTH_URL to remove trailing slash
-const NEXTAUTH_URL = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(/\/$/, "");
+const NEXTAUTH_URL = (
+  process.env.NEXTAUTH_URL || "http://localhost:3000"
+).replace(/\/$/, "");
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await requireAuth();
+    // Ensure user is authenticated
+    await requireAuth();
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
     const state = searchParams.get("state");
@@ -92,7 +95,9 @@ export async function GET(request: NextRequest) {
             githubUsername: githubUser.login,
           },
         });
-        console.log(`✅ Updated GitHub username for user ${currentUser.email}: ${githubUser.login}`);
+        console.log(
+          `✅ Updated GitHub username for user ${currentUser.email}: ${githubUser.login}`
+        );
       } catch (error) {
         console.error("Failed to update GitHub username:", error);
         // Don't fail the OAuth flow if this fails
@@ -100,19 +105,25 @@ export async function GET(request: NextRequest) {
     }
 
     // If state is a boardId, update that board
-    if (state && state.length > 10) {
+    // Security: Validate state parameter to prevent CSRF
+    if (state && state.length > 10 && state.length < 50) {
+      // Validate format (cuid is typically 25 characters)
+      // Only allow alphanumeric and hyphens
+      if (!/^[a-zA-Z0-9_-]+$/.test(state)) {
+        return NextResponse.redirect(
+          `${NEXTAUTH_URL}/boards?error=${encodeURIComponent(
+            "Invalid state parameter"
+          )}`
+        );
+      }
+
       // Likely a boardId (cuid format)
       try {
         await requireBoardAccess(state);
         const encryptedToken = encryptToken(accessToken);
 
-        // Get the board to check if we need to set the repo name
-        const board = await prisma.board.findUnique({
-          where: { id: state },
-        });
-
-        // If no repo name is set, try to get it from the board name or prompt user
-        // For now, we'll require the user to set it manually or via a separate endpoint
+        // Update board with GitHub access token
+        // Note: githubRepoName will be set separately via UI or API
         await prisma.board.update({
           where: { id: state },
           data: {

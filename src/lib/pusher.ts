@@ -33,7 +33,9 @@ export async function triggerPusherEvent(
   }
 
   if (channelName.length > 164) {
-    console.error(`Channel name too long: ${channelName.length} chars (max 164)`);
+    console.error(
+      `Channel name too long: ${channelName.length} chars (max 164)`
+    );
     return;
   }
 
@@ -45,10 +47,9 @@ export async function triggerPusherEvent(
 
   try {
     await pusherServer.trigger(channelName, eventName, data);
-  } catch (error: any) {
-    console.error(`Pusher trigger error:`, error?.message || error);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Pusher trigger error:`, errorMessage);
     throw error;
   }
 }
-
-

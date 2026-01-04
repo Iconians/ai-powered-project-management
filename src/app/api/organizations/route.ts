@@ -14,6 +14,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
+    // Input validation
+    if (name.length > 100) {
+      return NextResponse.json(
+        { error: "Organization name must be less than 100 characters" },
+        { status: 400 }
+      );
+    }
+
+    // Sanitize: Remove potentially dangerous characters
+    if (/[<>\"'&]/.test(name)) {
+      return NextResponse.json(
+        { error: "Organization name contains invalid characters" },
+        { status: 400 }
+      );
+    }
+
     // Verify the user exists in the database
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
@@ -103,7 +119,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const user = await requireAuth();
 

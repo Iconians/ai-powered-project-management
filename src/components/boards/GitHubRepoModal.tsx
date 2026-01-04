@@ -17,12 +17,17 @@ export function GitHubRepoModal({
   onClose,
 }: GitHubRepoModalProps) {
   const [repoName, setRepoName] = useState(currentRepoName || "");
-  const [projectId, setProjectId] = useState(currentProjectId?.toString() || "");
+  const [projectId, setProjectId] = useState(
+    currentProjectId?.toString() || ""
+  );
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const updateRepoMutation = useMutation({
-    mutationFn: async (data: { githubRepoName?: string; githubProjectId?: number }) => {
+    mutationFn: async (data: {
+      githubRepoName?: string;
+      githubProjectId?: number;
+    }) => {
       const res = await fetch(`/api/boards/${boardId}/github`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -46,13 +51,16 @@ export function GitHubRepoModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
-    const updateData: { githubRepoName?: string; githubProjectId?: number } = {};
+
+    const updateData: { githubRepoName?: string; githubProjectId?: number } =
+      {};
 
     // Validate and add repo name if provided
     if (repoName.trim()) {
       if (!/^[\w\-\.]+\/[\w\-\.]+$/.test(repoName.trim())) {
-        setError("Invalid repository format. Use 'owner/repo' (e.g., 'Iconians/ai-powered-project-management')");
+        setError(
+          "Invalid repository format. Use 'owner/repo' (e.g., 'Iconians/ai-powered-project-management')"
+        );
         return;
       }
       updateData.githubRepoName = repoName.trim();
@@ -151,4 +159,3 @@ export function GitHubRepoModal({
     </div>
   );
 }
-

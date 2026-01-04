@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     if (direction === "from-github" || direction === "both") {
       // Sync GitHub to board
-      const issues = await syncGitHubToBoard(
+      await syncGitHubToBoard(
         githubClient,
         board.githubRepoName,
         boardId

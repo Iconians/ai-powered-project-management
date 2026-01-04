@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember, requireBoardAccess } from "@/lib/auth";
+import { requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { triggerPusherEvent } from "@/lib/pusher";
 import { sendTaskAssignmentEmail } from "@/lib/email";
@@ -8,7 +8,7 @@ import { getGitHubClient } from "@/lib/github";
 import { TaskStatus } from "@prisma/client";
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -185,12 +185,18 @@ export async function PATCH(
     // Sync to GitHub if board has GitHub sync enabled
     // Always try to sync if GitHub is configured, even if githubIssueNumber doesn't exist yet
     // (in case the initial creation failed but we want to retry)
-    if (updatedTask.board.githubSyncEnabled && updatedTask.board.githubAccessToken && updatedTask.board.githubRepoName) {
+    if (
+      updatedTask.board.githubSyncEnabled &&
+      updatedTask.board.githubAccessToken &&
+      updatedTask.board.githubRepoName
+    ) {
       if (updatedTask.githubIssueNumber) {
         // Task already has a GitHub issue, sync the update
         try {
           await syncTaskToGitHub(updatedTask.id);
-          console.log(`✅ Synced task ${updatedTask.id} to GitHub issue #${updatedTask.githubIssueNumber}`);
+          console.log(
+            `✅ Synced task ${updatedTask.id} to GitHub issue #${updatedTask.githubIssueNumber}`
+          );
         } catch (githubError) {
           console.error("❌ Failed to sync task to GitHub:", githubError);
           // Don't fail the request if GitHub sync fails
@@ -198,14 +204,22 @@ export async function PATCH(
       } else {
         // Task doesn't have a GitHub issue yet, create one
         try {
-          const githubClient = getGitHubClient(updatedTask.board.githubAccessToken);
+          const githubClient = getGitHubClient(
+            updatedTask.board.githubAccessToken
+          );
           const [owner, repo] = updatedTask.board.githubRepoName.split("/");
-          
-          const statusLabel = updatedTask.status === "DONE" ? "done" : 
-                             updatedTask.status === "IN_PROGRESS" ? "in-progress" :
-                             updatedTask.status === "IN_REVIEW" ? "in-review" :
-                             updatedTask.status === "BLOCKED" ? "blocked" : "todo";
-          
+
+          const statusLabel =
+            updatedTask.status === "DONE"
+              ? "done"
+              : updatedTask.status === "IN_PROGRESS"
+              ? "in-progress"
+              : updatedTask.status === "IN_REVIEW"
+              ? "in-review"
+              : updatedTask.status === "BLOCKED"
+              ? "blocked"
+              : "todo";
+
           const issueResponse = await githubClient.rest.issues.create({
             owner,
             repo,
@@ -222,10 +236,15 @@ export async function PATCH(
               githubIssueNumber: issueResponse.data.number,
             },
           });
-          
-          console.log(`✅ Created GitHub issue #${issueResponse.data.number} for task ${updatedTask.id}`);
+
+          console.log(
+            `✅ Created GitHub issue #${issueResponse.data.number} for task ${updatedTask.id}`
+          );
         } catch (githubError) {
-          console.error("❌ Failed to create GitHub issue for task:", githubError);
+          console.error(
+            "❌ Failed to create GitHub issue for task:",
+            githubError
+          );
           // Don't fail the request if GitHub sync fails
         }
       }
@@ -240,7 +259,7 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

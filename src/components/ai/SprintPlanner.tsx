@@ -98,7 +98,7 @@ export function SprintPlanner({
 
       return results;
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
       queryClient.invalidateQueries({ queryKey: ["sprints", boardId] });
       // Don't close immediately, show success message first

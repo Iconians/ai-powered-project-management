@@ -16,6 +16,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Input validation
+    if (name.length > 200) {
+      return NextResponse.json(
+        { error: "Board name must be less than 200 characters" },
+        { status: 400 }
+      );
+    }
+
+    if (description && description.length > 5000) {
+      return NextResponse.json(
+        { error: "Description must be less than 5000 characters" },
+        { status: 400 }
+      );
+    }
+
     const member = await requireMember(organizationId);
     const user = await getCurrentUser();
     if (!user) {
@@ -27,7 +42,9 @@ export async function POST(request: NextRequest) {
       await requireLimit(organizationId, "boards");
     } catch (error) {
       return NextResponse.json(
-        { error: error instanceof Error ? error.message : "Board limit reached" },
+        {
+          error: error instanceof Error ? error.message : "Board limit reached",
+        },
         { status: 403 }
       );
     }
@@ -108,7 +125,9 @@ export async function GET(request: NextRequest) {
     });
 
     // Filter to only boards the user has access to
-    const accessibleBoards = allBoards.filter((board) => board.boardMembers.length > 0);
+    const accessibleBoards = allBoards.filter(
+      (board) => board.boardMembers.length > 0
+    );
 
     return NextResponse.json(accessibleBoards);
   } catch (error) {

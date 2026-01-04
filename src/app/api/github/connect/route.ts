@@ -3,9 +3,10 @@ import { requireAuth } from "@/lib/auth";
 import crypto from "crypto";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 // Normalize NEXTAUTH_URL to remove trailing slash
-const NEXTAUTH_URL = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(/\/$/, "");
+const NEXTAUTH_URL = (
+  process.env.NEXTAUTH_URL || "http://localhost:3000"
+).replace(/\/$/, "");
 
 export async function GET(request: NextRequest) {
   try {

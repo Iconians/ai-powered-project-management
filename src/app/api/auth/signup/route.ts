@@ -2,8 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { generateToken, sendEmailVerificationEmail } from "@/lib/email";
+import { rateLimiters } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResponse = await rateLimiters.signup(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const body = await request.json();
     const { email, password, name } = body;
@@ -11,6 +18,49 @@ export async function POST(request: NextRequest) {
     if (!email || !password) {
       return NextResponse.json(
         { error: "Email and password are required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Invalid email format" },
+        { status: 400 }
+      );
+    }
+
+    // Enhanced password validation
+    if (password.length < 12) {
+      return NextResponse.json(
+        { error: "Password must be at least 12 characters long" },
+        { status: 400 }
+      );
+    }
+
+    // Check password complexity
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
+      password
+    );
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+      return NextResponse.json(
+        {
+          error:
+            "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate name length if provided
+    if (name && name.length > 100) {
+      return NextResponse.json(
+        { error: "Name must be less than 100 characters" },
         { status: 400 }
       );
     }

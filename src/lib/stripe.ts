@@ -31,8 +31,12 @@ export async function createCheckoutSession(
       },
     ],
     mode: "subscription",
-    success_url: `${(process.env.NEXTAUTH_URL || "http://localhost:3000").replace(/\/$/, "")}/billing?success=true`,
-    cancel_url: `${(process.env.NEXTAUTH_URL || "http://localhost:3000").replace(/\/$/, "")}/billing?canceled=true`,
+    success_url: `${(
+      process.env.NEXTAUTH_URL || "http://localhost:3000"
+    ).replace(/\/$/, "")}/billing?success=true`,
+    cancel_url: `${(
+      process.env.NEXTAUTH_URL || "http://localhost:3000"
+    ).replace(/\/$/, "")}/billing?canceled=true`,
     metadata: {
       organizationId,
     },
@@ -45,7 +49,10 @@ export async function createCheckoutSession(
 }
 
 export async function createPortalSession(customerId: string) {
-  const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(/\/$/, "");
+  const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(
+    /\/$/,
+    ""
+  );
   return await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: `${baseUrl}/billing`,
