@@ -134,6 +134,110 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      case "projects_v2_item": {
+        // Handle GitHub Projects V2 item updates (when items are moved in project boards)
+        const projectItem = event.projects_v2_item;
+        const action = event.action;
+
+        // Only handle edits/updates (when status changes)
+        if (action !== "edited" && action !== "updated") {
+          return NextResponse.json({ 
+            received: true, 
+            event: "projects_v2_item",
+            action,
+            message: "Action not handled",
+          });
+        }
+
+        // Get the content (issue) from the project item
+        const content = projectItem?.content;
+        if (!content || content.type !== "Issue") {
+          return NextResponse.json({ 
+            received: true, 
+            event: "projects_v2_item",
+            message: "Content is not an issue",
+          });
+        }
+
+        const issue = content;
+        const issueNumber = issue.number;
+
+        // Find board by project ID (from the project item)
+        const project = event.projects_v2_item?.project;
+        let board = null;
+
+        if (project?.number) {
+          board = await prisma.board.findFirst({
+            where: {
+              githubProjectId: parseInt(project.number),
+              githubSyncEnabled: true,
+            },
+          });
+        }
+
+        // If not found by project ID, try to find by repository
+        if (!board && event.repository) {
+          const repository = event.repository;
+          board = await prisma.board.findFirst({
+            where: {
+              githubRepoName: `${repository.owner?.login || repository.owner}/${repository.name}`,
+              githubSyncEnabled: true,
+            },
+          });
+        }
+
+        if (!board || !board.githubAccessToken || !board.githubRepoName) {
+          return NextResponse.json({
+            message: "Board not found or sync disabled",
+          });
+        }
+
+        // Fetch the full issue from GitHub to get current state (labels, assignees, etc.)
+        try {
+          const { getGitHubClient } = await import("@/lib/github");
+          const githubClient = getGitHubClient(board.githubAccessToken);
+          const [owner, repo] = board.githubRepoName.split("/");
+
+          const { data: fullIssue } = await githubClient.rest.issues.get({
+            owner,
+            repo,
+            issue_number: issueNumber,
+          });
+
+          // Sync the issue to task (this will update status based on labels)
+          const task = await syncGitHubIssueToTask(
+            fullIssue,
+            { owner: { login: owner }, name: repo },
+            board.id
+          );
+
+          // Trigger Pusher event for real-time updates
+          const { triggerPusherEvent } = await import("@/lib/pusher");
+          await triggerPusherEvent(`board-${board.id}`, "task-updated", {
+            id: task.id,
+            boardId: board.id,
+            status: task.status,
+          });
+
+          console.log(`✅ Synced task ${task.id} from GitHub Project item update (issue #${issueNumber})`);
+
+          return NextResponse.json({ 
+            received: true, 
+            event: "projects_v2_item",
+            action,
+            taskId: task.id,
+            issueNumber: issueNumber,
+          });
+        } catch (error) {
+          console.error("Failed to sync issue from project item:", error);
+          return NextResponse.json({ 
+            received: true, 
+            event: "projects_v2_item",
+            error: "Failed to sync project item",
+          });
+        }
+      }
+
       default:
         // Acknowledge receipt of other event types
         return NextResponse.json({ 
