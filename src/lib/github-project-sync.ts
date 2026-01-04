@@ -157,13 +157,20 @@ export async function syncTaskToGitHubProject(
     }
 
     // Find if issue is already in project
+    // Query all items and check if any match our issue
     const itemsQuery = `
-      query GetProjectItems($projectId: ID!, $issueId: ID!) {
+      query GetProjectItems($projectId: ID!) {
         node(id: $projectId) {
           ... on ProjectV2 {
-            items(first: 100, filter: { content: { id: $issueId } }) {
+            items(first: 100) {
               nodes {
                 id
+                content {
+                  ... on Issue {
+                    id
+                    number
+                  }
+                }
               }
             }
           }
@@ -173,10 +180,12 @@ export async function syncTaskToGitHubProject(
 
     const itemsData: any = await githubClient.graphql(itemsQuery, {
       projectId: project.id,
-      issueId: issueNodeId,
     });
 
-    const existingItem = itemsData.node?.items?.nodes?.[0];
+    // Find the item that matches our issue
+    const existingItem = itemsData.node?.items?.nodes?.find(
+      (item: any) => item.content?.id === issueNodeId
+    );
 
     if (existingItem && statusField) {
       // Update existing project item status
