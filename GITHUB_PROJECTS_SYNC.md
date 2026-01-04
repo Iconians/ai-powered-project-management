@@ -17,7 +17,7 @@
 
 ### Step 0: Reconnect GitHub Account (Required for Projects)
 
-**Important**: GitHub Projects require additional OAuth scopes (`read:project` and `write:project`). If you connected GitHub before this update, you need to reconnect:
+**Important**: GitHub Projects require additional OAuth scopes (`read:project` and `project`). The `project` scope is required for write access (updating project items). If you connected GitHub before this update, you need to reconnect:
 
 1. Go to your board
 2. Click "Connect GitHub" again
