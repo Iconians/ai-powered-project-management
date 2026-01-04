@@ -23,9 +23,11 @@ export async function GET(request: NextRequest) {
     const state = boardId || crypto.randomBytes(16).toString("hex");
 
     const callbackUrl = `${NEXTAUTH_URL}/api/github/callback`;
+    // Note: 'project' scope is required for write access to Projects V2 (updateProjectV2ItemFieldValue)
+    // 'read:project' is for reading, 'project' is for writing
     const redirectUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(
       callbackUrl
-    )}&scope=repo,read:org,read:project,write:project&state=${state}`;
+    )}&scope=repo,read:org,read:project,project&state=${state}`;
 
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
