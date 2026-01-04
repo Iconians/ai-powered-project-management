@@ -220,20 +220,39 @@ export async function syncGitHubIssueToTask(
         statuses: {
           orderBy: { order: "asc" },
         },
+        organization: true,
       },
     });
 
-    if (!board) {
-      throw new Error("Board not found");
+    if (!board || !board.githubAccessToken) {
+      throw new Error("Board not found or GitHub not configured");
+    }
+
+    // Fetch full issue data from GitHub to get current assignees
+    // The webhook payload might not always have complete assignee information
+    const githubClient = getGitHubClient(board.githubAccessToken);
+    const [owner, repo] = board.githubRepoName?.split("/") || [repository.owner.login, repository.name];
+    
+    let fullIssue = issue;
+    try {
+      const { data: fetchedIssue } = await githubClient.rest.issues.get({
+        owner,
+        repo,
+        issue_number: issue.number,
+      });
+      fullIssue = fetchedIssue;
+    } catch (error) {
+      console.warn("Failed to fetch full issue from GitHub, using webhook payload:", error);
+      // Continue with webhook payload if fetch fails
     }
 
     // Map GitHub issue state to task status
     // Try to map based on labels first, then fall back to state
-    let taskStatus: TaskStatus = issue.state === "closed" ? "DONE" : "TODO";
+    let taskStatus: TaskStatus = fullIssue.state === "closed" ? "DONE" : "TODO";
     
     // Check if issue has status labels
-    if (issue.labels && Array.isArray(issue.labels)) {
-      const labelNames = issue.labels.map((l: any) => l.name.toLowerCase());
+    if (fullIssue.labels && Array.isArray(fullIssue.labels)) {
+      const labelNames = fullIssue.labels.map((l: any) => l.name.toLowerCase());
       if (labelNames.includes("in-progress")) taskStatus = "IN_PROGRESS";
       else if (labelNames.includes("in-review")) taskStatus = "IN_REVIEW";
       else if (labelNames.includes("blocked")) taskStatus = "BLOCKED";
@@ -248,36 +267,67 @@ export async function syncGitHubIssueToTask(
     const existingTask = await prisma.task.findFirst({
       where: {
         boardId,
-        githubIssueNumber: issue.number,
+        githubIssueNumber: fullIssue.number,
       },
     });
+
+    // Find assignee based on GitHub login
+    let assigneeId: string | null = null;
+    if (fullIssue.assignee?.login) {
+      // Single assignee (legacy field)
+      const user = await prisma.user.findFirst({
+        where: { githubUsername: fullIssue.assignee.login },
+      });
+      if (user) {
+        const member = await prisma.member.findFirst({
+          where: { userId: user.id, organizationId: board.organizationId },
+        });
+        assigneeId = member?.id || null;
+      }
+    } else if (fullIssue.assignees && fullIssue.assignees.length > 0) {
+      // Multiple assignees - use the first one
+      const firstAssignee = fullIssue.assignees[0];
+      const user = await prisma.user.findFirst({
+        where: { githubUsername: firstAssignee.login },
+      });
+      if (user) {
+        const member = await prisma.member.findFirst({
+          where: { userId: user.id, organizationId: board.organizationId },
+        });
+        assigneeId = member?.id || null;
+      }
+    }
+    // If no assignees on GitHub, assigneeId will be null (unassigned)
 
     if (existingTask) {
       // Update existing task
       const updatedTask = await prisma.task.update({
         where: { id: existingTask.id },
         data: {
-          title: issue.title,
-          description: issue.body || null,
+          title: fullIssue.title,
+          description: fullIssue.body || null,
           status: taskStatus,
           statusColumnId: statusColumn.id,
-          // Note: We don't update assignee here as it requires matching GitHub users to app users
+          assigneeId: assigneeId, // Update assignee based on GitHub issue
         },
       });
+      console.log(`✅ Updated task ${updatedTask.id} from GitHub issue #${fullIssue.number} (assignee: ${assigneeId ? "assigned" : "unassigned"})`);
       return updatedTask;
     } else {
       // Create new task
       const newTask = await prisma.task.create({
         data: {
-          title: issue.title,
-          description: issue.body || null,
+          title: fullIssue.title,
+          description: fullIssue.body || null,
           boardId,
           status: taskStatus,
           statusColumnId: statusColumn.id,
-          githubIssueNumber: issue.number,
+          githubIssueNumber: fullIssue.number,
+          assigneeId: assigneeId, // Set assignee based on GitHub issue
           order: 0,
         },
       });
+      console.log(`✅ Created task ${newTask.id} from GitHub issue #${fullIssue.number} (assignee: ${assigneeId ? "assigned" : "unassigned"})`);
       return newTask;
     }
   } catch (error) {

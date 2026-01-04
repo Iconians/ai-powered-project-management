@@ -67,7 +67,16 @@ export async function POST(request: NextRequest) {
         }
 
         // Update task based on issue
-        if (action === "opened" || action === "closed" || action === "edited") {
+        // Handle: opened, closed, edited, assigned, unassigned, labeled, unlabeled
+        if (
+          action === "opened" || 
+          action === "closed" || 
+          action === "edited" ||
+          action === "assigned" ||
+          action === "unassigned" ||
+          action === "labeled" ||
+          action === "unlabeled"
+        ) {
           try {
             const task = await syncGitHubIssueToTask(
               issue,
