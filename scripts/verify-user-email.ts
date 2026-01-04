@@ -1,7 +1,7 @@
 /**
  * Script to manually verify a user's email address
  * Usage: bun scripts/verify-user-email.ts <email>
- * 
+ *
  * This is useful for accounts created before email verification was implemented
  */
 
@@ -55,4 +55,3 @@ if (!email) {
 }
 
 verifyUserEmail(email);
-

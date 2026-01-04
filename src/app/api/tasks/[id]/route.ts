@@ -268,7 +268,14 @@ export async function DELETE(
     const task = await prisma.task.findUnique({
       where: { id },
       include: {
-        board: true,
+        board: {
+          select: {
+            id: true,
+            githubSyncEnabled: true,
+            githubAccessToken: true,
+            githubRepoName: true,
+          },
+        },
       },
     });
 
@@ -278,6 +285,37 @@ export async function DELETE(
 
     // Check board access - need MEMBER role to delete tasks
     await requireBoardAccess(task.boardId, "MEMBER");
+
+    // Close GitHub issue if it exists and board has GitHub sync enabled
+    if (
+      task.githubIssueNumber &&
+      task.board.githubSyncEnabled &&
+      task.board.githubAccessToken &&
+      task.board.githubRepoName
+    ) {
+      try {
+        const githubClient = getGitHubClient(task.board.githubAccessToken);
+        const [owner, repo] = task.board.githubRepoName.split("/");
+
+        // Close the GitHub issue (GitHub doesn't allow deleting issues)
+        await githubClient.rest.issues.update({
+          owner,
+          repo,
+          issue_number: task.githubIssueNumber,
+          state: "closed",
+        });
+
+        console.log(
+          `✅ Closed GitHub issue #${task.githubIssueNumber} for deleted task ${id}`
+        );
+      } catch (githubError) {
+        console.error(
+          `❌ Failed to close GitHub issue #${task.githubIssueNumber} for task ${id}:`,
+          githubError
+        );
+        // Don't fail the request if GitHub sync fails
+      }
+    }
 
     await prisma.task.delete({
       where: { id },

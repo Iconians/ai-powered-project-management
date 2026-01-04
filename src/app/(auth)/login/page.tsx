@@ -76,7 +76,9 @@ function LoginForm() {
             "Please verify your email address before logging in. Check your inbox for the verification email."
           );
         } else if (result.error === "CredentialsSignin") {
-          setError("Invalid email or password. Please check your credentials and try again.");
+          setError(
+            "Invalid email or password. Please check your credentials and try again."
+          );
         } else if (result.error.includes("Too many login attempts")) {
           setError(result.error);
         } else if (result.error.includes("Password must be at least")) {
@@ -223,10 +225,14 @@ function LoginForm() {
                     });
                     const data = await res.json();
                     if (res.ok) {
-                      setSuccess("Verification email sent! Please check your inbox.");
+                      setSuccess(
+                        "Verification email sent! Please check your inbox."
+                      );
                       setError(null);
                     } else {
-                      setError(data.error || "Failed to send verification email");
+                      setError(
+                        data.error || "Failed to send verification email"
+                      );
                     }
                   } catch (err) {
                     setError("Failed to send verification email");

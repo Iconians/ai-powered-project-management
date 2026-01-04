@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { OrganizationMembers } from "./OrganizationMembers";
+import { OrganizationSettings } from "./OrganizationSettings";
 
 interface Organization {
   id: string;
@@ -95,12 +96,17 @@ export function OrganizationsList({
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => setExpandedOrgId(isExpanded ? null : org.id)}
-                    className="px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
-                  >
-                    {isExpanded ? "Hide Members" : "Manage Members"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setExpandedOrgId(isExpanded ? null : org.id)}
+                      className="px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                    >
+                      {isExpanded ? "Hide Members" : "Manage Members"}
+                    </button>
+                    {isAdmin && (
+                      <OrganizationSettings organizationId={org.id} organizationName={org.name} />
+                    )}
+                  </div>
                 </div>
 
                 {isExpanded && (

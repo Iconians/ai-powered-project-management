@@ -1,27 +1,19 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import crypto from "crypto";
 
-// SMTP configuration
-const smtpConfig = {
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-};
-
+// Resend configuration
+const resendApiKey = process.env.RESEND_API_KEY;
 const fromEmail =
-  process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@example.com";
+  process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM || "onboarding@resend.dev";
+
 // Normalize NEXTAUTH_URL to remove trailing slash
 const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(
   /\/$/,
   ""
 );
 
-// Create transporter
-const transporter = nodemailer.createTransport(smtpConfig);
+// Initialize Resend client
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 // Generic email sender
 export async function sendEmail(
@@ -30,13 +22,13 @@ export async function sendEmail(
   html: string,
   text?: string
 ): Promise<void> {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    console.warn("SMTP not configured, skipping email send");
+  if (!resendApiKey || !resend) {
+    console.warn("Resend API key not configured, skipping email send");
     return;
   }
 
   try {
-    await transporter.sendMail({
+    await resend.emails.send({
       from: fromEmail,
       to,
       subject,
