@@ -29,8 +29,21 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters long");
+    if (password.length < 12) {
+      setError("Password must be at least 12 characters long");
+      return;
+    }
+
+    // Check password complexity
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+
+    if (!hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+      setError(
+        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+      );
       return;
     }
 
@@ -149,7 +162,7 @@ function ResetPasswordForm() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={12}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -168,7 +181,7 @@ function ResetPasswordForm() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={8}
+                minLength={12}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"

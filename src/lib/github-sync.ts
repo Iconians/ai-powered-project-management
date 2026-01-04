@@ -23,7 +23,9 @@ interface GitHubIssue {
   assignee?: GitHubIssueAssignee | null;
   assignees?: GitHubIssueAssignee[] | null; // GitHub API can return null
   // GitHub API can return labels as strings, objects, or mixed array
-  labels?: (string | GitHubIssueLabel | { name?: string; [key: string]: unknown })[] | null;
+  labels?:
+    | (string | GitHubIssueLabel | { name?: string; [key: string]: unknown })[]
+    | null;
 }
 
 interface GitHubRepository {

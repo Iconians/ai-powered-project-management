@@ -48,11 +48,9 @@ export async function GET(
 
     return NextResponse.json(board);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch board";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch board";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -89,11 +87,9 @@ export async function PATCH(
 
     return NextResponse.json(updatedBoard);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to update board";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to update board";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -119,10 +115,8 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to delete board";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to delete board";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
