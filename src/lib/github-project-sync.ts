@@ -145,15 +145,32 @@ export async function syncTaskToGitHubProject(
     }
 
     // Find the status field (usually named "Status")
-    const statusField = project.fields.nodes.find(
+    // Try exact match first, then case-insensitive
+    let statusField = project.fields.nodes.find(
       (field: any) => field.name === "Status" && field.options
     );
 
     if (!statusField) {
+      statusField = project.fields.nodes.find(
+        (field: any) => field.name?.toLowerCase() === "status" && field.options
+      );
+    }
+
+    if (!statusField) {
       console.warn(
-        "Status field not found in project. Project sync will skip status updates."
+        `Status field not found in project. Available fields: ${project.fields.nodes
+          .map((f: any) => f.name)
+          .join(", ")}`
       );
       // Still try to add the issue to the project even without status field
+    } else {
+      console.log(
+        `✅ Found status field: "${
+          statusField.name
+        }" with options: ${statusField.options
+          .map((opt: any) => opt.name)
+          .join(", ")}`
+      );
     }
 
     // Find if issue is already in project
@@ -189,9 +206,16 @@ export async function syncTaskToGitHubProject(
 
     if (existingItem && statusField) {
       // Update existing project item status
-      const statusOption = statusField.options.find(
+      // Try exact match first, then case-insensitive
+      let statusOption = statusField.options.find(
         (opt: any) => opt.name === statusValue
       );
+
+      if (!statusOption) {
+        statusOption = statusField.options.find(
+          (opt: any) => opt.name?.toLowerCase() === statusValue.toLowerCase()
+        );
+      }
 
       if (statusOption) {
         const updateItemMutation = `
@@ -218,7 +242,15 @@ export async function syncTaskToGitHubProject(
           optionId: statusOption.id,
         });
 
-        console.log(`✅ Updated project item status to "${statusValue}"`);
+        console.log(
+          `✅ Updated project item status to "${statusValue}" (matched option: "${statusOption.name}")`
+        );
+      } else {
+        console.warn(
+          `⚠️ Status option "${statusValue}" not found in project. Available options: ${statusField.options
+            .map((opt: any) => opt.name)
+            .join(", ")}`
+        );
       }
     } else if (!existingItem) {
       // Add issue to project
@@ -239,9 +271,16 @@ export async function syncTaskToGitHubProject(
 
       if (addResult.addProjectV2ItemById?.item?.id && statusField) {
         // Update the status after adding
-        const statusOption = statusField.options.find(
+        // Try exact match first, then case-insensitive
+        let statusOption = statusField.options.find(
           (opt: any) => opt.name === statusValue
         );
+
+        if (!statusOption) {
+          statusOption = statusField.options.find(
+            (opt: any) => opt.name?.toLowerCase() === statusValue.toLowerCase()
+          );
+        }
 
         if (statusOption) {
           await githubClient.graphql(
