@@ -38,6 +38,30 @@ function LoginForm() {
     setLoading(true);
 
     try {
+      // Check email verification status before attempting login
+      // This gives us a better error message
+      try {
+        const checkRes = await fetch("/api/auth/check-email-verification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email }),
+        });
+
+        if (checkRes.ok) {
+          const checkData = await checkRes.json();
+          if (checkData.emailVerified === false) {
+            setError(
+              "Please verify your email address before logging in. Check your inbox for the verification email."
+            );
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (checkError) {
+        // If check fails, continue with login attempt
+        console.warn("Failed to check email verification:", checkError);
+      }
+
       const result = await signIn("credentials", {
         email,
         password,
@@ -46,11 +70,20 @@ function LoginForm() {
 
       if (result?.error) {
         console.error("Login error:", result.error);
-        setError(
-          result.error === "CredentialsSignin"
-            ? "Invalid email or password"
-            : result.error || "Failed to sign in. Please try again."
-        );
+        // Handle specific error cases
+        if (result.error === "EMAIL_NOT_VERIFIED") {
+          setError(
+            "Please verify your email address before logging in. Check your inbox for the verification email."
+          );
+        } else if (result.error === "CredentialsSignin") {
+          setError("Invalid email or password. Please check your credentials and try again.");
+        } else if (result.error.includes("Too many login attempts")) {
+          setError(result.error);
+        } else if (result.error.includes("Password must be at least")) {
+          setError(result.error);
+        } else {
+          setError(result.error || "Failed to sign in. Please try again.");
+        }
         setLoading(false);
         return;
       }
