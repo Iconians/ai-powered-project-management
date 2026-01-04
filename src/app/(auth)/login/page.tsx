@@ -211,6 +211,32 @@ function LoginForm() {
             >
               Forgot your password?
             </Link>
+            {error && error.includes("verify your email") && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await fetch("/api/auth/resend-verification", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setSuccess("Verification email sent! Please check your inbox.");
+                      setError(null);
+                    } else {
+                      setError(data.error || "Failed to send verification email");
+                    }
+                  } catch (err) {
+                    setError("Failed to send verification email");
+                  }
+                }}
+                className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 underline"
+              >
+                Resend verification email
+              </button>
+            )}
             <Link
               href="/signup"
               className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
