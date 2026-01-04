@@ -116,18 +116,25 @@ export const authOptions: NextAuthOptions = {
 
           // Check if email is verified
           if (!user.emailVerified) {
-            throw new Error(
-              "Please verify your email address before logging in. Check your inbox for the verification email."
-            );
+            console.error("❌ Email not verified for user:", credentials.email);
+            // For email verification errors, we need to return null but log the specific reason
+            // NextAuth doesn't easily pass custom error messages, so we'll handle this in the login page
+            return null; // This will trigger CredentialsSignin, but we'll check emailVerified in a custom endpoint
           }
 
+          console.log("✅ User authenticated successfully:", credentials.email);
           return {
             id: user.id,
             email: user.email,
             name: user.name,
           };
         } catch (error) {
-          console.error("Authorization error:", error);
+          console.error("❌ Authorization error:", error);
+          // Log the specific error for debugging
+          if (error instanceof Error) {
+            console.error("Error message:", error.message);
+            console.error("Error stack:", error.stack);
+          }
           // Return null to indicate authentication failure
           // NextAuth will convert this to a CredentialsSignin error
           return null;
