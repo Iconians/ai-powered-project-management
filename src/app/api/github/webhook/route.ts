@@ -45,6 +45,13 @@ export async function POST(request: NextRequest) {
     const event = JSON.parse(body);
     const eventType = request.headers.get("x-github-event");
 
+    // Log all incoming webhook events for debugging
+    console.log(`📥 GitHub webhook received: ${eventType}`, {
+      action: event.action,
+      issueNumber: event.issue?.number || event.projects_v2_item?.content?.number,
+      projectNumber: event.projects_v2_item?.project?.number,
+    });
+
     // Handle different GitHub events
     switch (eventType) {
       case "issues": {
@@ -68,6 +75,7 @@ export async function POST(request: NextRequest) {
 
         // Update task based on issue
         // Handle: opened, closed, edited, assigned, unassigned, labeled, unlabeled
+        // Note: When items are moved in GitHub Projects, it may trigger "labeled" or "unlabeled" events
         if (
           action === "opened" || 
           action === "closed" || 
@@ -77,6 +85,7 @@ export async function POST(request: NextRequest) {
           action === "labeled" ||
           action === "unlabeled"
         ) {
+          console.log(`🔄 Processing ${action} event for issue #${issue.number}`);
           try {
             const task = await syncGitHubIssueToTask(
               issue,
@@ -166,27 +175,51 @@ export async function POST(request: NextRequest) {
         const project = event.projects_v2_item?.project;
         let board = null;
 
+        console.log("🔍 Looking for board", {
+          projectNumber: project?.number,
+          hasRepository: !!event.repository,
+        });
+
         if (project?.number) {
+          const projectNumber = parseInt(project.number);
+          console.log(`🔍 Searching for board with githubProjectId: ${projectNumber}`);
           board = await prisma.board.findFirst({
             where: {
-              githubProjectId: parseInt(project.number),
+              githubProjectId: projectNumber,
               githubSyncEnabled: true,
             },
           });
+          if (board) {
+            console.log(`✅ Found board by project ID: ${board.id}`);
+          } else {
+            console.log(`❌ No board found with project ID: ${projectNumber}`);
+          }
         }
 
         // If not found by project ID, try to find by repository
         if (!board && event.repository) {
           const repository = event.repository;
+          const repoName = `${repository.owner?.login || repository.owner}/${repository.name}`;
+          console.log(`🔍 Searching for board by repository: ${repoName}`);
           board = await prisma.board.findFirst({
             where: {
-              githubRepoName: `${repository.owner?.login || repository.owner}/${repository.name}`,
+              githubRepoName: repoName,
               githubSyncEnabled: true,
             },
           });
+          if (board) {
+            console.log(`✅ Found board by repository: ${board.id}`);
+          } else {
+            console.log(`❌ No board found with repository: ${repoName}`);
+          }
         }
 
         if (!board || !board.githubAccessToken || !board.githubRepoName) {
+          console.log("❌ Board not found or sync disabled", {
+            hasBoard: !!board,
+            hasToken: !!board?.githubAccessToken,
+            hasRepoName: !!board?.githubRepoName,
+          });
           return NextResponse.json({
             message: "Board not found or sync disabled",
           });
@@ -239,6 +272,12 @@ export async function POST(request: NextRequest) {
       }
 
       default:
+        // Log unhandled event types for debugging
+        console.log(`⚠️ Unhandled webhook event type: ${eventType}`, {
+          action: event.action,
+          hasIssue: !!event.issue,
+          hasProjectItem: !!event.projects_v2_item,
+        });
         // Acknowledge receipt of other event types
         return NextResponse.json({ 
           received: true, 
