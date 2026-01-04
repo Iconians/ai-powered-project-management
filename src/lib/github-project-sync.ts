@@ -307,6 +307,101 @@ export async function syncTaskToGitHubProject(
               optionId: statusOption.id,
             }
           );
+
+          // Also update the issue label to match the project status
+          try {
+            const statusLabel =
+              statusValue === "Todo"
+                ? "todo"
+                : statusValue === "In Progress"
+                ? "in-progress"
+                : statusValue === "In Review"
+                ? "in-review"
+                : statusValue === "Done"
+                ? "done"
+                : statusValue === "Blocked"
+                ? "blocked"
+                : "todo";
+
+            const [owner, repo] = repoName.split("/");
+
+            // Get current labels
+            const { data: currentIssue } = await githubClient.rest.issues.get({
+              owner,
+              repo,
+              issue_number: issueNumber,
+            });
+
+            const currentLabels =
+              currentIssue.labels?.map((l: any) => l.name) || [];
+            const statusLabels = [
+              "todo",
+              "in-progress",
+              "in-review",
+              "done",
+              "blocked",
+            ];
+            const labelsToRemove = currentLabels.filter((l: string) =>
+              statusLabels.includes(l.toLowerCase())
+            );
+
+            // Remove old status labels
+            for (const label of labelsToRemove) {
+              if (label.toLowerCase() !== statusLabel) {
+                try {
+                  await githubClient.rest.issues.removeLabel({
+                    owner,
+                    repo,
+                    issue_number: issueNumber,
+                    name: label,
+                  });
+                } catch (error) {
+                  // Label might not exist, continue
+                }
+              }
+            }
+
+            // Add new status label
+            if (
+              !currentLabels.some(
+                (l: string) => l.toLowerCase() === statusLabel
+              )
+            ) {
+              try {
+                await githubClient.rest.issues.addLabels({
+                  owner,
+                  repo,
+                  issue_number: issueNumber,
+                  labels: [statusLabel],
+                });
+                console.log(
+                  `✅ Updated issue label to "${statusLabel}" to match project status`
+                );
+              } catch (error) {
+                // Try creating the label if it doesn't exist
+                try {
+                  await githubClient.rest.issues.createLabel({
+                    owner,
+                    repo,
+                    name: statusLabel,
+                    color: "0e8a16",
+                  });
+                  await githubClient.rest.issues.addLabels({
+                    owner,
+                    repo,
+                    issue_number: issueNumber,
+                    labels: [statusLabel],
+                  });
+                  console.log(`✅ Created and added label "${statusLabel}"`);
+                } catch (createError) {
+                  console.error("Failed to create/add label:", createError);
+                }
+              }
+            }
+          } catch (labelError) {
+            console.error("Failed to update issue label:", labelError);
+            // Don't fail the whole sync if label update fails
+          }
         }
 
         console.log(
