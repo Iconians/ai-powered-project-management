@@ -54,7 +54,7 @@ export function getGitHubClient(accessToken: string | null) {
 
 // Sync board to GitHub Project
 export async function syncBoardToGitHub(
-  board: { id: string; name: string; description: string | null },
+  _board: { id: string; name: string; description: string | null },
   tasks: Array<{
     id: string;
     title: string;
@@ -63,7 +63,7 @@ export async function syncBoardToGitHub(
   }>,
   githubClient: { rest: Octokit; graphql: typeof graphql },
   repoName: string,
-  projectId: number
+  _projectId: number
 ) {
   // This is a simplified sync - in production, you'd want more sophisticated mapping
   // For now, we'll create/update GitHub Issues for each task
@@ -97,7 +97,7 @@ export async function syncBoardToGitHub(
 export async function syncGitHubToBoard(
   githubClient: { rest: Octokit; graphql: typeof graphql },
   repoName: string,
-  boardId: string
+  _boardId: string
 ) {
   const [owner, repo] = repoName.split("/");
 

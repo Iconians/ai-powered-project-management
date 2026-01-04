@@ -31,12 +31,13 @@ export async function POST(request: NextRequest) {
     // Check if organization has a paid subscription
     try {
       await requirePaidSubscription(board.organizationId);
-    } catch (error: any) {
+    } catch (error) {
       return NextResponse.json(
         {
           error:
-            error.message ||
-            "AI features require a paid subscription (Pro or Enterprise)",
+            error instanceof Error
+              ? error.message
+              : "AI features require a paid subscription (Pro or Enterprise)",
         },
         { status: 403 }
       );
@@ -108,7 +109,7 @@ Example:
         userPrompt,
         systemPrompt
       );
-    } catch (error: any) {
+    } catch (error) {
       // Fall back to simple rule-based selection if AI fails
       console.error("AI generation failed, using rule-based selection:", error);
       const selectedTasks = backlogTasks
@@ -173,9 +174,11 @@ Example:
       reasoning:
         suggestion.reasoning || "Tasks selected based on priority and capacity",
     });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Failed to plan sprint" },
+      {
+        error: error instanceof Error ? error.message : "Failed to plan sprint",
+      },
       { status: 500 }
     );
   }

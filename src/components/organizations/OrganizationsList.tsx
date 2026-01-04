@@ -21,7 +21,7 @@ interface OrganizationsListProps {
 
 export function OrganizationsList({
   organizations,
-  currentUserId,
+  currentUserId: _currentUserId,
 }: OrganizationsListProps) {
   const [expandedOrgId, setExpandedOrgId] = useState<string | null>(null);
 

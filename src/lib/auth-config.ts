@@ -2,6 +2,46 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { logSecurityEvent } from "@/lib/security-logger";
+
+// Rate limiting wrapper for NextAuth authorize function
+// Note: This is a workaround since NextAuth doesn't directly support rate limiting
+// In production, consider using middleware or a reverse proxy for rate limiting
+let loginAttempts = new Map<string, { count: number; resetTime: number }>();
+
+// Clean up login attempts every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of loginAttempts.entries()) {
+    if (entry.resetTime < now) {
+      loginAttempts.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
+
+function checkLoginRateLimit(email: string): boolean {
+  const key = `login:${email}`;
+  const now = Date.now();
+  const window = 15 * 60 * 1000; // 15 minutes
+  const limit = 5;
+
+  let entry = loginAttempts.get(key);
+
+  if (!entry || entry.resetTime < now) {
+    entry = { count: 1, resetTime: now + window };
+    loginAttempts.set(key, entry);
+    return true; // Allowed
+  }
+
+  entry.count++;
+  loginAttempts.set(key, entry);
+
+  if (entry.count > limit) {
+    return false; // Rate limited
+  }
+
+  return true; // Allowed
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -18,12 +58,40 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Email and password are required");
           }
 
+          // Rate limiting for login attempts
+          if (!checkLoginRateLimit(credentials.email)) {
+            console.error("Rate limit exceeded for:", credentials.email);
+            throw new Error(
+              "Too many login attempts. Please try again in 15 minutes."
+            );
+          }
+
+          // Validate email format
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(credentials.email)) {
+            throw new Error("Invalid email format");
+          }
+
+          // Validate password length
+          if (credentials.password.length < 12) {
+            throw new Error("Password must be at least 12 characters");
+          }
+
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
           });
 
           if (!user) {
             console.error("User not found:", credentials.email);
+            // Log authentication failure
+            logSecurityEvent(
+              "auth_failure",
+              "/api/auth/login",
+              credentials.email,
+              {
+                reason: "user_not_found",
+              }
+            );
             throw new Error("Invalid email or password");
           }
 
@@ -34,6 +102,15 @@ export const authOptions: NextAuthOptions = {
 
           if (!isPasswordValid) {
             console.error("Invalid password for user:", credentials.email);
+            // Log authentication failure
+            logSecurityEvent(
+              "auth_failure",
+              "/api/auth/login",
+              credentials.email,
+              {
+                reason: "invalid_password",
+              }
+            );
             throw new Error("Invalid email or password");
           }
 

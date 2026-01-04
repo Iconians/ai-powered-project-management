@@ -223,7 +223,6 @@ export async function POST(request: NextRequest) {
           const organizationId = subscription.metadata?.organizationId;
 
           let updatedSubscription;
-          let finalOrganizationId = organizationId;
           if (!organizationId) {
             // Try to find by subscription ID
             const existing = await prisma.subscription.findUnique({
@@ -231,7 +230,6 @@ export async function POST(request: NextRequest) {
               include: { plan: true },
             });
             if (existing) {
-              finalOrganizationId = existing.organizationId;
               updatedSubscription = await prisma.subscription.update({
                 where: { id: existing.id },
                 data: { status: "CANCELED" },

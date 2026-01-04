@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireMember, requireBoardAccess } from "@/lib/auth";
+import { requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { triggerPusherEvent } from "@/lib/pusher";
 import { getGitHubClient } from "@/lib/github";
 import { TaskStatus } from "@prisma/client";
-import { requireLimit } from "@/lib/limits";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +23,30 @@ export async function POST(request: NextRequest) {
     if (!title || !boardId) {
       return NextResponse.json(
         { error: "Title and boardId are required" },
+        { status: 400 }
+      );
+    }
+
+    // Input validation: Prevent DoS via extremely long inputs
+    if (title.length > 500) {
+      return NextResponse.json(
+        { error: "Title must be less than 500 characters" },
+        { status: 400 }
+      );
+    }
+
+    if (description && description.length > 10000) {
+      return NextResponse.json(
+        { error: "Description must be less than 10000 characters" },
+        { status: 400 }
+      );
+    }
+
+    // Validate priority enum
+    const validPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+    if (priority && !validPriorities.includes(priority)) {
+      return NextResponse.json(
+        { error: "Invalid priority value" },
         { status: 400 }
       );
     }
@@ -104,17 +127,27 @@ export async function POST(request: NextRequest) {
     });
 
     // Sync to GitHub if board has GitHub sync enabled
-    if (board.githubSyncEnabled && board.githubAccessToken && board.githubRepoName) {
+    if (
+      board.githubSyncEnabled &&
+      board.githubAccessToken &&
+      board.githubRepoName
+    ) {
       try {
         const githubClient = getGitHubClient(board.githubAccessToken);
         const [owner, repo] = board.githubRepoName.split("/");
-        
+
         // Map status to label
-        const statusLabel = task.status === "DONE" ? "done" : 
-                           task.status === "IN_PROGRESS" ? "in-progress" :
-                           task.status === "IN_REVIEW" ? "in-review" :
-                           task.status === "BLOCKED" ? "blocked" : "todo";
-        
+        const statusLabel =
+          task.status === "DONE"
+            ? "done"
+            : task.status === "IN_PROGRESS"
+            ? "in-progress"
+            : task.status === "IN_REVIEW"
+            ? "in-review"
+            : task.status === "BLOCKED"
+            ? "blocked"
+            : "todo";
+
         const issueResponse = await githubClient.rest.issues.create({
           owner,
           repo,
@@ -131,15 +164,19 @@ export async function POST(request: NextRequest) {
             githubIssueNumber: issueResponse.data.number,
           },
         });
-        
-        console.log(`✅ Created GitHub issue #${issueResponse.data.number} for task ${task.id}`);
+
+        console.log(
+          `✅ Created GitHub issue #${issueResponse.data.number} for task ${task.id}`
+        );
 
         // Sync to GitHub Project if project ID is set
         // Note: This requires the board to have githubProjectId set
         // The project ID should be the numeric ID from GitHub Project settings
         if (board.githubProjectId) {
           try {
-            const { syncTaskToGitHubProject } = await import("@/lib/github-project-sync");
+            const { syncTaskToGitHubProject } = await import(
+              "@/lib/github-project-sync"
+            );
             await syncTaskToGitHubProject(
               githubClient,
               issueResponse.data.number,
@@ -147,14 +184,19 @@ export async function POST(request: NextRequest) {
               task.status,
               board.githubRepoName
             );
-            console.log(`✅ Added issue #${issueResponse.data.number} to GitHub Project ${board.githubProjectId}`);
+            console.log(
+              `✅ Added issue #${issueResponse.data.number} to GitHub Project ${board.githubProjectId}`
+            );
           } catch (projectError) {
             console.error("❌ Failed to sync to GitHub Project:", projectError);
             // Don't fail if project sync fails
           }
         }
       } catch (githubError) {
-        console.error("❌ Failed to create GitHub issue for task:", githubError);
+        console.error(
+          "❌ Failed to create GitHub issue for task:",
+          githubError
+        );
         // Log more details for debugging
         if (githubError instanceof Error) {
           console.error("Error details:", {
@@ -182,11 +224,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(task, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create task";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to create task";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -240,11 +280,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(tasks);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch tasks";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch tasks";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

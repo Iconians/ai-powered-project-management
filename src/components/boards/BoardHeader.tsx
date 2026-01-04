@@ -45,7 +45,7 @@ export function BoardHeader({
   });
 
   // Fetch subscription to check if AI features are available
-  const { data: subscription, error: subscriptionError } = useQuery({
+  const { data: subscription } = useQuery({
     queryKey: ["subscription", organizationId],
     queryFn: async () => {
       if (!organizationId) return null;
@@ -77,31 +77,43 @@ export function BoardHeader({
 
   // Handle price - can be Decimal (server), number, or string (JSON serialized Decimal)
   const planPrice = subscription?.plan?.price;
-  const priceValue = typeof planPrice === 'object' && planPrice !== null && 'toNumber' in planPrice
-    ? (planPrice as any).toNumber()
-    : typeof planPrice === 'number'
-    ? planPrice
-    : typeof planPrice === 'string'
-    ? parseFloat(planPrice) || 0
-    : 0;
-  
+  const priceValue =
+    typeof planPrice === "object" &&
+    planPrice !== null &&
+    "toNumber" in planPrice
+      ? (planPrice as any).toNumber()
+      : typeof planPrice === "number"
+      ? planPrice
+      : typeof planPrice === "string"
+      ? parseFloat(planPrice) || 0
+      : 0;
+
   // Check if subscription is still active (either ACTIVE, or CANCELED but period hasn't ended)
   let isSubscriptionActive = false;
   if (subscription) {
-    if (subscription.status === "ACTIVE" || subscription.status === "TRIALING") {
+    if (
+      subscription.status === "ACTIVE" ||
+      subscription.status === "TRIALING"
+    ) {
       isSubscriptionActive = true;
-    } else if (subscription.status === "CANCELED" && subscription.currentPeriodEnd) {
+    } else if (
+      subscription.status === "CANCELED" &&
+      subscription.currentPeriodEnd
+    ) {
       const periodEnd = new Date(subscription.currentPeriodEnd);
       const now = new Date();
       isSubscriptionActive = periodEnd > now;
     }
   }
-  
+
   const hasPaidSubscription = priceValue > 0 && isSubscriptionActive;
   const isGitHubConnected =
     board?.githubSyncEnabled && board?.githubAccessToken;
   // Check if GitHub is connected but repo name is not set
-  const needsRepoName = board?.githubSyncEnabled && board?.githubAccessToken && !board?.githubRepoName;
+  const needsRepoName =
+    board?.githubSyncEnabled &&
+    board?.githubAccessToken &&
+    !board?.githubRepoName;
 
   return (
     <>

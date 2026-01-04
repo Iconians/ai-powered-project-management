@@ -27,11 +27,11 @@ export default function NewOrganizationPage() {
         throw new Error(data.error || "Failed to create organization");
       }
 
-      const organization = await res.json();
+      await res.json(); // Response not needed, just ensure it's successful
       router.push("/boards");
       router.refresh();
-    } catch (error: any) {
-      setError(error.message || "An error occurred");
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setLoading(false);
     }

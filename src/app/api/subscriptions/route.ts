@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMember } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe, createCheckoutSession, createPortalSession } from "@/lib/stripe";
+import {
+  stripe,
+  createCheckoutSession,
+  createPortalSession,
+} from "@/lib/stripe";
 import { pusherServer } from "@/lib/pusher";
 
 export async function GET(request: NextRequest) {
@@ -27,16 +31,17 @@ export async function GET(request: NextRequest) {
     });
 
     if (!subscription) {
-      return NextResponse.json({ error: "No subscription found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "No subscription found" },
+        { status: 404 }
+      );
     }
 
     return NextResponse.json(subscription);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to fetch subscription";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch subscription";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -78,11 +83,17 @@ export async function POST(request: NextRequest) {
             status: "ACTIVE",
           },
         });
-        return NextResponse.json({ subscription, message: "Free plan activated" });
+        return NextResponse.json({
+          subscription,
+          message: "Free plan activated",
+        });
       }
-      
+
       return NextResponse.json(
-        { error: "Plan does not have a Stripe price ID configured. Please contact support." },
+        {
+          error:
+            "Plan does not have a Stripe price ID configured. Please contact support.",
+        },
         { status: 400 }
       );
     }
@@ -98,10 +109,15 @@ export async function POST(request: NextRequest) {
     // Check if upgrading/downgrading to a different plan
     if (existingSubscription && existingSubscription.planId !== planId) {
       // If there's an active Stripe subscription, cancel it first
-      if (existingSubscription.stripeSubscriptionId && existingSubscription.status === "ACTIVE") {
+      if (
+        existingSubscription.stripeSubscriptionId &&
+        existingSubscription.status === "ACTIVE"
+      ) {
         try {
-          await stripe.subscriptions.cancel(existingSubscription.stripeSubscriptionId);
-          
+          await stripe.subscriptions.cancel(
+            existingSubscription.stripeSubscriptionId
+          );
+
           // Update database subscription status to CANCELED
           await prisma.subscription.update({
             where: { organizationId },
@@ -175,15 +191,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Create checkout session
-    const session = await createCheckoutSession(customerId, plan.stripePriceId, organizationId);
+    const session = await createCheckoutSession(
+      customerId,
+      plan.stripePriceId,
+      organizationId
+    );
 
     return NextResponse.json({ url: session.url });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create subscription";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to create subscription";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -233,7 +251,7 @@ export async function PATCH(request: NextRequest) {
 
           if (organization && organization.members.length > 0) {
             const adminEmail = organization.members[0].user.email;
-            
+
             try {
               // Search for customer by email
               const customers = await stripe.customers.list({
@@ -244,7 +262,7 @@ export async function PATCH(request: NextRequest) {
               if (customers.data.length > 0) {
                 const customer = customers.data[0];
                 customerId = customer.id;
-                
+
                 // Get the customer's subscriptions
                 const subscriptions = await stripe.subscriptions.list({
                   customer: customer.id,
@@ -254,10 +272,12 @@ export async function PATCH(request: NextRequest) {
 
                 if (subscriptions.data.length > 0) {
                   const stripeSubscription = subscriptions.data[0];
-                  
+
                   // Find the plan by Stripe price ID
                   const foundPlan = await prisma.plan.findUnique({
-                    where: { stripePriceId: stripeSubscription.items.data[0]?.price.id },
+                    where: {
+                      stripePriceId: stripeSubscription.items.data[0]?.price.id,
+                    },
                   });
 
                   if (foundPlan) {
@@ -276,13 +296,23 @@ export async function PATCH(request: NextRequest) {
                             : stripeSubscription.status === "past_due"
                             ? "PAST_DUE"
                             : "CANCELED",
-                        currentPeriodStart: (stripeSubscription as any).current_period_start
-                          ? new Date((stripeSubscription as any).current_period_start * 1000)
+                        currentPeriodStart: (stripeSubscription as any)
+                          .current_period_start
+                          ? new Date(
+                              (stripeSubscription as any).current_period_start *
+                                1000
+                            )
                           : null,
-                        currentPeriodEnd: (stripeSubscription as any).current_period_end
-                          ? new Date((stripeSubscription as any).current_period_end * 1000)
+                        currentPeriodEnd: (stripeSubscription as any)
+                          .current_period_end
+                          ? new Date(
+                              (stripeSubscription as any).current_period_end *
+                                1000
+                            )
                           : null,
-                        cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end || false,
+                        cancelAtPeriodEnd:
+                          (stripeSubscription as any).cancel_at_period_end ||
+                          false,
                       },
                     });
                   }
@@ -295,7 +325,10 @@ export async function PATCH(request: NextRequest) {
 
           if (!customerId) {
             return NextResponse.json(
-              { error: "No Stripe subscription found. Please click 'Refresh Status' first to sync your subscription from Stripe." },
+              {
+                error:
+                  "No Stripe subscription found. Please click 'Refresh Status' first to sync your subscription from Stripe.",
+              },
               { status: 400 }
             );
           }
@@ -306,10 +339,12 @@ export async function PATCH(request: NextRequest) {
               subscription.stripeSubscriptionId
             );
             customerId = stripeSubscription.customer as string;
-            
+
             // Also update the plan and other details while we're at it
             const plan = await prisma.plan.findUnique({
-              where: { stripePriceId: stripeSubscription.items.data[0]?.price.id },
+              where: {
+                stripePriceId: stripeSubscription.items.data[0]?.price.id,
+              },
             });
 
             // Update the subscription with the customer ID and latest info
@@ -326,19 +361,28 @@ export async function PATCH(request: NextRequest) {
                     : stripeSubscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: (stripeSubscription as any).current_period_start
-                  ? new Date((stripeSubscription as any).current_period_start * 1000)
+                currentPeriodStart: (stripeSubscription as any)
+                  .current_period_start
+                  ? new Date(
+                      (stripeSubscription as any).current_period_start * 1000
+                    )
                   : null,
                 currentPeriodEnd: (stripeSubscription as any).current_period_end
-                  ? new Date((stripeSubscription as any).current_period_end * 1000)
+                  ? new Date(
+                      (stripeSubscription as any).current_period_end * 1000
+                    )
                   : null,
-                cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end ?? false,
+                cancelAtPeriodEnd:
+                  (stripeSubscription as any).cancel_at_period_end ?? false,
               },
             });
           } catch (error) {
             console.error("Error retrieving Stripe subscription:", error);
             return NextResponse.json(
-              { error: "Failed to retrieve subscription from Stripe. Please try clicking 'Refresh Status' first, then try again." },
+              {
+                error:
+                  "Failed to retrieve subscription from Stripe. Please try clicking 'Refresh Status' first, then try again.",
+              },
               { status: 400 }
             );
           }
@@ -347,7 +391,10 @@ export async function PATCH(request: NextRequest) {
 
       if (!customerId) {
         return NextResponse.json(
-          { error: "Unable to retrieve Stripe customer information. Please ensure your subscription is properly linked to Stripe." },
+          {
+            error:
+              "Unable to retrieve Stripe customer information. Please ensure your subscription is properly linked to Stripe.",
+          },
           { status: 400 }
         );
       }
@@ -358,7 +405,10 @@ export async function PATCH(request: NextRequest) {
       } catch (error) {
         console.error("Error creating portal session:", error);
         return NextResponse.json(
-          { error: "Failed to create Stripe customer portal session. Please try again later." },
+          {
+            error:
+              "Failed to create Stripe customer portal session. Please try again later.",
+          },
           { status: 500 }
         );
       }
@@ -371,7 +421,7 @@ export async function PATCH(request: NextRequest) {
         const plan = await prisma.plan.findUnique({
           where: { id: subscription.planId },
         });
-        
+
         if (plan && plan.price.toNumber() === 0) {
           // Re-fetch subscription with plan relation to ensure it's included
           const subscriptionWithPlan = await prisma.subscription.findUnique({
@@ -380,13 +430,13 @@ export async function PATCH(request: NextRequest) {
               plan: true,
             },
           });
-          
+
           return NextResponse.json({
             message: "Free plan subscriptions don't require Stripe sync",
             subscription: subscriptionWithPlan,
           });
         }
-        
+
         // Try to find the subscription in Stripe by looking up the customer
         // Get organization admin email to find Stripe customer
         const organization = await prisma.organization.findUnique({
@@ -402,7 +452,7 @@ export async function PATCH(request: NextRequest) {
 
         if (organization && organization.members.length > 0) {
           const adminEmail = organization.members[0].user.email;
-          
+
           try {
             // Search for customer by email
             const customers = await stripe.customers.list({
@@ -412,7 +462,7 @@ export async function PATCH(request: NextRequest) {
 
             if (customers.data.length > 0) {
               const customer = customers.data[0];
-              
+
               // Get the customer's subscriptions
               const subscriptions = await stripe.subscriptions.list({
                 customer: customer.id,
@@ -423,13 +473,13 @@ export async function PATCH(request: NextRequest) {
               if (subscriptions.data.length > 0) {
                 const stripeSubscription = subscriptions.data[0];
                 const priceId = stripeSubscription.items.data[0]?.price.id;
-                
+
                 console.log("Found Stripe subscription:", {
                   subscriptionId: stripeSubscription.id,
                   priceId,
                   status: stripeSubscription.status,
                 });
-                
+
                 // Find the plan by Stripe price ID
                 const foundPlan = await prisma.plan.findUnique({
                   where: { stripePriceId: priceId },
@@ -443,7 +493,7 @@ export async function PATCH(request: NextRequest) {
                   console.error("Plan not found for price ID:", priceId);
                   console.error("Available plans in database:", allPlans);
                   return NextResponse.json(
-                    { 
+                    {
                       error: `Plan not found for Stripe price ID: ${priceId}. Please update your plans with the correct Stripe price IDs.`,
                       availablePlans: allPlans,
                       stripePriceId: priceId,
@@ -468,13 +518,23 @@ export async function PATCH(request: NextRequest) {
                           : stripeSubscription.status === "past_due"
                           ? "PAST_DUE"
                           : "CANCELED",
-                      currentPeriodStart: (stripeSubscription as any).current_period_start
-                        ? new Date((stripeSubscription as any).current_period_start * 1000)
+                      currentPeriodStart: (stripeSubscription as any)
+                        .current_period_start
+                        ? new Date(
+                            (stripeSubscription as any).current_period_start *
+                              1000
+                          )
                         : null,
-                      currentPeriodEnd: (stripeSubscription as any).current_period_end
-                        ? new Date((stripeSubscription as any).current_period_end * 1000)
+                      currentPeriodEnd: (stripeSubscription as any)
+                        .current_period_end
+                        ? new Date(
+                            (stripeSubscription as any).current_period_end *
+                              1000
+                          )
                         : null,
-                      cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end || false,
+                      cancelAtPeriodEnd:
+                        (stripeSubscription as any).cancel_at_period_end ||
+                        false,
                     },
                     include: {
                       plan: true,
@@ -512,9 +572,12 @@ export async function PATCH(request: NextRequest) {
             console.error("Error looking up subscription in Stripe:", error);
           }
         }
-        
+
         return NextResponse.json(
-          { error: "No Stripe subscription ID found. This subscription is not linked to Stripe. If you recently purchased a plan, please wait a few moments and try again, or contact support." },
+          {
+            error:
+              "No Stripe subscription ID found. This subscription is not linked to Stripe. If you recently purchased a plan, please wait a few moments and try again, or contact support.",
+          },
           { status: 400 }
         );
       }
@@ -551,12 +614,15 @@ export async function PATCH(request: NextRequest) {
                 ? "PAST_DUE"
                 : "CANCELED",
             currentPeriodStart: (stripeSubscription as any).current_period_start
-              ? new Date((stripeSubscription as any).current_period_start * 1000)
+              ? new Date(
+                  (stripeSubscription as any).current_period_start * 1000
+                )
               : null,
             currentPeriodEnd: (stripeSubscription as any).current_period_end
               ? new Date((stripeSubscription as any).current_period_end * 1000)
               : null,
-            cancelAtPeriodEnd: (stripeSubscription as any).cancel_at_period_end || false,
+            cancelAtPeriodEnd:
+              (stripeSubscription as any).cancel_at_period_end || false,
           },
           include: {
             plan: true,
@@ -593,11 +659,8 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to manage subscription";
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to manage subscription";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

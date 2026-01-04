@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  requireMember,
   requireBoardAccess,
   requirePaidSubscription,
 } from "@/lib/auth";
@@ -36,19 +35,20 @@ export async function POST(request: NextRequest) {
     // Check if organization has a paid subscription
     try {
       await requirePaidSubscription(board.organizationId);
-    } catch (error: any) {
+    } catch (error) {
       return NextResponse.json(
         {
           error:
-            error.message ||
-            "AI features require a paid subscription (Pro or Enterprise)",
+            error instanceof Error
+              ? error.message
+              : "AI features require a paid subscription (Pro or Enterprise)",
         },
         { status: 403 }
       );
     }
 
     // Check board access - need MEMBER role to generate tasks
-    const { boardMember } = await requireBoardAccess(boardId, "MEMBER");
+    await requireBoardAccess(boardId, "MEMBER");
 
     const systemPrompt = `You are a project management assistant. Given a project description or requirements, break it down into actionable tasks. 
 Return a JSON array of tasks, each with:
@@ -76,7 +76,7 @@ Example format:
         userPrompt,
         systemPrompt
       );
-    } catch (error: any) {
+    } catch (error) {
       // If AI fails, try demo mode as fallback
       console.error("AI generation failed, falling back to demo mode:", error);
       try {
@@ -169,9 +169,12 @@ Example format:
     }
 
     return NextResponse.json({ tasks: createdTasks }, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Failed to generate tasks" },
+      {
+        error:
+          error instanceof Error ? error.message : "Failed to generate tasks",
+      },
       { status: 500 }
     );
   }
