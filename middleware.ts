@@ -26,7 +26,8 @@ export const config = {
      * - api/auth (NextAuth routes)
      * - api/github/webhook (GitHub webhooks - no auth required)
      * - api/stripe/webhook (Stripe webhooks - no auth required)
+     * - login, signup, forgot-password, reset-password (auth pages)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/auth|api/github/webhook|api/stripe/webhook|login|signup).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/auth|api/github/webhook|api/stripe/webhook|login|signup|forgot-password|reset-password).*)",
   ],
 };
