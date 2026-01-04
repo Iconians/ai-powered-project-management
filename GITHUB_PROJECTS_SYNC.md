@@ -15,6 +15,15 @@
 
 ## How to Set Up GitHub Projects Sync
 
+### Step 0: Reconnect GitHub Account (Required for Projects)
+
+**Important**: GitHub Projects require additional OAuth scopes (`read:project` and `write:project`). If you connected GitHub before this update, you need to reconnect:
+
+1. Go to your board
+2. Click "Connect GitHub" again
+3. Authorize the new scopes when prompted
+4. This will update your token with the required permissions
+
 ### Step 1: Get Your GitHub Project ID
 
 1. Go to your GitHub repository

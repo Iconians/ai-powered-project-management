@@ -47,16 +47,40 @@ export async function syncTaskToGitHubProject(
 
     const issueNodeId = issueData.repository.issue.id;
 
-    // Get the project and its fields
-    // Note: GitHub Project IDs need to be in the format: PVT_kwDO... or O_kgDO...
-    // The projectId in the database should be the numeric ID, but we need the full node ID
-    // For now, we'll try to construct it, but users may need to provide the full node ID
-    const projectNodeId = `PVT_kwDOQx2LLM${projectId}`; // This is a placeholder format
+    // Get the project using owner and project number
+    // This works for both user and organization projects
+    // First, try as a user project, then as an organization project
+    const userProjectQuery = `
+      query GetUserProject($login: String!, $number: Int!) {
+        user(login: $login) {
+          projectV2(number: $number) {
+            id
+            title
+            fields(first: 20) {
+              nodes {
+                ... on ProjectV2Field {
+                  id
+                  name
+                }
+                ... on ProjectV2SingleSelectField {
+                  id
+                  name
+                  options {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
 
-    const projectQuery = `
-      query GetProject($projectId: ID!) {
-        node(id: $projectId) {
-          ... on ProjectV2 {
+    const orgProjectQuery = `
+      query GetOrgProject($login: String!, $number: Int!) {
+        organization(login: $login) {
+          projectV2(number: $number) {
             id
             title
             fields(first: 20) {
@@ -82,27 +106,38 @@ export async function syncTaskToGitHubProject(
 
     let project;
     try {
-      const projectData: any = await githubClient.graphql(projectQuery, {
-        projectId: projectNodeId,
-      });
-      project = projectData.node;
-    } catch (error) {
-      // If the constructed ID doesn't work, try using the numeric ID directly
-      // Some projects might use a different format
-      console.warn(
-        `Failed to fetch project with ID ${projectNodeId}, trying alternative format`
+      // Try user project first
+      const userProjectData: any = await githubClient.graphql(
+        userProjectQuery,
+        {
+          login: owner,
+          number: projectId,
+        }
       );
-      try {
-        const projectData: any = await githubClient.graphql(projectQuery, {
-          projectId: `O_kgDO${projectId}`, // Alternative format for organization projects
-        });
-        project = projectData.node;
-      } catch (error2) {
-        console.error("Failed to fetch GitHub Project:", error2);
+      project = userProjectData.user?.projectV2;
+
+      // If not found, try organization project
+      if (!project) {
+        const orgProjectData: any = await githubClient.graphql(
+          orgProjectQuery,
+          {
+            login: owner,
+            number: projectId,
+          }
+        );
+        project = orgProjectData.organization?.projectV2;
+      }
+    } catch (error: any) {
+      console.error("Failed to fetch GitHub Project:", error);
+      const errorMessage = error?.errors?.[0]?.message || error.message;
+      if (errorMessage.includes("read:project")) {
         throw new Error(
-          `Project ${projectId} not found. Make sure the project ID is correct and the project exists.`
+          `Missing required GitHub scope: read:project. Please reconnect your GitHub account to grant project access.`
         );
       }
+      throw new Error(
+        `Project ${projectId} not found for ${owner}. Make sure the project ID is correct and the project exists. Error: ${errorMessage}`
+      );
     }
 
     if (!project) {
