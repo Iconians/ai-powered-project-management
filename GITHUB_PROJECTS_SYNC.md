@@ -69,11 +69,21 @@ If these don't exist, GitHub will create them automatically, or you can add them
 1. When you create a task in the app → Creates a GitHub issue
 2. If `githubProjectId` is set → Adds the issue to the GitHub Project
 3. Sets the project item status based on task status
+4. Updates the issue label to match the project status (for bidirectional sync)
 
-### Task Updates
+### Task Updates (App → GitHub)
 1. When you move a task to a different column → Updates GitHub issue labels
-2. If `githubProjectId` is set → Updates the project item status
+2. If `githubProjectId` is set → Updates the project item status AND issue label
 3. When you assign/unassign → Updates GitHub issue assignees
+
+### Task Updates (GitHub → App)
+**Important**: Personal GitHub accounts don't receive `projects_v2_item` webhook events. To sync changes from GitHub Projects back to the app:
+
+1. **Via Issue Labels**: When you move an item in GitHub Project, the issue label is automatically updated to match the project status. The `labeled`/`unlabeled` webhook events will sync the change back to the app.
+
+2. **Manual Sync**: If labels don't update automatically, you can manually change the issue label in GitHub, which will trigger a webhook and sync to the app.
+
+**Note**: For organization accounts, `projects_v2_item` webhook events are available and will automatically sync project status changes.
 
 ### Status Mapping
 
