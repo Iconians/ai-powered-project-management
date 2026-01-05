@@ -88,11 +88,15 @@ async function main() {
   console.log("Created plans:");
   console.log(`  - ${freePlan.name}: $${freePlan.price}/${freePlan.interval}`);
   console.log(`  - ${proPlan.name}: $${proPlan.price}/${proPlan.interval}`);
-  console.log(`  - ${enterprisePlan.name}: $${enterprisePlan.price}/${enterprisePlan.interval}`);
+  console.log(
+    `  - ${enterprisePlan.name}: $${enterprisePlan.price}/${enterprisePlan.interval}`
+  );
 
   // Create free plan subscriptions for all existing organizations
-  console.log("\nCreating free plan subscriptions for existing organizations...");
-  
+  console.log(
+    "\nCreating free plan subscriptions for existing organizations..."
+  );
+
   const organizations = await prisma.organization.findMany({
     include: {
       subscriptions: true,
@@ -125,5 +129,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
-
-
