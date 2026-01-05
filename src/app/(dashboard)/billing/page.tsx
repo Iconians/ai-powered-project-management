@@ -351,29 +351,60 @@ export default function BillingPage() {
                   </div>
                 )}
                 <div className="flex flex-col sm:flex-row gap-2">
-                  <button
-                    onClick={() =>
-                      syncSubscriptionMutation.mutate(selectedOrgId!)
+                  {/* Only show Refresh Status for paid plans */}
+                  {(() => {
+                    // Handle Decimal type from Prisma
+                    const priceValue = subscription?.plan?.price;
+                    let planPrice = 0;
+                    if (priceValue) {
+                      if (
+                        typeof priceValue === "object" &&
+                        "toNumber" in priceValue
+                      ) {
+                        planPrice = (
+                          priceValue as { toNumber: () => number }
+                        ).toNumber();
+                      } else if (typeof priceValue === "number") {
+                        planPrice = priceValue;
+                      } else if (typeof priceValue === "string") {
+                        planPrice = parseFloat(priceValue) || 0;
+                      }
                     }
-                    disabled={syncSubscriptionMutation.isPending}
-                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
-                    title="Sync subscription status from Stripe"
-                  >
-                    {syncSubscriptionMutation.isPending
-                      ? "Syncing..."
-                      : "Refresh Status"}
-                  </button>
-                  <button
-                    onClick={() =>
-                      manageSubscriptionMutation.mutate(selectedOrgId!)
-                    }
-                    disabled={manageSubscriptionMutation.isPending}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {manageSubscriptionMutation.isPending
-                      ? "Loading..."
-                      : "Manage Subscription"}
-                  </button>
+                    const isPaidPlan = planPrice > 0;
+
+                    return (
+                      <>
+                        {isPaidPlan && (
+                          <button
+                            onClick={() =>
+                              syncSubscriptionMutation.mutate(selectedOrgId!)
+                            }
+                            disabled={syncSubscriptionMutation.isPending}
+                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                            title="Sync subscription status from Stripe"
+                          >
+                            {syncSubscriptionMutation.isPending
+                              ? "Syncing..."
+                              : "Refresh Status"}
+                          </button>
+                        )}
+                        {/* Only show Manage Subscription for paid plans with Stripe subscription */}
+                        {isPaidPlan && subscription?.stripeSubscriptionId && (
+                          <button
+                            onClick={() =>
+                              manageSubscriptionMutation.mutate(selectedOrgId!)
+                            }
+                            disabled={manageSubscriptionMutation.isPending}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {manageSubscriptionMutation.isPending
+                              ? "Loading..."
+                              : "Manage Subscription"}
+                          </button>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             )}

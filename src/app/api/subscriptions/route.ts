@@ -415,27 +415,28 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === "sync") {
-      // Manually sync subscription status from Stripe
-      if (!subscription.stripeSubscriptionId) {
-        // Check if this is a free plan (which doesn't need Stripe sync)
-        const plan = await prisma.plan.findUnique({
-          where: { id: subscription.planId },
+      // Check if this is a free plan (which doesn't need Stripe sync)
+      const plan = await prisma.plan.findUnique({
+        where: { id: subscription.planId },
+      });
+
+      if (plan && plan.price.toNumber() === 0) {
+        // Re-fetch subscription with plan relation to ensure it's included
+        const subscriptionWithPlan = await prisma.subscription.findUnique({
+          where: { organizationId },
+          include: {
+            plan: true,
+          },
         });
 
-        if (plan && plan.price.toNumber() === 0) {
-          // Re-fetch subscription with plan relation to ensure it's included
-          const subscriptionWithPlan = await prisma.subscription.findUnique({
-            where: { organizationId },
-            include: {
-              plan: true,
-            },
-          });
+        return NextResponse.json({
+          message: "Free plan subscriptions don't require Stripe sync",
+          subscription: subscriptionWithPlan,
+        });
+      }
 
-          return NextResponse.json({
-            message: "Free plan subscriptions don't require Stripe sync",
-            subscription: subscriptionWithPlan,
-          });
-        }
+      // Manually sync subscription status from Stripe
+      if (!subscription.stripeSubscriptionId) {
 
         // Try to find the subscription in Stripe by looking up the customer
         // Get organization admin email to find Stripe customer
