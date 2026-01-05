@@ -41,7 +41,7 @@ export default function BillingPage() {
 
   // Fetch subscription for selected organization
   const { data: subscription, isLoading: isLoadingSubscription } =
-    useQuery<Subscription>({
+    useQuery<Subscription | null>({
       queryKey: ["subscription", selectedOrgId],
       queryFn: async () => {
         if (!selectedOrgId) return null;
@@ -49,7 +49,10 @@ export default function BillingPage() {
           `/api/subscriptions?organizationId=${selectedOrgId}`
         );
         if (!res.ok) {
-          if (res.status === 404) return null;
+          if (res.status === 404) {
+            // Return null for 404 - we'll use Free plan as default
+            return null;
+          }
           throw new Error("Failed to fetch subscription");
         }
         return res.json();
@@ -255,7 +258,10 @@ export default function BillingPage() {
     );
   }
 
-  const currentPlan = subscription?.plan;
+  // Get current plan - use subscription plan if available, otherwise default to Free plan
+  const currentPlan =
+    subscription?.plan ||
+    (plans ? plans.find((p) => p.name === "Free") || null : null);
   const actualCounts = usage?.actualCounts || {
     boards: 0,
     members: 0,
@@ -301,11 +307,11 @@ export default function BillingPage() {
           </div>
         ) : (
           <>
-            {/* Current Subscription */}
-            {subscription && subscription.plan && (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+            {/* Current Subscription - Always show when organization is selected */}
+            {selectedOrgId && currentPlan && (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6 border border-gray-200 dark:border-gray-700">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Current Plan: {subscription.plan.name}
+                  Current Plan: {currentPlan.name}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                   <div>
@@ -342,7 +348,7 @@ export default function BillingPage() {
                     </div>
                   </div>
                 </div>
-                {subscription.currentPeriodEnd && (
+                {subscription?.currentPeriodEnd && (
                   <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                     Renews:{" "}
                     {new Date(
@@ -354,7 +360,7 @@ export default function BillingPage() {
                   {/* Only show Refresh Status for paid plans */}
                   {(() => {
                     // Handle Decimal type from Prisma
-                    const priceValue = subscription?.plan?.price;
+                    const priceValue = currentPlan?.price;
                     let planPrice = 0;
                     if (priceValue) {
                       if (
