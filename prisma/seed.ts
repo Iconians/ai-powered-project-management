@@ -20,12 +20,17 @@ async function main() {
       interval: "MONTHLY",
       maxBoards: 3,
       maxMembers: 5,
-      maxTasks: 50,
+      maxTasks: -1, // Unlimited tasks
       features: {
         aiTaskGeneration: false,
         aiSprintPlanning: false,
         realTimeUpdates: true,
         basicAutomation: false,
+        githubIntegration: false,
+        prioritySupport: false,
+        customIntegrations: false,
+        advancedAI: false,
+        slaGuarantees: false,
       },
       isActive: true,
     },
@@ -34,17 +39,22 @@ async function main() {
   const proPlan = await prisma.plan.create({
     data: {
       name: "Pro",
-      price: 29.99,
+      price: 19.99,
       interval: "MONTHLY",
       maxBoards: 20,
-      maxMembers: 25,
-      maxTasks: 1000,
+      maxMembers: 20,
+      maxTasks: -1, // Unlimited tasks
       features: {
         aiTaskGeneration: true,
         aiSprintPlanning: true,
         realTimeUpdates: true,
         basicAutomation: true,
         advancedReports: true,
+        githubIntegration: true,
+        prioritySupport: true,
+        customIntegrations: false,
+        advancedAI: false,
+        slaGuarantees: false,
       },
       isActive: true,
     },
@@ -53,7 +63,7 @@ async function main() {
   const enterprisePlan = await prisma.plan.create({
     data: {
       name: "Enterprise",
-      price: 99.99,
+      price: 49.99,
       interval: "MONTHLY",
       maxBoards: -1, // Unlimited
       maxMembers: -1, // Unlimited
@@ -65,8 +75,11 @@ async function main() {
         basicAutomation: true,
         advancedAutomation: true,
         advancedReports: true,
-        customIntegrations: true,
+        githubIntegration: true,
         prioritySupport: true,
+        customIntegrations: true,
+        advancedAI: true,
+        slaGuarantees: true,
       },
       isActive: true,
     },

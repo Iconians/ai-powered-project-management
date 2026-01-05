@@ -54,6 +54,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check organization limit for Free plan users
+    // Free plan users can only create 1 organization
+    const userOrganizations = await prisma.member.findMany({
+      where: {
+        userId: user.id,
+        role: "ADMIN", // Only count organizations where user is admin
+      },
+      include: {
+        organization: {
+          include: {
+            subscriptions: {
+              where: {
+                status: "ACTIVE",
+              },
+              include: {
+                plan: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Check if user already has a Free plan organization
+    const hasFreePlanOrg = userOrganizations.some((member) => {
+      const activeSubscription = member.organization.subscriptions.find(
+        (sub) => sub.status === "ACTIVE"
+      );
+      return activeSubscription && activeSubscription.plan.price.toNumber() === 0;
+    });
+
+    if (hasFreePlanOrg) {
+      return NextResponse.json(
+        {
+          error:
+            "Free plan allows only 1 organization. Please upgrade to Pro or Enterprise to create additional organizations.",
+        },
+        { status: 403 }
+      );
+    }
+
     // Get the free plan for new organizations
     const freePlan = await prisma.plan.findFirst({
       where: { name: "Free" },
