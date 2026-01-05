@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { TaskGenerator } from "../ai/TaskGenerator";
 import { SprintPlanner } from "../ai/SprintPlanner";
 import { CreateSprintModal } from "../sprints/CreateSprintModal";
 import { BoardMembersModal } from "./BoardMembersModal";
 import { GitHubRepoModal } from "./GitHubRepoModal";
+import { ManageColumnsModal } from "./ManageColumnsModal";
 
 interface BoardHeaderProps {
   boardId: string;
@@ -32,6 +33,42 @@ export function BoardHeader({
   const [showCreateSprint, setShowCreateSprint] = useState(false);
   const [showBoardMembers, setShowBoardMembers] = useState(false);
   const [showGitHubRepo, setShowGitHubRepo] = useState(false);
+  const [showManageColumns, setShowManageColumns] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState(boardName);
+  const queryClient = useQueryClient();
+
+  const updateBoardTitleMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const res = await fetch(`/api/boards/${boardId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to update board title");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+      setIsEditingTitle(false);
+    },
+    onError: () => {
+      setEditTitle(boardName); // Revert on error
+      setIsEditingTitle(false);
+    },
+  });
+
+  const handleSaveTitle = () => {
+    if (editTitle.trim() && editTitle.trim() !== boardName) {
+      updateBoardTitleMutation.mutate(editTitle.trim());
+    } else {
+      setIsEditingTitle(false);
+      setEditTitle(boardName);
+    }
+  };
 
   // Fetch active sprint
   const { data: activeSprint } = useQuery({
@@ -120,9 +157,43 @@ export function BoardHeader({
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
-              {boardName}
-            </h1>
+            {isEditingTitle &&
+            (userBoardRole === "ADMIN" || userBoardRole === "MEMBER") ? (
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="w-full px-2 py-1 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white bg-transparent border-b-2 border-blue-500 focus:outline-none"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleSaveTitle();
+                  } else if (e.key === "Escape") {
+                    setIsEditingTitle(false);
+                    setEditTitle(boardName);
+                  }
+                }}
+                onBlur={handleSaveTitle}
+              />
+            ) : (
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
+                  {boardName}
+                </h1>
+                {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
+                  <button
+                    onClick={() => {
+                      setIsEditingTitle(true);
+                      setEditTitle(boardName);
+                    }}
+                    className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm flex-shrink-0"
+                    title="Edit board title"
+                  >
+                    ✏️
+                  </button>
+                )}
+              </div>
+            )}
             {boardDescription && (
               <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
                 {boardDescription}
@@ -271,6 +342,14 @@ export function BoardHeader({
           currentRepoName={board?.githubRepoName}
           currentProjectId={board?.githubProjectId}
           onClose={() => setShowGitHubRepo(false)}
+        />
+      )}
+
+      {showManageColumns && (
+        <ManageColumnsModal
+          boardId={boardId}
+          userBoardRole={userBoardRole}
+          onClose={() => setShowManageColumns(false)}
         />
       )}
     </>

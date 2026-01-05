@@ -34,6 +34,11 @@ enum PlanInterval {
   YEARLY
 }
 
+enum InvitationType {
+  ORGANIZATION
+  BOARD
+}
+
 enum TaskPriority {
   LOW
   MEDIUM
@@ -85,6 +90,7 @@ model User {
   comments    Comment[]
   attachments Attachment[]
   reminders   Reminder[]
+  invitations Invitation[]
 
   @@index([email])
 }
@@ -101,6 +107,7 @@ model Organization {
   boards        Board[]
   subscriptions Subscription[]
   usage         Usage[]
+  invitations   Invitation[]
 
   @@index([slug])
 }
@@ -160,6 +167,7 @@ model Board {
   tasks        Task[]
   statuses     TaskStatusColumn[]
   boardMembers BoardMember[]
+  invitations  Invitation[]
 
   @@index([organizationId])
   @@index([teamId])
@@ -376,4 +384,29 @@ model Usage {
 
   @@unique([organizationId, metric, period])
   @@index([organizationId])
+}
+
+model Invitation {
+  id             String         @id @default(cuid())
+  type           InvitationType
+  email          String
+  token          String         @unique
+  organizationId String?
+  boardId        String?
+  role           MemberRole     @default(MEMBER)
+  invitedBy      String
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  board        Board?        @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  inviter      User          @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@index([email])
+  @@index([token])
+  @@index([organizationId])
+  @@index([boardId])
+  @@index([expiresAt])
 }

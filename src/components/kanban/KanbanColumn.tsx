@@ -82,7 +82,10 @@ export function KanbanColumn({
           items={tasks.map((t) => t.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-2 max-h-[80vh] overflow-y-auto flex-1 scroll-smooth">
+          <div
+            className="space-y-2 max-h-[80vh] overflow-y-auto flex-1 scroll-smooth"
+            style={{ touchAction: "pan-y" }} // Allow vertical scrolling
+          >
             {tasks.map((task) => (
               <TaskCard
                 key={task.id}

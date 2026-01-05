@@ -1,98 +1,83 @@
 /**
- * Security logging utility for tracking authentication failures and suspicious activities
+ * Security event logger
+ * In production, this should integrate with your logging service (e.g., Sentry, LogRocket, etc.)
  */
 
-interface SecurityLogEntry {
-  type: "auth_failure" | "rate_limit" | "suspicious_activity";
-  endpoint: string;
-  identifier: string; // IP, email, or user ID
-  details: Record<string, unknown>;
+interface SecurityEvent {
+  type: string;
+  path: string;
+  identifier: string;
+  metadata?: Record<string, any>;
   timestamp: Date;
 }
 
-// In-memory log store (in production, use a proper logging service)
-const securityLogs: SecurityLogEntry[] = [];
-const MAX_LOGS = 1000; // Keep last 1000 entries
-
 /**
- * Log security events
+ * Log security events for monitoring and alerting
  */
 export function logSecurityEvent(
-  type: SecurityLogEntry["type"],
-  endpoint: string,
+  type: string,
+  path: string,
   identifier: string,
-  details: Record<string, unknown> = {}
-): void {
-  const entry: SecurityLogEntry = {
+  metadata?: Record<string, any>
+) {
+  const event: SecurityEvent = {
     type,
-    endpoint,
+    path,
     identifier,
-    details,
+    metadata,
     timestamp: new Date(),
   };
 
-  securityLogs.push(entry);
-
-  // Keep only last MAX_LOGS entries
-  if (securityLogs.length > MAX_LOGS) {
-    securityLogs.shift();
-  }
-
-  // Log to console in development
+  // In development, log to console
   if (process.env.NODE_ENV === "development") {
-    console.log(`[SECURITY] ${type.toUpperCase()}:`, {
-      endpoint,
-      identifier,
-      details,
-      timestamp: entry.timestamp.toISOString(),
-    });
+    console.warn("[Security Event]", event);
+    return;
   }
 
-  // In production, send to logging service (e.g., Sentry, LogRocket, etc.)
-  if (process.env.NODE_ENV === "production") {
-    // TODO: Integrate with your logging service
-    // Example: Sentry.captureMessage(`Security event: ${type}`, { extra: entry });
-  }
+  // In production, you should:
+  // 1. Send to your logging service (Sentry, LogRocket, etc.)
+  // 2. Send alerts for critical events (e.g., rate limit violations, suspicious activity)
+  // 3. Store in database for audit trail
+  // 4. Integrate with monitoring tools
+
+  // Example: Send to external logging service
+  // if (process.env.SECURITY_WEBHOOK_URL) {
+  //   fetch(process.env.SECURITY_WEBHOOK_URL, {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify(event),
+  //   }).catch(console.error);
+  // }
+
+  // For now, log to console in production (replace with proper logging)
+  console.warn("[Security Event]", JSON.stringify(event));
 }
 
 /**
- * Get recent security logs (for monitoring/admin dashboard)
+ * Log authentication failures
  */
-export function getRecentSecurityLogs(
-  limit: number = 100,
-  type?: SecurityLogEntry["type"]
-): SecurityLogEntry[] {
-  let logs = [...securityLogs].reverse(); // Most recent first
-
-  if (type) {
-    logs = logs.filter((log) => log.type === type);
-  }
-
-  return logs.slice(0, limit);
+export function logAuthFailure(
+  email: string,
+  reason: string,
+  metadata?: Record<string, any>
+) {
+  logSecurityEvent("auth_failure", "/api/auth/callback/credentials", email, {
+    reason,
+    ...metadata,
+  });
 }
 
 /**
- * Check for suspicious patterns
+ * Log suspicious activity
  */
-export function detectSuspiciousActivity(identifier: string): boolean {
-  const recentLogs = securityLogs.filter(
-    (log) =>
-      log.identifier === identifier &&
-      log.timestamp > new Date(Date.now() - 60 * 60 * 1000) // Last hour
-  );
-
-  // Multiple auth failures in short time
-  const authFailures = recentLogs.filter(
-    (log) => log.type === "auth_failure"
-  ).length;
-
-  // Multiple rate limit hits
-  const rateLimitHits = recentLogs.filter(
-    (log) => log.type === "rate_limit"
-  ).length;
-
-  // Consider suspicious if:
-  // - More than 10 auth failures in an hour
-  // - More than 5 rate limit hits in an hour
-  return authFailures > 10 || rateLimitHits > 5;
+export function logSuspiciousActivity(
+  path: string,
+  identifier: string,
+  description: string,
+  metadata?: Record<string, any>
+) {
+  logSecurityEvent("suspicious_activity", path, identifier, {
+    description,
+    ...metadata,
+  });
 }

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logSecurityEvent } from "./security-logger";
 
+// Import env validation to ensure it runs
+import "./env-validation";
+
 // In-memory rate limit store (for development/single-instance)
 // In production with multiple instances, use Redis
 interface RateLimitEntry {

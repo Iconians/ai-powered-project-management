@@ -76,7 +76,9 @@ function LoginForm() {
             "Please verify your email address before logging in. Check your inbox for the verification email."
           );
         } else if (result.error === "CredentialsSignin") {
-          setError("Invalid email or password. Please check your credentials and try again.");
+          setError(
+            "Invalid email or password. Please check your credentials and try again."
+          );
         } else if (result.error.includes("Too many login attempts")) {
           setError(result.error);
         } else if (result.error.includes("Password must be at least")) {
@@ -211,6 +213,36 @@ function LoginForm() {
             >
               Forgot your password?
             </Link>
+            {error && error.includes("verify your email") && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await fetch("/api/auth/resend-verification", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ email }),
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                      setSuccess(
+                        "Verification email sent! Please check your inbox."
+                      );
+                      setError(null);
+                    } else {
+                      setError(
+                        data.error || "Failed to send verification email"
+                      );
+                    }
+                  } catch (err) {
+                    setError("Failed to send verification email");
+                  }
+                }}
+                className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400 underline"
+              >
+                Resend verification email
+              </button>
+            )}
             <Link
               href="/signup"
               className="text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"

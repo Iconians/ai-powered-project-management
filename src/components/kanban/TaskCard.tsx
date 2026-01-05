@@ -6,6 +6,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { TaskStatus } from "@prisma/client";
 import { AssignTaskModal } from "../tasks/AssignTaskModal";
+import { EditTaskModal } from "../tasks/EditTaskModal";
 
 interface Task {
   id: string;
@@ -48,6 +49,7 @@ export function TaskCard({
   userBoardRole,
 }: TaskCardProps) {
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const queryClient = useQueryClient();
   const {
     attributes,
@@ -109,13 +111,21 @@ export function TaskCard({
     isDone &&
     !isViewer &&
     (userBoardRole === "ADMIN" || userBoardRole === "MEMBER");
+  const canEdit =
+    !isViewer && (userBoardRole === "ADMIN" || userBoardRole === "MEMBER");
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowEditModal(true);
+  };
 
   return (
     <div
       ref={setNodeRef}
       style={{
         ...style,
-        touchAction: isViewer ? "auto" : "none", // Prevent default touch behaviors for dragging
+        // Allow vertical scrolling but prevent horizontal panning when not dragging
+        touchAction: isViewer ? "auto" : "pan-y", // Allow vertical scrolling, prevent horizontal panning
         WebkitTouchCallout: "none", // Prevent iOS callout menu
         WebkitUserSelect: "none", // Prevent text selection on iOS
         userSelect: "none", // Prevent text selection
@@ -136,17 +146,29 @@ export function TaskCard({
             </p>
           )}
         </div>
-        {canDelete && (
-          <button
-            onClick={handleDelete}
-            onTouchStart={(e) => e.stopPropagation()}
-            disabled={deleteTaskMutation.isPending}
-            className="ml-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm disabled:opacity-50 flex-shrink-0"
-            title="Delete task"
-          >
-            🗑️
-          </button>
-        )}
+        <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+          {canEdit && (
+            <button
+              onClick={handleEdit}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm"
+              title="Edit task"
+            >
+              ✏️
+            </button>
+          )}
+          {canDelete && (
+            <button
+              onClick={handleDelete}
+              onTouchStart={(e) => e.stopPropagation()}
+              disabled={deleteTaskMutation.isPending}
+              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm disabled:opacity-50"
+              title="Delete task"
+            >
+              🗑️
+            </button>
+          )}
+        </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
         <span
@@ -189,6 +211,16 @@ export function TaskCard({
           boardId={boardId}
           currentAssigneeId={task.assigneeId}
           onClose={() => setShowAssignModal(false)}
+        />
+      )}
+
+      {showEditModal && (
+        <EditTaskModal
+          taskId={task.id}
+          boardId={boardId}
+          currentTitle={task.title}
+          currentDescription={task.description}
+          onClose={() => setShowEditModal(false)}
         />
       )}
     </div>
