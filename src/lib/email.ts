@@ -4,7 +4,9 @@ import crypto from "crypto";
 // Resend configuration
 const resendApiKey = process.env.RESEND_API_KEY;
 const fromEmail =
-  process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM || "onboarding@resend.dev";
+  process.env.RESEND_FROM_EMAIL ||
+  process.env.SMTP_FROM ||
+  "onboarding@resend.dev";
 
 // Normalize NEXTAUTH_URL to remove trailing slash
 const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(

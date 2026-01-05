@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function NewOrganizationPage() {
+function NewOrganizationForm() {
+  const searchParams = useSearchParams();
+  const isOnboarding = searchParams?.get("onboarding") === "true";
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -40,13 +42,26 @@ export default function NewOrganizationPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-2xl mx-auto">
-        <Link
-          href="/boards"
-          className="text-sm sm:text-base text-blue-600 hover:text-blue-700 dark:text-blue-400 mb-4 inline-block"
-        >
-          ← Back to Boards
-        </Link>
+        {!isOnboarding && (
+          <Link
+            href="/boards"
+            className="text-sm sm:text-base text-blue-600 hover:text-blue-700 dark:text-blue-400 mb-4 inline-block"
+          >
+            ← Back to Boards
+          </Link>
+        )}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 lg:p-8">
+          {isOnboarding && (
+            <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                Welcome! 👋
+              </h2>
+              <p className="text-blue-800 dark:text-blue-200 text-sm">
+                To get started, create your first organization. Organizations
+                help you organize your projects and collaborate with your team.
+              </p>
+            </div>
+          )}
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-4 sm:mb-6">
             Create Organization
           </h1>
@@ -81,16 +96,40 @@ export default function NewOrganizationPage() {
               >
                 {loading ? "Creating..." : "Create Organization"}
               </button>
-              <Link
-                href="/boards"
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-center text-sm sm:text-base"
-              >
-                Cancel
-              </Link>
+              {!isOnboarding && (
+                <Link
+                  href="/boards"
+                  className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-center text-sm sm:text-base"
+                >
+                  Cancel
+                </Link>
+              )}
             </div>
           </form>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function NewOrganizationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+          <div className="max-w-2xl mx-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6 lg:p-8">
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded mb-4"></div>
+                <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <NewOrganizationForm />
+    </Suspense>
   );
 }

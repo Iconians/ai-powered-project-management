@@ -18,14 +18,14 @@ export function AddMemberModal({
 
   const addMemberMutation = useMutation({
     mutationFn: async (data: { email: string; role: string }) => {
-      const res = await fetch(`/api/organizations/${organizationId}/members`, {
+      const res = await fetch(`/api/organizations/${organizationId}/invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || "Failed to add member");
+        throw new Error(error.error || "Failed to send invitation");
       }
       return res.json();
     },
@@ -68,7 +68,8 @@ export function AddMemberModal({
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              User must have an account. They can sign up at /signup
+              If the user doesn't have an account, they'll receive an invitation
+              email to sign up.
             </p>
           </div>
           <div>
@@ -104,13 +105,19 @@ export function AddMemberModal({
               disabled={addMemberMutation.isPending || !email.trim()}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {addMemberMutation.isPending ? "Adding..." : "Add Member"}
+              {addMemberMutation.isPending ? "Sending..." : "Send Invitation"}
             </button>
           </div>
         </form>
         {addMemberMutation.isError && (
           <div className="mt-4 text-red-600 dark:text-red-400 text-sm">
-            {addMemberMutation.error?.message || "Failed to add member"}
+            {addMemberMutation.error?.message || "Failed to send invitation"}
+          </div>
+        )}
+        {addMemberMutation.isSuccess && (
+          <div className="mt-4 text-green-600 dark:text-green-400 text-sm">
+            Invitation sent successfully!{" "}
+            {addMemberMutation.data?.message || ""}
           </div>
         )}
       </div>

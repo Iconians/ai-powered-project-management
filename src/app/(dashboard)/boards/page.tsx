@@ -74,6 +74,11 @@ export default async function BoardsPage() {
     }
   }
 
+  // Check if user has no organizations - redirect to create one
+  if (organizations.length === 0) {
+    redirect("/organizations/new?onboarding=true");
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
@@ -87,6 +92,12 @@ export default async function BoardsPage() {
               className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base text-center"
             >
               Manage Organizations
+            </Link>
+            <Link
+              href="/profile"
+              className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base text-center"
+            >
+              Profile
             </Link>
             <Link
               href="/organizations/new"
