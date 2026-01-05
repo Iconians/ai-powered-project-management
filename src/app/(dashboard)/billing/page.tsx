@@ -87,6 +87,7 @@ export default function BillingPage() {
       organizationId: string;
       planId: string;
     }) => {
+      console.log("Creating subscription with:", { organizationId, planId });
       const res = await fetch("/api/subscriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
