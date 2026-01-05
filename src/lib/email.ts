@@ -25,20 +25,42 @@ export async function sendEmail(
   text?: string
 ): Promise<void> {
   if (!resendApiKey || !resend) {
-    console.warn("Resend API key not configured, skipping email send");
+    console.warn("⚠️ Resend API key not configured, skipping email send");
+    console.warn("   Set RESEND_API_KEY and RESEND_FROM_EMAIL environment variables");
     return;
   }
 
+  // Validate fromEmail format (must be a valid email address)
+  if (!fromEmail || !fromEmail.includes("@")) {
+    console.error("❌ RESEND_FROM_EMAIL must be a valid email address (e.g., noreply@yourdomain.com)");
+    console.error(`   Current value: ${fromEmail || "not set"}`);
+    throw new Error("Invalid RESEND_FROM_EMAIL: must be a valid email address");
+  }
+
   try {
-    await resend.emails.send({
+    const result = await resend.emails.send({
       from: fromEmail,
       to,
       subject,
       html,
       text: text || html.replace(/<[^>]*>/g, ""), // Strip HTML for text version
     });
+
+    if (result.error) {
+      console.error("❌ Resend API error:", result.error);
+      throw new Error(`Resend API error: ${JSON.stringify(result.error)}`);
+    }
+
+    console.log(`✅ Email sent successfully to ${to} (ID: ${result.data?.id || "unknown"})`);
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("❌ Error sending email:", error);
+    // Log more details for debugging
+    if (error instanceof Error) {
+      console.error("   Error message:", error.message);
+      console.error("   To:", to);
+      console.error("   From:", fromEmail);
+      console.error("   Subject:", subject);
+    }
     throw error;
   }
 }
