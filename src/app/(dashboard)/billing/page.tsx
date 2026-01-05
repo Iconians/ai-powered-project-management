@@ -416,73 +416,124 @@ export default function BillingPage() {
                   Available Plans
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {plans.map((plan) => (
-                    <div
-                      key={plan.id}
-                      className={`bg-white dark:bg-gray-800 rounded-lg shadow p-6 ${
-                        currentPlan?.id === plan.id
-                          ? "ring-2 ring-blue-500"
-                          : ""
-                      }`}
-                    >
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        {plan.name}
-                      </h3>
-                      <div className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                        ${plan.price}
-                        <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
-                          /{plan.interval.toLowerCase()}
-                        </span>
-                      </div>
-                      <ul className="space-y-2 mb-6 text-sm text-gray-600 dark:text-gray-400">
-                        <li>
-                          {plan.maxBoards === -1 ? "Unlimited" : plan.maxBoards}{" "}
-                          Boards
-                        </li>
-                        <li>
-                          {plan.maxMembers === -1
-                            ? "Unlimited"
-                            : plan.maxMembers}{" "}
-                          Members
-                        </li>
-                        <li>
-                          {plan.maxTasks === -1
-                            ? "Unlimited"
-                            : plan.maxTasks || "Unlimited"}{" "}
-                          Tasks
-                        </li>
-                        {plan.features.aiTaskGeneration && (
-                          <li>✓ AI Task Generation</li>
-                        )}
-                        {plan.features.aiSprintPlanning && (
-                          <li>✓ AI Sprint Planning</li>
-                        )}
-                      </ul>
-                      {currentPlan?.id === plan.id ? (
-                        <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-                          Current Plan
+                  {plans.map((plan) => {
+                    const isCurrentPlan = currentPlan?.id === plan.id;
+                    return (
+                      <div
+                        key={plan.id}
+                        className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 border-2 transition-all ${
+                          isCurrentPlan
+                            ? "border-blue-500 ring-2 ring-blue-500 ring-opacity-50"
+                            : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {plan.name}
+                          </h3>
+                          {isCurrentPlan && (
+                            <span className="px-2 py-1 text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded">
+                              Current
+                            </span>
+                          )}
                         </div>
-                      ) : (
-                        <button
-                          onClick={() =>
-                            createSubscriptionMutation.mutate({
-                              organizationId: selectedOrgId!,
-                              planId: plan.id,
-                            })
-                          }
-                          disabled={
-                            createSubscriptionMutation.isPending ||
-                            !selectedOrgId
-                          }
-                          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                        >
-                          {createSubscriptionMutation.isPending
-                            ? "Processing..."
-                            : "Subscribe"}
-                        </button>
-                      )}
-                    </div>
-                  ))}
+                        <div className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                          ${plan.price}
+                          <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
+                            /{plan.interval.toLowerCase()}
+                          </span>
+                        </div>
+                        <ul className="space-y-2 mb-6 text-sm text-gray-600 dark:text-gray-400">
+                          <li>
+                            {plan.maxBoards === -1
+                              ? "Unlimited"
+                              : plan.maxBoards}{" "}
+                            Boards
+                          </li>
+                          <li>
+                            {plan.maxMembers === -1
+                              ? "Unlimited"
+                              : plan.maxMembers}{" "}
+                            Members
+                          </li>
+                          <li>
+                            {plan.maxTasks === -1
+                              ? "Unlimited"
+                              : plan.maxTasks || "Unlimited"}{" "}
+                            Tasks
+                          </li>
+                          {plan.features.aiTaskGeneration && (
+                            <li className="flex items-center">
+                              <span className="text-green-500 mr-2">✓</span>
+                              AI Task Generation
+                            </li>
+                          )}
+                          {plan.features.aiSprintPlanning && (
+                            <li className="flex items-center">
+                              <span className="text-green-500 mr-2">✓</span>
+                              AI Sprint Planning
+                            </li>
+                          )}
+                          {plan.features.githubIntegration && (
+                            <li className="flex items-center">
+                              <span className="text-green-500 mr-2">✓</span>
+                              GitHub Integration
+                            </li>
+                          )}
+                          {plan.features.prioritySupport && (
+                            <li className="flex items-center">
+                              <span className="text-green-500 mr-2">✓</span>
+                              Priority Support
+                            </li>
+                          )}
+                          {plan.features.customIntegrations && (
+                            <li className="flex items-center">
+                              <span className="text-green-500 mr-2">✓</span>
+                              Custom Integrations
+                            </li>
+                          )}
+                          {plan.features.advancedAI && (
+                            <li className="flex items-center">
+                              <span className="text-green-500 mr-2">✓</span>
+                              Advanced AI Features
+                            </li>
+                          )}
+                          {plan.features.slaGuarantees && (
+                            <li className="flex items-center">
+                              <span className="text-green-500 mr-2">✓</span>
+                              SLA Guarantees
+                            </li>
+                          )}
+                        </ul>
+                        {isCurrentPlan ? (
+                          <button
+                            disabled
+                            className="w-full px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-lg cursor-not-allowed font-medium"
+                          >
+                            Current Plan
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              createSubscriptionMutation.mutate({
+                                organizationId: selectedOrgId!,
+                                planId: plan.id,
+                              })
+                            }
+                            disabled={
+                              createSubscriptionMutation.isPending ||
+                              !selectedOrgId
+                            }
+                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                          >
+                            {createSubscriptionMutation.isPending
+                              ? "Processing..."
+                              : "Subscribe"}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
