@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI-Powered Project Management",
-  description: "Jira-lite with AI automation",
+  title: "Intillitask Pro",
+  description: "AI-powered project management for your team",
 };
 
 export default function RootLayout({

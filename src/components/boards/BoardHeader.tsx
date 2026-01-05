@@ -201,6 +201,16 @@ export function BoardHeader({
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
+              <button
+                onClick={() => setShowManageColumns(true)}
+                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                title="Manage Columns"
+              >
+                <span>📊</span>
+                <span className="hidden sm:inline">Columns</span>
+              </button>
+            )}
             {userBoardRole === "ADMIN" && (
               <>
                 <button
