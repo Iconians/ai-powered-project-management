@@ -28,7 +28,7 @@ export function Navbar() {
               href="/boards"
               className="text-xl font-bold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
             >
-              Project Manager
+              Intellitask Pro
             </Link>
             <div className="hidden sm:flex items-center gap-4">
               <Link

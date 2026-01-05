@@ -3,10 +3,9 @@ import crypto from "crypto";
 
 // Resend configuration
 const resendApiKey = process.env.RESEND_API_KEY;
-const fromEmail =
-  process.env.RESEND_FROM_EMAIL ||
-  process.env.SMTP_FROM ||
-  "onboarding@resend.dev";
+const customFromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM;
+// Use default Resend domain for testing if custom domain not verified
+const fromEmail = customFromEmail || "onboarding@resend.dev";
 
 // Normalize NEXTAUTH_URL to remove trailing slash
 const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(
@@ -26,13 +25,17 @@ export async function sendEmail(
 ): Promise<void> {
   if (!resendApiKey || !resend) {
     console.warn("⚠️ Resend API key not configured, skipping email send");
-    console.warn("   Set RESEND_API_KEY and RESEND_FROM_EMAIL environment variables");
+    console.warn(
+      "   Set RESEND_API_KEY and RESEND_FROM_EMAIL environment variables"
+    );
     return;
   }
 
   // Validate fromEmail format (must be a valid email address)
   if (!fromEmail || !fromEmail.includes("@")) {
-    console.error("❌ RESEND_FROM_EMAIL must be a valid email address (e.g., noreply@yourdomain.com)");
+    console.error(
+      "❌ RESEND_FROM_EMAIL must be a valid email address (e.g., noreply@yourdomain.com)"
+    );
     console.error(`   Current value: ${fromEmail || "not set"}`);
     throw new Error("Invalid RESEND_FROM_EMAIL: must be a valid email address");
   }
@@ -47,11 +50,28 @@ export async function sendEmail(
     });
 
     if (result.error) {
+      // Check if it's a domain verification error
+      if (result.error.message?.includes("domain is not verified")) {
+        console.error("❌ Resend domain verification error:");
+        console.error(
+          `   Domain "${fromEmail.split("@")[1]}" is not verified in Resend`
+        );
+        console.error("   Options:");
+        console.error("   1. Verify your domain at https://resend.com/domains");
+        console.error(
+          "   2. Use 'onboarding@resend.dev' for testing (remove RESEND_FROM_EMAIL from .env)"
+        );
+        console.error("   3. Or set RESEND_FROM_EMAIL=onboarding@resend.dev");
+      }
       console.error("❌ Resend API error:", result.error);
       throw new Error(`Resend API error: ${JSON.stringify(result.error)}`);
     }
 
-    console.log(`✅ Email sent successfully to ${to} (ID: ${result.data?.id || "unknown"})`);
+    console.log(
+      `✅ Email sent successfully to ${to} (ID: ${
+        result.data?.id || "unknown"
+      })`
+    );
   } catch (error) {
     console.error("❌ Error sending email:", error);
     // Log more details for debugging
@@ -60,6 +80,17 @@ export async function sendEmail(
       console.error("   To:", to);
       console.error("   From:", fromEmail);
       console.error("   Subject:", subject);
+
+      // If it's a domain verification error, provide helpful guidance
+      if (error.message.includes("domain is not verified")) {
+        console.error("\n💡 Quick fix for testing:");
+        console.error(
+          "   Temporarily remove RESEND_FROM_EMAIL from .env.local"
+        );
+        console.error(
+          "   The app will use 'onboarding@resend.dev' which works without verification"
+        );
+      }
     }
     throw error;
   }
