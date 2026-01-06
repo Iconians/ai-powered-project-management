@@ -129,17 +129,17 @@ export function OrganizationMembers({
             members.map((member) => (
               <div
                 key={member.id}
-                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                className="flex items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden"
               >
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900 dark:text-white">
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-900 dark:text-white truncate">
                     {member.user.name || member.user.email}
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                     {member.user.email}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {isAdmin ? (
                     <select
                       value={member.role}
@@ -154,7 +154,7 @@ export function OrganizationMembers({
                     </select>
                   ) : (
                     <span
-                      className={`text-xs px-2 py-1 rounded ${
+                      className={`text-xs px-2 py-1 rounded whitespace-nowrap ${
                         member.role === "ADMIN"
                           ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
                           : member.role === "MEMBER"
@@ -169,7 +169,7 @@ export function OrganizationMembers({
                     <button
                       onClick={() => handleRemove(member.id, member.user.email)}
                       disabled={removeMemberMutation.isPending}
-                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm disabled:opacity-50"
+                      className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xs sm:text-sm disabled:opacity-50 whitespace-nowrap"
                     >
                       Remove
                     </button>

@@ -71,37 +71,37 @@ export function OrganizationsList({
                 key={org.id}
                 className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6"
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex-1">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                <div className="flex items-center justify-between gap-2 mb-4 overflow-hidden">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1 truncate">
                       {org.name}
                     </h2>
-                    <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-                      <span>
+                    <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400 flex-wrap">
+                      <span className="whitespace-nowrap">
                         {org._count.members} member
                         {org._count.members !== 1 ? "s" : ""}
                       </span>
-                      <span>•</span>
-                      <span>
+                      <span className="hidden sm:inline">•</span>
+                      <span className="whitespace-nowrap">
                         {org._count.boards} board
                         {org._count.boards !== 1 ? "s" : ""}
                       </span>
                       {isAdmin && (
                         <>
-                          <span>•</span>
-                          <span className="text-purple-600 dark:text-purple-400 font-medium">
+                          <span className="hidden sm:inline">•</span>
+                          <span className="text-purple-600 dark:text-purple-400 font-medium whitespace-nowrap">
                             Admin
                           </span>
                         </>
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       onClick={() => setExpandedOrgId(isExpanded ? null : org.id)}
-                      className="px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                      className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap"
                     >
-                      {isExpanded ? "Hide Members" : "Manage Members"}
+                      {isExpanded ? "Hide" : "Manage"}
                     </button>
                     {isAdmin && (
                       <OrganizationSettings organizationId={org.id} organizationName={org.name} />
