@@ -5,7 +5,7 @@ import { sendPasswordChangedEmail } from "@/lib/email";
 import { rateLimiters } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
-  // Rate limiting
+  
   const rateLimitResponse = await rateLimiters.passwordReset(request);
   if (rateLimitResponse) {
     return rateLimitResponse;
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Enhanced password validation
+    
     if (password.length < 12) {
       return NextResponse.json(
         { error: "Password must be at least 12 characters long" },
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check password complexity
+    
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Find user with this token
+    
     const user = await prisma.user.findUnique({
       where: { passwordResetToken: token },
     });
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if token has expired (1 hour)
+    
     if (
       user.passwordResetTokenExpires &&
       user.passwordResetTokenExpires < new Date()
@@ -71,10 +71,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash new password
+    
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Update password and clear reset token
+    
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -84,12 +84,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send password changed confirmation email
+    
     try {
       await sendPasswordChangedEmail(user);
     } catch (emailError) {
       console.error("Failed to send password changed email:", emailError);
-      // Don't fail the request if email fails
+      
     }
 
     return NextResponse.json({

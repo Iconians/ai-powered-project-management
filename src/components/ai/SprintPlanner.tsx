@@ -66,7 +66,7 @@ export function SprintPlanner({
 
   const applySuggestionMutation = useMutation({
     mutationFn: async (taskIds: string[]) => {
-      // Update tasks to assign them to the sprint
+      
       const results = await Promise.allSettled(
         taskIds.map((taskId) =>
           fetch(`/api/tasks/${taskId}`, {
@@ -83,7 +83,7 @@ export function SprintPlanner({
         )
       );
 
-      // Check for failures
+      
       const failures = results.filter((r) => r.status === "rejected");
       if (failures.length > 0) {
         const errorMessages = failures
@@ -101,7 +101,7 @@ export function SprintPlanner({
     onSuccess: (_data, _variables) => {
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
       queryClient.invalidateQueries({ queryKey: ["sprints", boardId] });
-      // Don't close immediately, show success message first
+      
       setTimeout(() => {
         onClose();
       }, 2000);

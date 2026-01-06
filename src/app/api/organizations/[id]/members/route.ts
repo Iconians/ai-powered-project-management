@@ -19,10 +19,10 @@ export async function POST(
       );
     }
 
-    // Check if user is an ADMIN of the organization
+    
     await requireMember(id, "ADMIN");
 
-    // Check member limit
+    
     try {
       await requireLimit(id, "members");
     } catch (error) {
@@ -32,7 +32,7 @@ export async function POST(
       );
     }
 
-    // Find the user by email
+    
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -44,7 +44,7 @@ export async function POST(
       );
     }
 
-    // Check if user is already a member
+    
     const existingMember = await prisma.member.findUnique({
       where: {
         userId_organizationId: {
@@ -61,7 +61,7 @@ export async function POST(
       );
     }
 
-    // Add user as a member
+    
     const member = await prisma.member.create({
       data: {
         userId: user.id,
@@ -96,7 +96,7 @@ export async function GET(
   try {
     const { id } = await params;
     
-    // Check if user is a member of the organization
+    
     await requireMember(id);
 
     const members = await prisma.member.findMany({

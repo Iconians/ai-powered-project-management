@@ -37,7 +37,7 @@ export async function GET(
       return NextResponse.json({ error: "Sprint not found" }, { status: 404 });
     }
 
-    // Check board access - need at least VIEWER role to see sprints
+    
     await requireBoardAccess(sprint.boardId, "VIEWER");
 
     return NextResponse.json(sprint);
@@ -67,10 +67,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Sprint not found" }, { status: 404 });
     }
 
-    // Check board access - need MEMBER role to update sprints
+    
     await requireBoardAccess(sprint.boardId, "MEMBER");
 
-    // If activating this sprint, deactivate others
+    
     if (body.isActive === true && !sprint.isActive) {
       await prisma.sprint.updateMany({
         where: {
@@ -105,7 +105,7 @@ export async function PATCH(
       },
     });
 
-    // Emit Pusher event
+    
     try {
       await pusherServer.trigger(`board-${sprint.boardId}`, "sprint-updated", {
         sprint: updatedSprint,
@@ -140,14 +140,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Sprint not found" }, { status: 404 });
     }
 
-    // Check board access - need MEMBER role to delete sprints
+    
     await requireBoardAccess(sprint.boardId, "MEMBER");
 
     await prisma.sprint.delete({
       where: { id },
     });
 
-    // Emit Pusher event
+    
     try {
       await pusherServer.trigger(`board-${sprint.boardId}`, "sprint-deleted", {
         sprintId: id,

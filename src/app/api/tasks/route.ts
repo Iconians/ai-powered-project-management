@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Input validation: Prevent DoS via extremely long inputs
+    
     if (title.length > 500) {
       return NextResponse.json(
         { error: "Title must be less than 500 characters" },
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate priority enum
+    
     const validPriorities = ["LOW", "MEDIUM", "HIGH", "URGENT"];
     if (priority && !validPriorities.includes(priority)) {
       return NextResponse.json(
@@ -66,12 +66,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    // Check board access - need MEMBER role to create tasks
+    
     await requireBoardAccess(boardId, "MEMBER");
 
     const taskStatus = status || TaskStatus.TODO;
 
-    // Get the status column for this status
+    
     const statusColumn = await prisma.taskStatusColumn.findFirst({
       where: {
         boardId,
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Get max order for tasks in this status
+    
     const maxOrderTask = await prisma.task.findFirst({
       where: {
         boardId,
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Sync to GitHub if board has GitHub sync enabled
+    
     if (
       board.githubSyncEnabled &&
       board.githubAccessToken &&
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         const githubClient = getGitHubClient(board.githubAccessToken);
         const [owner, repo] = board.githubRepoName.split("/");
 
-        // Map status to label
+        
         const statusLabel =
           task.status === "DONE"
             ? "done"
@@ -154,10 +154,10 @@ export async function POST(request: NextRequest) {
           title: task.title,
           body: task.description || "",
           state: task.status === "DONE" ? "closed" : "open",
-          labels: [statusLabel], // Add status label when creating
+          labels: [statusLabel], 
         });
 
-        // Update task with GitHub issue number
+        
         await prisma.task.update({
           where: { id: task.id },
           data: {
@@ -169,9 +169,9 @@ export async function POST(request: NextRequest) {
           `✅ Created GitHub issue #${issueResponse.data.number} for task ${task.id}`
         );
 
-        // Sync to GitHub Project if project ID is set
-        // Note: This requires the board to have githubProjectId set
-        // The project ID should be the numeric ID from GitHub Project settings
+        
+        
+        
         if (board.githubProjectId) {
           try {
             const { syncTaskToGitHubProject } = await import(
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
             );
           } catch (projectError) {
             console.error("❌ Failed to sync to GitHub Project:", projectError);
-            // Don't fail if project sync fails
+            
           }
         }
       } catch (githubError) {
@@ -197,7 +197,7 @@ export async function POST(request: NextRequest) {
           "❌ Failed to create GitHub issue for task:",
           githubError
         );
-        // Log more details for debugging
+        
         if (githubError instanceof Error) {
           console.error("Error details:", {
             message: githubError.message,
@@ -206,11 +206,11 @@ export async function POST(request: NextRequest) {
             repoName: board.githubRepoName,
           });
         }
-        // Don't fail the request if GitHub sync fails
+        
       }
     }
 
-    // Emit Pusher event for real-time updates
+    
     try {
       await triggerPusherEvent(`board-${boardId}`, "task-created", {
         taskId: task.id,
@@ -218,8 +218,8 @@ export async function POST(request: NextRequest) {
         status: task.status,
       });
     } catch (pusherError) {
-      // Error already logged in triggerPusherEvent
-      // Don't fail the request if Pusher fails
+      
+      
     }
 
     return NextResponse.json(task, { status: 201 });
@@ -252,7 +252,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    // Check board access - need at least VIEWER role to see tasks
+    
     await requireBoardAccess(boardId, "VIEWER");
 
     const tasks = await prisma.task.findMany({

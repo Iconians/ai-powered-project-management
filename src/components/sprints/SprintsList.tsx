@@ -44,7 +44,7 @@ export function SprintsList({ boardId, userBoardRole }: SprintsListProps) {
     refetchOnReconnect: true,
   });
 
-  // Real-time updates for sprint changes
+  
   useRealtime({
     channelName: `board-${boardId}`,
     eventName: "sprint-created",
@@ -152,7 +152,7 @@ export function SprintsList({ boardId, userBoardRole }: SprintsListProps) {
         const progressPercentage =
           totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
-        // Calculate total estimated and actual hours
+        
         const totalEstimatedHours = sprint.tasks.reduce(
           (sum, task) => sum + (task.estimatedHours || 0),
           0

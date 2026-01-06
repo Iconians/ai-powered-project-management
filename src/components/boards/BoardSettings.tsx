@@ -7,14 +7,14 @@ import { useRouter } from "next/navigation";
 interface BoardSettingsProps {
   boardId: string;
   boardName: string;
-  organizationId?: string; // Optional, not used but kept for future use
+  organizationId?: string; 
   isOrgAdmin: boolean;
 }
 
 export function BoardSettings({
   boardId,
   boardName,
-  organizationId: _organizationId, // Prefix with _ to indicate intentionally unused
+  organizationId: _organizationId, 
   isOrgAdmin,
 }: BoardSettingsProps) {
   const [showModal, setShowModal] = useState(false);
@@ -88,7 +88,7 @@ export function BoardSettings({
   };
 
   if (!isOrgAdmin) {
-    return null; // Only org admins can manage boards
+    return null; 
   }
 
   if (!showModal) {

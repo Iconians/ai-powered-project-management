@@ -62,7 +62,7 @@ export function EditTaskModal({
     setDescription(currentDescription ?? "");
   }, [currentTitle, currentDescription]);
 
-  // Ensure description is always a string
+  
   const descriptionValue = description ?? "";
 
   const handleSubmit = (e: React.FormEvent) => {

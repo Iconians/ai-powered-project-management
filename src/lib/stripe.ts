@@ -42,7 +42,7 @@ export async function createCheckoutSession(
     },
     subscription_data: {
       metadata: {
-        organizationId, // This ensures the subscription has the metadata
+        organizationId,
       },
     },
   });

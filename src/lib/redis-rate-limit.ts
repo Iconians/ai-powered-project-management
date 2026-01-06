@@ -1,21 +1,20 @@
-/**
- * Redis-based rate limiting for production
- * Falls back to in-memory rate limiting if Redis is not available
- *
- * To use Redis rate limiting:
- * 1. Install redis: bun add redis
- * 2. Set REDIS_URL environment variable
- */
-
 import { rateLimit } from "./rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 
-// Check if Redis is available
-let redisClient: any = null;
+type RedisClient = {
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
+  on: (event: string, handler: (err: Error) => void) => void;
+  incr: (key: string) => Promise<number>;
+  expire: (key: string, seconds: number) => Promise<boolean>;
+  ttl: (key: string) => Promise<number>;
+};
+
+let redisClient: RedisClient | null = null;
 let redisAvailable = false;
 let redisInitialized = false;
 
-async function initRedis() {
+async function initRedis(): Promise<RedisClient | null> {
   if (redisInitialized) return redisClient;
   redisInitialized = true;
 
@@ -25,15 +24,12 @@ async function initRedis() {
   }
 
   try {
-    // Dynamically import Redis client (only if REDIS_URL is set)
-    // Note: redis package is optional - install with: bun add redis
-    // Use eval to prevent TypeScript from checking the import at compile time
-    let redisModule: any;
+    let redisModule: {
+      createClient: (options: { url: string }) => RedisClient;
+    } | null = null;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-implied-eval
       redisModule = await new Function('return import("redis")')();
     } catch (importError) {
-      // Redis package not installed - this is fine, we'll use in-memory
       return null;
     }
 
@@ -64,10 +60,6 @@ async function initRedis() {
   }
 }
 
-/**
- * Redis-based rate limiting
- * Uses Redis for distributed rate limiting across multiple instances
- */
 export async function redisRateLimit(
   req: NextRequest,
   config: {
@@ -76,17 +68,14 @@ export async function redisRateLimit(
     identifier?: (req: NextRequest) => string;
   }
 ) {
-  // Initialize Redis if not already done
   if (!redisClient && process.env.REDIS_URL) {
     await initRedis();
   }
 
-  // Fall back to in-memory rate limiting if Redis is not available
   if (!redisAvailable || !redisClient) {
     return rateLimit(req, config);
   }
 
-  // Get identifier
   const identifier =
     config.identifier?.(req) ||
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -98,15 +87,10 @@ export async function redisRateLimit(
   const windowMs = config.window * 1000;
 
   try {
-    // Use Redis INCR with expiration
     const count = await redisClient.incr(key);
-
-    // Set expiration on first request
     if (count === 1) {
       await redisClient.expire(key, config.window);
     }
-
-    // Check if rate limit exceeded
     if (count > config.limit) {
       const ttl = await redisClient.ttl(key);
       const retryAfter = ttl > 0 ? ttl : config.window;
@@ -127,48 +111,41 @@ export async function redisRateLimit(
         }
       );
     }
-
-    // Not rate limited - return null to continue
     return null;
   } catch (error) {
     console.error("Redis rate limit error:", error);
-    // Fall back to in-memory rate limiting on error
     return rateLimit(req, config);
   }
 }
 
-/**
- * Pre-configured Redis rate limiters
- * Automatically falls back to in-memory if Redis is not available
- */
 export const redisRateLimiters = {
   login: (req: NextRequest) =>
     redisRateLimit(req, {
       limit: 5,
-      window: 15 * 60, // 15 minutes
+      window: 15 * 60,
     }),
 
   signup: (req: NextRequest) =>
     redisRateLimit(req, {
       limit: 3,
-      window: 60 * 60, // 1 hour
+      window: 60 * 60,
     }),
 
   passwordReset: (req: NextRequest) =>
     redisRateLimit(req, {
       limit: 3,
-      window: 60 * 60, // 1 hour
+      window: 60 * 60,
     }),
 
   forgotPassword: (req: NextRequest) =>
     redisRateLimit(req, {
       limit: 3,
-      window: 60 * 60, // 1 hour
+      window: 60 * 60,
     }),
 
   api: (req: NextRequest) =>
     redisRateLimit(req, {
       limit: 100,
-      window: 60, // 1 minute
+      window: 60,
     }),
 };

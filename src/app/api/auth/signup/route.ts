@@ -5,7 +5,7 @@ import { generateToken, sendEmailVerificationEmail } from "@/lib/email";
 import { rateLimiters } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
-  // Rate limiting
+  
   const rateLimitResponse = await rateLimiters.signup(request);
   if (rateLimitResponse) {
     return rateLimitResponse;
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate email format
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Enhanced password validation
+    
     if (password.length < 12) {
       return NextResponse.json(
         { error: "Password must be at least 12 characters long" },
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check password complexity
+    
     const hasUpperCase = /[A-Z]/.test(password);
     const hasLowerCase = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate name length if provided
+    
     if (name && name.length > 100) {
       return NextResponse.json(
         { error: "Name must be less than 100 characters" },
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user already exists
+    
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -77,15 +77,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash password
+    
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate verification token
+    
     const verificationToken = generateToken();
     const tokenExpires = new Date();
-    tokenExpires.setHours(tokenExpires.getHours() + 24); // 24 hours
+    tokenExpires.setHours(tokenExpires.getHours() + 24); 
 
-    // Create user
+    
     const user = await prisma.user.create({
       data: {
         email,
@@ -97,12 +97,12 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send verification email
+    
     try {
       await sendEmailVerificationEmail(user, verificationToken);
     } catch (emailError) {
       console.error("Failed to send verification email:", emailError);
-      // Don't fail signup if email fails, but log it
+      
     }
 
     return NextResponse.json(

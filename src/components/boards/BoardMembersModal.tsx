@@ -46,16 +46,16 @@ export function BoardMembersModal({
     },
   });
 
-  // Get organization members to add to board
+  
   const { data: orgMembers } = useQuery<OrganizationMember[]>({
     queryKey: ["board", boardId, "org-members"],
     queryFn: async () => {
-      // First get the board to find organization
+      
       const boardRes = await fetch(`/api/boards/${boardId}`);
       if (!boardRes.ok) throw new Error("Failed to fetch board");
       const board = await boardRes.json();
 
-      // Then get organization members
+      
       const orgRes = await fetch(
         `/api/organizations/${board.organizationId}/members`
       );
@@ -151,7 +151,7 @@ export function BoardMembersModal({
     updateRoleMutation.mutate({ memberId, role: newRole });
   };
 
-  // Get members not yet added to board
+  
   const availableMembers =
     orgMembers?.filter(
       (orgMember) => !boardMembers?.some((bm) => bm.member.id === orgMember.id)

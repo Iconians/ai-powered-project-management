@@ -38,14 +38,12 @@ a {
   text-decoration: none;
 }
 
-/* Smooth transitions for theme changes */
 * {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
 
-/* Grid pattern background */
 .bg-grid-pattern {
   background-image: linear-gradient(
       to right,
@@ -65,8 +63,6 @@ a {
     linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
 }
 
-/* Custom Scrollbar Styles */
-/* Webkit browsers (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -94,17 +90,15 @@ a {
   background: rgba(75, 85, 99, 0.6);
 }
 
-/* Hide scrollbar by default, show on hover */
 .scrollbar-hide {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
-/* Show scrollbar on hover */
 .scrollbar-hover:hover::-webkit-scrollbar {
   display: block;
 }
@@ -131,7 +125,6 @@ a {
   background: rgba(75, 85, 99, 0.5);
 }
 
-/* Thin, modern scrollbar that appears on scroll/hover */
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
@@ -175,7 +168,6 @@ a {
   background: rgba(75, 85, 99, 0.5);
 }
 
-/* React DatePicker Custom Styles */
 .react-datepicker-wrapper {
   width: 100%;
 }

@@ -15,7 +15,7 @@ export function Navbar() {
     await signOut({ callbackUrl: "/login" });
   };
 
-  // Don't show navbar on auth pages or marketing pages
+  
   if (
     pathname?.startsWith("/login") ||
     pathname?.startsWith("/signup") ||
@@ -71,7 +71,7 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Dark Mode Toggle */}
+            {}
             <ThemeToggle />
 
             {session?.user && (
@@ -126,7 +126,7 @@ export function Navbar() {
           </div>
         </div>
 
-        {/* Mobile menu */}
+        {}
         <div className="sm:hidden pb-4">
           <div className="flex flex-col gap-2">
             <Link

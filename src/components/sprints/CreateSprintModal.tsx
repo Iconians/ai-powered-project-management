@@ -24,7 +24,7 @@ export function CreateSprintModal({
   const [isActive, setIsActive] = useState(false);
   const queryClient = useQueryClient();
 
-  // Set default dates (2 weeks from now)
+  
   useEffect(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

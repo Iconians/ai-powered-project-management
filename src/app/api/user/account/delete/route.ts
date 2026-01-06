@@ -7,7 +7,7 @@ export async function DELETE(_request: NextRequest) {
   try {
     const user = await requireAuth();
 
-    // Get all organizations where the user is a member
+    
     const userMemberships = await prisma.member.findMany({
       where: { userId: user.id },
       include: {
@@ -26,7 +26,7 @@ export async function DELETE(_request: NextRequest) {
       },
     });
 
-    // Check if user is the only admin in any organization with other members
+    
     const blockingOrganizations: string[] = [];
 
     for (const membership of userMemberships) {
@@ -37,7 +37,7 @@ export async function DELETE(_request: NextRequest) {
         );
         const totalMembers = organization.members.length;
 
-        // If user is the only admin AND there are other members, block deletion
+        
         if (allAdmins.length === 1 && totalMembers > 1) {
           blockingOrganizations.push(organization.name);
         }
@@ -56,7 +56,7 @@ export async function DELETE(_request: NextRequest) {
       );
     }
 
-    // Cancel Stripe subscriptions for organizations where user is admin
+    
     for (const membership of userMemberships) {
       if (membership.role === "ADMIN") {
         const organization = membership.organization;
@@ -67,7 +67,7 @@ export async function DELETE(_request: NextRequest) {
           ) {
             try {
               await cancelSubscription(subscription.stripeSubscriptionId);
-              // Update subscription status in database
+              
               await prisma.subscription.update({
                 where: { id: subscription.id },
                 data: {
@@ -80,22 +80,22 @@ export async function DELETE(_request: NextRequest) {
                 `Failed to cancel Stripe subscription ${subscription.stripeSubscriptionId}:`,
                 stripeError
               );
-              // Continue with deletion even if Stripe cancellation fails
+              
             }
           }
         }
       }
     }
 
-    // Track organization IDs the user was a member of for cleanup
+    
     const userOrganizationIds = userMemberships.map((m) => m.organizationId);
 
-    // Delete the user (this will cascade delete members, comments, attachments, reminders, invitations)
+    
     await prisma.user.delete({
       where: { id: user.id },
     });
 
-    // Clean up organizations that have no members left (only check organizations user was a member of)
+    
     for (const orgId of userOrganizationIds) {
       const org = await prisma.organization.findUnique({
         where: { id: orgId },
@@ -105,7 +105,7 @@ export async function DELETE(_request: NextRequest) {
       });
 
       if (org && org.members.length === 0) {
-        // This will cascade delete boards, subscriptions, usage, invitations
+        
         await prisma.organization.delete({
           where: { id: org.id },
         });

@@ -42,7 +42,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Rate limiting
+    
     const rateLimitResponse = await rateLimiters.api(request);
     if (rateLimitResponse) {
       return rateLimitResponse;
@@ -56,7 +56,7 @@ export async function PATCH(request: NextRequest) {
       password?: string;
     } = {};
 
-    // Update name if provided
+    
     if (name !== undefined) {
       if (name.length > 100) {
         return NextResponse.json(
@@ -67,7 +67,7 @@ export async function PATCH(request: NextRequest) {
       updateData.name = name || null;
     }
 
-    // Update password if provided
+    
     if (password !== undefined) {
       if (!currentPassword) {
         return NextResponse.json(
@@ -76,7 +76,7 @@ export async function PATCH(request: NextRequest) {
         );
       }
 
-      // Validate new password
+      
       if (password.length < 12) {
         return NextResponse.json(
           { error: "Password must be at least 12 characters long" },
@@ -101,7 +101,7 @@ export async function PATCH(request: NextRequest) {
         );
       }
 
-      // Verify current password
+      
       const dbUser = await prisma.user.findUnique({
         where: { id: user.id },
         select: { password: true },
@@ -119,11 +119,11 @@ export async function PATCH(request: NextRequest) {
         );
       }
 
-      // Hash new password
+      
       updateData.password = await bcrypt.hash(password, 10);
     }
 
-    // Update user
+    
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: updateData,

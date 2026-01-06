@@ -57,33 +57,33 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  // Disable drag/drop for VIEWERs
+  
   const isViewer = userBoardRole === "VIEWER";
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
       },
-      disabled: isViewer, // Disable drag for viewers
+      disabled: isViewer, 
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        // Use distance-based activation to distinguish scrolling from dragging
-        // Require 10px movement before activating drag - this prevents accidental drags during scrolling
+        
+        
         distance: 10,
       },
-      disabled: isViewer, // Disable drag for viewers
+      disabled: isViewer, 
     })
   );
-  // const isViewer = userBoardRole === "VIEWER";
-  // const sensors = useSensors(
-  //   useSensor(PointerSensor, {
-  //     activationConstraint: {
-  //       distance: 8,
-  //     },
-  //     disabled: isViewer, // Disable drag for viewers
-  //   })
-  // );
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
   const { data: board, isLoading } = useQuery<Board>({
     queryKey: ["board", boardId],
@@ -92,19 +92,19 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
       if (!res.ok) throw new Error("Failed to fetch board");
       return res.json();
     },
-    // Only refetch on window focus/reconnect, not aggressive polling
+    
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    // Disable automatic refetching - rely on mutations and Pusher real-time updates
+    
     refetchInterval: false,
   });
 
-  // Set up real-time updates via Pusher
+  
   useRealtime({
     channelName: `board-${boardId}`,
     eventName: "task-updated",
     callback: () => {
-      // Invalidate queries to refetch board data when a task is updated
+      
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
     },
   });
@@ -187,7 +187,7 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
     const { active, over } = event;
     setActiveId(null);
 
-    // Prevent drag/drop for VIEWERs
+    
     if (isViewer) {
       return;
     }
@@ -199,10 +199,10 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
     const taskId = active.id as string;
     const overId = over.id as string;
 
-    // Check if dropped on a status column (droppable)
+    
     const statusColumn = board.statuses.find((s) => s.id === overId);
 
-    // If dropped on another task, find which column that task belongs to
+    
     if (!statusColumn) {
       const droppedOnTask = board.tasks.find((t) => t.id === overId);
       if (droppedOnTask) {
@@ -234,12 +234,12 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
     }
 
     if (task.status === statusColumn.status) {
-      // Task is already in this column, might be reordering within column
-      // This is handled by the SortableContext
+      
+      
       return;
     }
 
-    // Calculate new order (place at end of new column)
+    
     const tasksInNewStatus = board.tasks.filter(
       (t) => t.status === statusColumn.status
     );
@@ -272,7 +272,7 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
   const activeTask = board.tasks.find((t) => t.id === activeId);
 
   const handleDragOver = () => {
-    // This helps with visual feedback during drag
+    
   };
 
   return (

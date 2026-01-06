@@ -1,8 +1,3 @@
-/**
- * Environment variable validation
- * Validates required environment variables at startup
- */
-
 interface EnvConfig {
   required: string[];
   optional: string[];
@@ -23,7 +18,7 @@ const envConfig: EnvConfig = {
     "NEXT_PUBLIC_PUSHER_CLUSTER",
     "RESEND_API_KEY",
     "RESEND_FROM_EMAIL",
-    // Legacy SMTP support (optional, for backward compatibility)
+
     "SMTP_HOST",
     "SMTP_PORT",
     "SMTP_USER",
@@ -47,22 +42,16 @@ const envConfig: EnvConfig = {
   ],
 };
 
-/**
- * Validate environment variables
- * @throws Error if required variables are missing
- */
 export function validateEnv() {
   const missing: string[] = [];
   const warnings: string[] = [];
 
-  // Check required variables
   for (const key of envConfig.required) {
     if (!process.env[key]) {
       missing.push(key);
     }
   }
 
-  // Check production-only variables
   if (process.env.NODE_ENV === "production") {
     for (const key of envConfig.productionOnly) {
       if (!process.env[key]) {
@@ -81,7 +70,6 @@ export function validateEnv() {
     console.warn("[Env Validation] Production warnings:", warnings.join(", "));
   }
 
-  // Validate specific formats
   if (
     process.env.NEXTAUTH_URL &&
     !process.env.NEXTAUTH_URL.startsWith("http")
@@ -102,16 +90,13 @@ export function validateEnv() {
   }
 }
 
-// Run validation on import (server-side only)
 if (typeof window === "undefined") {
   try {
     validateEnv();
   } catch (error) {
-    // In development, log the error but don't crash
     if (process.env.NODE_ENV === "development") {
       console.error("[Env Validation Error]", error);
     } else {
-      // In production, throw to prevent startup with invalid config
       throw error;
     }
   }

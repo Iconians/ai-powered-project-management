@@ -55,7 +55,7 @@ export async function GET(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Check board access - need at least VIEWER role to see tasks
+    
     await requireBoardAccess(task.boardId, "VIEWER");
 
     return NextResponse.json(task);
@@ -93,10 +93,10 @@ export async function PATCH(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Check board access - need MEMBER role to update tasks (including status changes and assignments)
+    
     await requireBoardAccess(task.boardId, "MEMBER");
 
-    // Handle status change - update status column
+    
     let statusColumnId = task.statusColumnId;
     if (body.status && body.status !== task.status) {
       const statusColumn = await prisma.taskStatusColumn.findFirst({
@@ -108,7 +108,7 @@ export async function PATCH(
       statusColumnId = statusColumn?.id || null;
     }
 
-    // Check if assignee changed
+    
     const assigneeChanged =
       body.assigneeId !== undefined && body.assigneeId !== task.assigneeId;
 
@@ -156,7 +156,7 @@ export async function PATCH(
       },
     });
 
-    // Send email notification if task was assigned
+    
     if (assigneeChanged && updatedTask.assignee && updatedTask.assignee.user) {
       try {
         await sendTaskAssignmentEmail(
@@ -166,11 +166,11 @@ export async function PATCH(
         );
       } catch (emailError) {
         console.error("Failed to send task assignment email:", emailError);
-        // Don't fail the request if email fails
+        
       }
     }
 
-    // Emit Pusher event for real-time updates
+    
     try {
       await triggerPusherEvent(`board-${task.boardId}`, "task-updated", {
         taskId: updatedTask.id,
@@ -178,20 +178,20 @@ export async function PATCH(
         status: updatedTask.status,
       });
     } catch (pusherError) {
-      // Error already logged in triggerPusherEvent
-      // Don't fail the request if Pusher fails
+      
+      
     }
 
-    // Sync to GitHub if board has GitHub sync enabled
-    // Always try to sync if GitHub is configured, even if githubIssueNumber doesn't exist yet
-    // (in case the initial creation failed but we want to retry)
+    
+    
+    
     if (
       updatedTask.board.githubSyncEnabled &&
       updatedTask.board.githubAccessToken &&
       updatedTask.board.githubRepoName
     ) {
       if (updatedTask.githubIssueNumber) {
-        // Task already has a GitHub issue, sync the update
+        
         try {
           await syncTaskToGitHub(updatedTask.id);
           console.log(
@@ -199,10 +199,10 @@ export async function PATCH(
           );
         } catch (githubError) {
           console.error("❌ Failed to sync task to GitHub:", githubError);
-          // Don't fail the request if GitHub sync fails
+          
         }
       } else {
-        // Task doesn't have a GitHub issue yet, create one
+        
         try {
           const githubClient = getGitHubClient(
             updatedTask.board.githubAccessToken
@@ -229,7 +229,7 @@ export async function PATCH(
             labels: [statusLabel],
           });
 
-          // Update task with GitHub issue number
+          
           await prisma.task.update({
             where: { id: updatedTask.id },
             data: {
@@ -245,7 +245,7 @@ export async function PATCH(
             "❌ Failed to create GitHub issue for task:",
             githubError
           );
-          // Don't fail the request if GitHub sync fails
+          
         }
       }
     }
@@ -283,10 +283,10 @@ export async function DELETE(
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    // Check board access - need MEMBER role to delete tasks
+    
     await requireBoardAccess(task.boardId, "MEMBER");
 
-    // Close GitHub issue if it exists and board has GitHub sync enabled
+    
     if (
       task.githubIssueNumber &&
       task.board.githubSyncEnabled &&
@@ -297,7 +297,7 @@ export async function DELETE(
         const githubClient = getGitHubClient(task.board.githubAccessToken);
         const [owner, repo] = task.board.githubRepoName.split("/");
 
-        // Close the GitHub issue (GitHub doesn't allow deleting issues)
+        
         await githubClient.rest.issues.update({
           owner,
           repo,
@@ -313,7 +313,7 @@ export async function DELETE(
           `❌ Failed to close GitHub issue #${task.githubIssueNumber} for task ${id}:`,
           githubError
         );
-        // Don't fail the request if GitHub sync fails
+        
       }
     }
 
@@ -321,14 +321,14 @@ export async function DELETE(
       where: { id },
     });
 
-    // Emit Pusher event for real-time updates
+    
     try {
       await triggerPusherEvent(`board-${task.boardId}`, "task-deleted", {
         taskId: id,
       });
     } catch (pusherError) {
-      // Error already logged in triggerPusherEvent
-      // Don't fail the request if Pusher fails
+      
+      
     }
 
     return NextResponse.json({ success: true });

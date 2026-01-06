@@ -55,7 +55,7 @@ export function GitHubRepoModal({
     const updateData: { githubRepoName?: string; githubProjectId?: number } =
       {};
 
-    // Validate and add repo name if provided
+    
     if (repoName.trim()) {
       if (!/^[\w\-\.]+\/[\w\-\.]+$/.test(repoName.trim())) {
         setError(
@@ -66,7 +66,7 @@ export function GitHubRepoModal({
       updateData.githubRepoName = repoName.trim();
     }
 
-    // Validate and add project ID if provided
+    
     if (projectId.trim()) {
       const projectIdNum = parseInt(projectId.trim(), 10);
       if (isNaN(projectIdNum) || projectIdNum <= 0) {
@@ -76,7 +76,7 @@ export function GitHubRepoModal({
       updateData.githubProjectId = projectIdNum;
     }
 
-    // At least one field must be provided
+    
     if (!updateData.githubRepoName && !updateData.githubProjectId) {
       setError("Either repository name or project ID is required");
       return;

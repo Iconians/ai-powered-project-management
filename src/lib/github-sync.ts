@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getGitHubClient } from "@/lib/github";
 import { TaskStatus } from "@prisma/client";
 
-// Type definitions for GitHub API
+
 interface GitHubIssueLabel {
   name: string;
   id?: number;
@@ -19,10 +19,10 @@ interface GitHubIssue {
   number: number;
   title: string;
   body?: string | null;
-  state: "open" | "closed" | string; // GitHub API can return other states
+  state: "open" | "closed" | string; 
   assignee?: GitHubIssueAssignee | null;
-  assignees?: GitHubIssueAssignee[] | null; // GitHub API can return null
-  // GitHub API can return labels as strings, objects, or mixed array
+  assignees?: GitHubIssueAssignee[] | null; 
+  
   labels?:
     | (string | GitHubIssueLabel | { name?: string; [key: string]: unknown })[]
     | null;
@@ -35,12 +35,12 @@ interface GitHubRepository {
   name: string;
 }
 
-// Map task status to GitHub issue state
+
 function mapStatusToGitHubState(status: TaskStatus): "open" | "closed" {
   return status === "DONE" ? "closed" : "open";
 }
 
-// Map task status to GitHub issue labels (for column tracking)
+
 function mapStatusToLabel(status: TaskStatus): string {
   const statusMap: Record<TaskStatus, string> = {
     TODO: "todo",
@@ -52,7 +52,7 @@ function mapStatusToLabel(status: TaskStatus): string {
   return statusMap[status] || "todo";
 }
 
-// Sync task update to GitHub issue
+
 export async function syncTaskToGitHub(taskId: string) {
   try {
     const task = await prisma.task.findUnique({
@@ -75,13 +75,13 @@ export async function syncTaskToGitHub(taskId: string) {
       !task.board.githubAccessToken ||
       !task.board.githubRepoName
     ) {
-      return; // Not synced or not configured
+      return; 
     }
 
     const githubClient = getGitHubClient(task.board.githubAccessToken);
     const [owner, repo] = task.board.githubRepoName.split("/");
 
-    // Update GitHub issue
+    
     const updateData = {
       owner,
       repo,
@@ -100,10 +100,10 @@ export async function syncTaskToGitHub(taskId: string) {
       }
     );
 
-    // Update assignee if task has one
+    
     if (task.assignee?.user?.githubUsername) {
       try {
-        // Get current assignees
+        
         const { data: issue } = await githubClient.rest.issues.get({
           owner,
           repo,
@@ -116,7 +116,7 @@ export async function syncTaskToGitHub(taskId: string) {
         );
 
         if (shouldAssign) {
-          // Remove existing assignees and add new one
+          
           if (currentAssignees.length > 0) {
             await githubClient.rest.issues.removeAssignees({
               owner,
@@ -138,15 +138,15 @@ export async function syncTaskToGitHub(taskId: string) {
         }
       } catch (error) {
         console.error("Failed to assign GitHub user:", error);
-        // Continue even if assignee sync fails
+        
       }
     } else if (task.assignee) {
-      // Task has assignee but no GitHub username - log warning
+      
       console.warn(
         `⚠️ Task ${task.id} has assignee ${task.assignee.user.email} but no GitHub username`
       );
     } else {
-      // Task has no assignee - remove any GitHub assignees
+      
       try {
         const { data: issue } = await githubClient.rest.issues.get({
           owner,
@@ -171,7 +171,7 @@ export async function syncTaskToGitHub(taskId: string) {
       }
     }
 
-    // Update labels to reflect status column
+    
     if (task.statusColumn) {
       const statusLabel = mapStatusToLabel(task.status);
       const { data: labels } = await githubClient.rest.issues.listLabelsOnIssue(
@@ -182,7 +182,7 @@ export async function syncTaskToGitHub(taskId: string) {
         }
       );
 
-      // Remove old status labels and add new one
+      
       const statusLabels = [
         "todo",
         "in-progress",
@@ -194,7 +194,7 @@ export async function syncTaskToGitHub(taskId: string) {
         .filter((l) => statusLabels.includes(l.name.toLowerCase()))
         .map((l) => l.name);
 
-      // Remove old labels
+      
       for (const label of labelsToRemove) {
         if (label !== statusLabel) {
           try {
@@ -205,12 +205,12 @@ export async function syncTaskToGitHub(taskId: string) {
               name: label,
             });
           } catch (error) {
-            // Label might not exist, continue
+            
           }
         }
       }
 
-      // Add new label
+      
       try {
         await githubClient.rest.issues.addLabels({
           owner,
@@ -219,13 +219,13 @@ export async function syncTaskToGitHub(taskId: string) {
           labels: [statusLabel],
         });
       } catch (error) {
-        // Label might not exist, create it first
+        
         try {
           await githubClient.rest.issues.createLabel({
             owner,
             repo,
             name: statusLabel,
-            color: "0e8a16", // Green
+            color: "0e8a16", 
           });
           await githubClient.rest.issues.addLabels({
             owner,
@@ -241,7 +241,7 @@ export async function syncTaskToGitHub(taskId: string) {
 
     await githubClient.rest.issues.update(updateData);
 
-    // Sync to GitHub Project if project ID is set
+    
     if (task.board.githubProjectId) {
       try {
         const { syncTaskToGitHubProject } = await import(
@@ -256,16 +256,16 @@ export async function syncTaskToGitHub(taskId: string) {
         );
       } catch (projectError) {
         console.error("Failed to sync to GitHub Project:", projectError);
-        // Don't fail if project sync fails
+        
       }
     }
   } catch (error) {
     console.error("Failed to sync task to GitHub:", error);
-    // Don't throw - sync failures shouldn't break the app
+    
   }
 }
 
-// Create or update task from GitHub issue
+
 export async function syncGitHubIssueToTask(
   issue: GitHubIssue,
   repository: GitHubRepository,
@@ -288,8 +288,8 @@ export async function syncGitHubIssueToTask(
       throw new Error("Board not found or GitHub not configured");
     }
 
-    // Fetch full issue data from GitHub to get current assignees
-    // The webhook payload might not always have complete assignee information
+    
+    
     const githubClient = getGitHubClient(board.githubAccessToken);
     const [owner, repo] = board.githubRepoName?.split("/") || [
       repository.owner.login,
@@ -309,14 +309,14 @@ export async function syncGitHubIssueToTask(
         "Failed to fetch full issue from GitHub, using webhook payload:",
         error
       );
-      // Continue with webhook payload if fetch fails
+      
     }
 
-    // Map GitHub issue state to task status
-    // Try to map based on labels first, then fall back to state
+    
+    
     let taskStatus: TaskStatus = fullIssue.state === "closed" ? "DONE" : "TODO";
 
-    // Check if issue has status labels
+    
     if (fullIssue.labels && Array.isArray(fullIssue.labels)) {
       const labelNames = fullIssue.labels
         .map((l) => {
@@ -336,11 +336,11 @@ export async function syncGitHubIssueToTask(
       else if (labelNames.includes("todo")) taskStatus = "TODO";
     }
 
-    // Find the appropriate status column
+    
     const statusColumn =
       board.statuses.find((s) => s.status === taskStatus) || board.statuses[0];
 
-    // Check if task already exists for this issue
+    
     const existingTask = await prisma.task.findFirst({
       where: {
         boardId,
@@ -348,10 +348,10 @@ export async function syncGitHubIssueToTask(
       },
     });
 
-    // Find assignee based on GitHub login
+    
     let assigneeId: string | null = null;
     if (fullIssue.assignee?.login) {
-      // Single assignee (legacy field)
+      
       const user = await prisma.user.findFirst({
         where: { githubUsername: fullIssue.assignee.login },
       });
@@ -362,7 +362,7 @@ export async function syncGitHubIssueToTask(
         assigneeId = member?.id || null;
       }
     } else if (fullIssue.assignees && fullIssue.assignees.length > 0) {
-      // Multiple assignees - use the first one
+      
       const firstAssignee = fullIssue.assignees[0];
       const user = await prisma.user.findFirst({
         where: { githubUsername: firstAssignee.login },
@@ -374,10 +374,10 @@ export async function syncGitHubIssueToTask(
         assigneeId = member?.id || null;
       }
     }
-    // If no assignees on GitHub, assigneeId will be null (unassigned)
+    
 
     if (existingTask) {
-      // Update existing task
+      
       const updatedTask = await prisma.task.update({
         where: { id: existingTask.id },
         data: {
@@ -385,7 +385,7 @@ export async function syncGitHubIssueToTask(
           description: fullIssue.body ?? null,
           status: taskStatus,
           statusColumnId: statusColumn.id,
-          assigneeId: assigneeId, // Update assignee based on GitHub issue
+          assigneeId: assigneeId, 
         },
       });
       console.log(
@@ -395,7 +395,7 @@ export async function syncGitHubIssueToTask(
       );
       return updatedTask;
     } else {
-      // Create new task
+      
       const newTask = await prisma.task.create({
         data: {
           title: fullIssue.title,
@@ -404,7 +404,7 @@ export async function syncGitHubIssueToTask(
           status: taskStatus,
           statusColumnId: statusColumn.id,
           githubIssueNumber: fullIssue.number,
-          assigneeId: assigneeId, // Set assignee based on GitHub issue
+          assigneeId: assigneeId, 
           order: 0,
         },
       });

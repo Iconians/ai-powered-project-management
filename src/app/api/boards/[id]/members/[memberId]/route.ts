@@ -18,7 +18,7 @@ export async function PATCH(
       );
     }
 
-    // Check that requester is org admin
+    
     const { orgMember } = await requireBoardAccess(boardId);
     
     if (orgMember.role !== "ADMIN") {
@@ -28,7 +28,7 @@ export async function PATCH(
       );
     }
 
-    // Update board member role
+    
     const boardMember = await prisma.boardMember.update({
       where: {
         boardId_memberId: {
@@ -77,7 +77,7 @@ export async function DELETE(
   try {
     const { id: boardId, memberId } = await params;
     
-    // Check that requester is org admin
+    
     const { orgMember } = await requireBoardAccess(boardId);
     
     if (orgMember.role !== "ADMIN") {
@@ -87,7 +87,7 @@ export async function DELETE(
       );
     }
 
-    // Prevent removing the last board admin
+    
     const boardAdmins = await prisma.boardMember.count({
       where: {
         boardId,

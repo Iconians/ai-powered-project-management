@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Input validation
+    
     if (name.length > 200) {
       return NextResponse.json(
         { error: "Board name must be less than 200 characters" },
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check board limit
+    
     try {
       await requireLimit(organizationId, "boards");
     } catch (error) {
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
         boardMembers: {
           create: {
             memberId: member.id,
-            role: "ADMIN", // Creator gets admin access
+            role: "ADMIN", 
           },
         },
       },
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get all boards in the organization
+    
     const allBoards = await prisma.board.findMany({
       where: {
         organizationId,
@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Filter to only boards the user has access to
+    
     const accessibleBoards = allBoards.filter(
       (board) => board.boardMembers.length > 0
     );

@@ -3,13 +3,10 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export type AIProvider = "demo" | "gemini" | "ollama" | "openai" | "anthropic";
 
-// Demo mode - completely free, no API calls
 function generateDemoTasks(description: string) {
-  // Simulate AI thinking delay
   const delay = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
 
-  // Simple rule-based task breakdown for demo
   const keywords = description.toLowerCase();
   const tasks: Array<{
     title: string;
@@ -136,7 +133,6 @@ function generateDemoTasks(description: string) {
       }
     );
   } else {
-    // Generic task breakdown
     tasks.push(
       {
         title: "Project planning and setup",
@@ -174,7 +170,6 @@ function generateDemoTasks(description: string) {
   return delay(1500).then(() => tasks);
 }
 
-// Google Gemini (Free tier: 15 requests per minute)
 async function generateWithGemini(
   prompt: string,
   systemPrompt?: string
@@ -186,7 +181,7 @@ async function generateWithGemini(
   }
 
   const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
-  // Use gemini-1.5-flash for better performance and lower cost (still free tier)
+
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
     generationConfig: {
@@ -203,7 +198,6 @@ async function generateWithGemini(
     const response = await result.response;
     return response.text();
   } catch (error) {
-    // Provide helpful error messages
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.includes("API_KEY")) {
       throw new Error(
@@ -219,22 +213,19 @@ async function generateWithGemini(
   }
 }
 
-// Ollama (Local, completely free)
 async function generateWithOllama(
   prompt: string,
   systemPrompt?: string
 ): Promise<string> {
-  // Security: Validate OLLAMA_URL to prevent SSRF attacks
   const rawOllamaUrl = process.env.OLLAMA_URL || "http://localhost:11434";
   let ollamaUrl: string;
 
   try {
     const url = new URL(rawOllamaUrl);
-    // Only allow localhost, 127.0.0.1, or private network addresses
+
     const hostname = url.hostname.toLowerCase();
     const allowedHosts = ["localhost", "127.0.0.1", "::1", "0.0.0.0"];
 
-    // Check if hostname is localhost or private IP
     const isLocalhost = allowedHosts.includes(hostname);
     const isPrivateIP = /^10\.|^172\.(1[6-9]|2[0-9]|3[01])\.|^192\.168\./.test(
       hostname
@@ -246,7 +237,6 @@ async function generateWithOllama(
       );
     }
 
-    // Only allow http/https protocols
     if (url.protocol !== "http:" && url.protocol !== "https:") {
       throw new Error("OLLAMA_URL must use http or https protocol");
     }
@@ -281,7 +271,6 @@ async function generateWithOllama(
   return data.response || "";
 }
 
-// OpenAI (paid, but included for completeness)
 async function generateWithOpenAI(
   prompt: string,
   systemPrompt?: string
@@ -307,7 +296,6 @@ async function generateWithOpenAI(
   return response.choices[0]?.message?.content || "";
 }
 
-// Anthropic (paid, but included for completeness)
 async function generateWithAnthropic(
   prompt: string,
   systemPrompt?: string
@@ -338,7 +326,6 @@ export async function generateWithAI(
 ): Promise<string> {
   switch (provider) {
     case "demo":
-      // For demo mode, return a simple response
       return JSON.stringify(await generateDemoTasks(prompt));
 
     case "gemini":

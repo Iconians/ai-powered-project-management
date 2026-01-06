@@ -10,7 +10,7 @@ export async function getPlan(organizationId: string) {
   });
 
   if (!subscription || subscription.status !== "ACTIVE") {
-    // Return free plan as default
+    
     const freePlan = await prisma.plan.findFirst({
       where: { name: "Free" },
     });
@@ -80,7 +80,7 @@ export async function checkGitHubIntegrationLimit(
   const plan = await getPlan(organizationId);
   const features = (plan.features as Record<string, unknown>) || {};
 
-  // Check if GitHub integration is enabled for this plan
+  
   if (!features.githubIntegration) {
     return {
       allowed: false,
@@ -89,13 +89,13 @@ export async function checkGitHubIntegrationLimit(
     };
   }
 
-  // Get the limit (default to Infinity for paid plans, 1 for free)
+  
   const maxGithubBoards =
     typeof features.maxGithubBoards === "number"
       ? features.maxGithubBoards
       : Infinity;
 
-  // Count boards with GitHub sync enabled in this organization
+  
   const boardsWithGitHub = await prisma.board.count({
     where: {
       organizationId,

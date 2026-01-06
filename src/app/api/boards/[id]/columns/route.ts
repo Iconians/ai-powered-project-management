@@ -13,7 +13,7 @@ export async function POST(
     const body = await request.json();
     const { name, status, order } = body;
 
-    // Check board access - need MEMBER role to create columns
+    
     await requireBoardAccess(boardId, "MEMBER");
 
     if (!name || !status) {
@@ -23,7 +23,7 @@ export async function POST(
       );
     }
 
-    // Validate status enum
+    
     const validStatuses = Object.values(TaskStatus);
     if (!validStatuses.includes(status)) {
       return NextResponse.json(
@@ -34,7 +34,7 @@ export async function POST(
       );
     }
 
-    // Check if status already exists for this board
+    
     const existingColumn = await prisma.taskStatusColumn.findUnique({
       where: {
         boardId_status: {
@@ -53,7 +53,7 @@ export async function POST(
       );
     }
 
-    // Get max order if order not provided
+    
     let columnOrder = order;
     if (columnOrder === undefined) {
       const maxOrderColumn = await prisma.taskStatusColumn.findFirst({
@@ -95,7 +95,7 @@ export async function GET(
   try {
     const { id: boardId } = await params;
 
-    // Check board access - need VIEWER role to see columns
+    
     await requireBoardAccess(boardId, "VIEWER");
 
     const columns = await prisma.taskStatusColumn.findMany({

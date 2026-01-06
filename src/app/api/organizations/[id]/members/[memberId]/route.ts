@@ -15,10 +15,10 @@ export async function PATCH(
       return NextResponse.json({ error: "role is required" }, { status: 400 });
     }
 
-    // Check if user is an ADMIN of the organization
+    
     await requireMember(id, "ADMIN");
 
-    // Get the member to check if they exist
+    
     const member = await prisma.member.findUnique({
       where: { id: memberId },
       include: {
@@ -37,7 +37,7 @@ export async function PATCH(
       );
     }
 
-    // Prevent removing the last admin
+    
     if (member.role === "ADMIN" && role !== "ADMIN") {
       const adminCount = await prisma.member.count({
         where: {
@@ -54,7 +54,7 @@ export async function PATCH(
       }
     }
 
-    // Update member role
+    
     const updatedMember = await prisma.member.update({
       where: { id: memberId },
       data: {
@@ -86,10 +86,10 @@ export async function DELETE(
   try {
     const { id, memberId } = await params;
 
-    // Check if user is an ADMIN of the organization
+    
     await requireMember(id, "ADMIN");
 
-    // Get the member to check if they exist
+    
     const member = await prisma.member.findUnique({
       where: { id: memberId },
       include: {
@@ -108,7 +108,7 @@ export async function DELETE(
       );
     }
 
-    // Prevent removing the last admin
+    
     const adminCount = await prisma.member.count({
       where: {
         organizationId: id,

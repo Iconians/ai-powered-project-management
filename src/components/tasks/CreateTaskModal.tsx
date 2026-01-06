@@ -70,13 +70,13 @@ export function CreateTaskModal({
       return res.json();
     },
     onMutate: async () => {
-      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      
       await queryClient.cancelQueries({ queryKey: ["board", boardId] });
 
-      // Snapshot the previous value
+      
       const previousBoard = queryClient.getQueryData<Board>(["board", boardId]);
 
-      // Optimistically update the board with the new task
+      
       if (previousBoard) {
         const status = (defaultStatus as TaskStatus) || "TODO";
         const tasksInStatus = previousBoard.tasks.filter(
@@ -84,7 +84,7 @@ export function CreateTaskModal({
         );
         const newOrder = tasksInStatus.length;
 
-        // Create optimistic task with temporary ID
+        
         const optimisticTask = {
           id: `temp-${Date.now()}`,
           title,
@@ -108,16 +108,16 @@ export function CreateTaskModal({
       return { previousBoard };
     },
     onError: (_error, _variables, context) => {
-      // Rollback to previous state on error
+      
       if (context?.previousBoard) {
         queryClient.setQueryData(["board", boardId], context.previousBoard);
       }
     },
     onSuccess: (data) => {
-      // Replace optimistic task with real task from server
+      
       queryClient.setQueryData<Board>(["board", boardId], (old) => {
         if (!old) return old;
-        // Remove optimistic task and add real task
+        
         const tasksWithoutTemp = old.tasks.filter(
           (task) => !task.id.startsWith("temp-")
         );
@@ -126,12 +126,12 @@ export function CreateTaskModal({
           tasks: [...tasksWithoutTemp, data],
         };
       });
-      // Invalidate to ensure we have the latest data
+      
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
       onClose();
     },
     onSettled: () => {
-      // Always refetch after error or success to ensure consistency
+      
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
     },
   });
