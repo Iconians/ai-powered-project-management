@@ -283,7 +283,7 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-2 sm:gap-4 p-2 sm:p-4 overflow-x-auto h-full">
+      <div className="flex flex-col md:flex-row gap-2 sm:gap-4 p-2 sm:p-4 overflow-y-auto md:overflow-x-auto md:overflow-y-visible h-full md:justify-center">
         {sortedStatuses.map((status) => {
           const columnTasks = board.tasks
             .filter((t) => t.status === status.status)
