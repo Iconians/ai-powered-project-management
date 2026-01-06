@@ -98,13 +98,18 @@ export function OrganizationsList({
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
-                      onClick={() => setExpandedOrgId(isExpanded ? null : org.id)}
+                      onClick={() =>
+                        setExpandedOrgId(isExpanded ? null : org.id)
+                      }
                       className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap"
                     >
                       {isExpanded ? "Hide" : "Manage"}
                     </button>
                     {isAdmin && (
-                      <OrganizationSettings organizationId={org.id} organizationName={org.name} />
+                      <OrganizationSettings
+                        organizationId={org.id}
+                        organizationName={org.name}
+                      />
                     )}
                   </div>
                 </div>
