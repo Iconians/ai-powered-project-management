@@ -152,6 +152,24 @@ export function BoardHeader({
     board?.githubAccessToken &&
     !board?.githubRepoName;
 
+  // Check GitHub integration limit
+  const { data: githubLimit } = useQuery({
+    queryKey: ["githubLimit", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return null;
+      const res = await fetch(
+        `/api/organizations/${organizationId}/github-limit`
+      );
+      if (!res.ok) return null;
+      return res.json();
+    },
+    enabled: !!organizationId && !isGitHubConnected,
+  });
+
+  const canConnectGitHub =
+    isGitHubConnected ||
+    (githubLimit?.allowed !== false && !githubLimit?.error);
+
   return (
     <>
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
@@ -230,7 +248,7 @@ export function BoardHeader({
                     <span>🔗</span>
                     <span className="hidden sm:inline">Set GitHub Repo</span>
                   </button>
-                ) : (
+                ) : canConnectGitHub ? (
                   <a
                     href={`/api/github/connect?boardId=${boardId}`}
                     className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm ${
@@ -247,6 +265,19 @@ export function BoardHeader({
                       {isGitHubConnected ? "GitHub" : "Connect GitHub"}
                     </span>
                   </a>
+                ) : (
+                  <button
+                    disabled
+                    className="px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-gray-400 text-white cursor-not-allowed flex items-center gap-1 sm:gap-2 shadow-md text-xs sm:text-sm"
+                    title={
+                      githubLimit?.limit === 1
+                        ? `GitHub integration limit reached (${githubLimit.current}/1). Upgrade to Pro or Enterprise for unlimited integrations.`
+                        : `GitHub integration limit reached. Please upgrade your plan.`
+                    }
+                  >
+                    <span>🔗</span>
+                    <span className="hidden sm:inline">Connect GitHub</span>
+                  </button>
                 )}
               </>
             )}

@@ -222,7 +222,8 @@ export function CreateTaskModal({
           <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400 text-sm">
             <p className="font-medium">Failed to create task</p>
             <p className="mt-1">
-              {createTaskMutation.error?.message || "An error occurred. The task was not created."}
+              {createTaskMutation.error?.message ||
+                "An error occurred. The task was not created."}
             </p>
           </div>
         )}

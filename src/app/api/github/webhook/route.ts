@@ -171,7 +171,6 @@ export async function POST(request: NextRequest) {
         const project = event.projects_v2_item?.project;
         let board = null;
 
-
         if (project?.number) {
           const projectNumber = parseInt(project.number);
           console.log(

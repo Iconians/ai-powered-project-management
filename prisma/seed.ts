@@ -26,7 +26,8 @@ async function main() {
         aiSprintPlanning: false,
         realTimeUpdates: true,
         basicAutomation: false,
-        githubIntegration: false,
+        githubIntegration: true, // Limited to 1 board
+        maxGithubBoards: 1, // Limit for free plan
         prioritySupport: false,
         customIntegrations: false,
         advancedAI: false,
