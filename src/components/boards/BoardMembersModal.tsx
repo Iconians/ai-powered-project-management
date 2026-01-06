@@ -200,18 +200,18 @@ export function BoardMembersModal({
                 boardMembers.map((boardMember) => (
                   <div
                     key={boardMember.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                    className="flex items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden"
                   >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 dark:text-white">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 dark:text-white truncate">
                         {boardMember.member.user.name ||
                           boardMember.member.user.email}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                         {boardMember.member.user.email}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <select
                         value={boardMember.role}
                         onChange={(e) =>
@@ -234,7 +234,7 @@ export function BoardMembersModal({
                           )
                         }
                         disabled={removeMemberMutation.isPending}
-                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm disabled:opacity-50"
+                        className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-xs sm:text-sm disabled:opacity-50 whitespace-nowrap"
                       >
                         Remove
                       </button>
@@ -271,17 +271,17 @@ export function BoardMembersModal({
                 {availableMembers.map((member) => (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+                    className="flex items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden"
                   >
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900 dark:text-white">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 dark:text-white truncate">
                         {member.user.name || member.user.email}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
                         {member.user.email}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <select
                         id={`role-${member.id}`}
                         className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -302,7 +302,7 @@ export function BoardMembersModal({
                           });
                         }}
                         disabled={addMemberMutation.isPending}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50"
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:opacity-50 whitespace-nowrap"
                       >
                         Add
                       </button>

@@ -162,15 +162,15 @@ export default async function BoardsPage() {
                   key={board.id}
                   className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
                 >
-                  <div className="flex items-start justify-between mb-2">
-                    <Link href={`/boards/${board.id}`} className="flex-1">
-                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400">
+                  <div className="flex items-start justify-between gap-2 mb-2 overflow-hidden">
+                    <Link href={`/boards/${board.id}`} className="flex-1 min-w-0">
+                      <h3 className="text-xl font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate">
                         {board.name}
                       </h3>
                     </Link>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <span
-                        className={`text-xs px-2 py-1 rounded ${
+                        className={`text-xs px-2 py-1 rounded whitespace-nowrap ${
                           board.userBoardRole === "ADMIN"
                             ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
                             : board.userBoardRole === "MEMBER"

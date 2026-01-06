@@ -215,7 +215,7 @@ export function ManageColumnsModal({
           {columns?.map((column) => (
             <div
               key={column.id}
-              className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              className="flex items-center gap-2 sm:gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden"
             >
               {editingColumnId === column.id ? (
                 <>
@@ -223,7 +223,7 @@ export function ManageColumnsModal({
                     type="text"
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -237,7 +237,7 @@ export function ManageColumnsModal({
                   <button
                     onClick={() => handleSaveEdit(column.id)}
                     disabled={updateColumnMutation.isPending}
-                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-xs sm:text-sm whitespace-nowrap flex-shrink-0"
                   >
                     Save
                   </button>
@@ -246,34 +246,34 @@ export function ManageColumnsModal({
                       setEditingColumnId(null);
                       setEditName("");
                     }}
-                    className="px-3 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 text-sm"
+                    className="px-3 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 text-xs sm:text-sm whitespace-nowrap flex-shrink-0"
                   >
                     Cancel
                   </button>
                 </>
               ) : (
                 <>
-                  <div className="flex-1">
-                    <div className="font-medium text-gray-900 dark:text-white">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900 dark:text-white truncate">
                       {column.name}
                     </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       Status: {column.status} • {column._count?.tasks || 0}{" "}
                       task(s)
                     </div>
                   </div>
                   {canEdit && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0">
                       <button
                         onClick={() => handleStartEdit(column)}
-                        className="px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                        className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 whitespace-nowrap"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(column)}
                         disabled={deleteColumnMutation.isPending}
-                        className="px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50"
+                        className="px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50 whitespace-nowrap"
                       >
                         Delete
                       </button>
