@@ -106,28 +106,30 @@ export default async function BoardsPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
             Boards
           </h1>
-          <div className="flex flex-col xs:flex-row gap-2 sm:gap-4">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             <Link
               href="/organizations"
-              className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base text-center"
+              className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-xs sm:text-sm whitespace-nowrap"
             >
-              Manage Organizations
+              <span className="hidden sm:inline">Manage Organizations</span>
+              <span className="sm:hidden">Organizations</span>
             </Link>
             <Link
               href="/profile"
-              className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base text-center"
+              className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-xs sm:text-sm whitespace-nowrap"
             >
               Profile
             </Link>
             <Link
               href="/organizations/new"
-              className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm sm:text-base text-center"
+              className="px-3 sm:px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-xs sm:text-sm whitespace-nowrap"
             >
-              New Organization
+              <span className="hidden sm:inline">New Organization</span>
+              <span className="sm:hidden">New Org</span>
             </Link>
             <Link
               href="/boards/new"
-              className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm sm:text-base text-center"
+              className="px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs sm:text-sm whitespace-nowrap"
             >
               Create Board
             </Link>
