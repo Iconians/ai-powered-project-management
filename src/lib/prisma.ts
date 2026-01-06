@@ -9,10 +9,17 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+const connection = {
+  query: pool.query.bind(pool),
+  execute: pool.query.bind(pool),
+  dispose: async () => {
+  },
+};
+
 const adapter = {
   provider: "postgres" as const,
   adapterName: "pg" as const,
-  connect: async () => pool as any,
+  connect: async () => connection as any,
   dispose: async () => {
   },
 };
