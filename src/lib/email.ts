@@ -469,9 +469,6 @@ export async function sendSubscriptionWelcomeEmail(
   organization: { name: string },
   plan: { name: string }
 ) {
-  // #region agent log
-  fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'email.ts:467',message:'sendSubscriptionWelcomeEmail entry',data:{userEmail:user.email,orgName:organization.name,planName:plan.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G,H'})}).catch(()=>{});
-  // #endregion
   const template = emailTemplates.subscriptionWelcome(
     user.name,
     organization.name,
@@ -479,13 +476,7 @@ export async function sendSubscriptionWelcomeEmail(
   );
   try {
     await sendEmail(user.email, template.subject, template.html);
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'email.ts:477',message:'sendEmail success',data:{userEmail:user.email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
-    // #endregion
   } catch (error) {
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'email.ts:478',message:'sendEmail error',data:{error:error instanceof Error?error.message:String(error),userEmail:user.email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
-    // #endregion
     throw error;
   }
 }

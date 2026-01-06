@@ -210,51 +210,11 @@ export default function BillingPage() {
       console.log(
         "[BillingPage] Realtime callback fired for subscription-updated event"
       );
-      // #region agent log
-      if (typeof window !== "undefined") {
-        fetch(
-          "http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              location: "billing/page.tsx:197",
-              message: "Realtime callback fired",
-              data: { selectedOrgId },
-              timestamp: Date.now(),
-              sessionId: "debug-session",
-              runId: "run1",
-              hypothesisId: "D,E",
-            }),
-          }
-        ).catch(() => {});
-      }
-      // #endregion
       if (selectedOrgId) {
         console.log(
           "[BillingPage] Invalidating and refetching subscription for org:",
           selectedOrgId
         );
-        // #region agent log
-        if (typeof window !== "undefined") {
-          fetch(
-            "http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                location: "billing/page.tsx:199",
-                message: "Invalidating and refetching queries",
-                data: { selectedOrgId },
-                timestamp: Date.now(),
-                sessionId: "debug-session",
-                runId: "run1",
-                hypothesisId: "E",
-              }),
-            }
-          ).catch(() => {});
-        }
-        // #endregion
         queryClient.invalidateQueries({
           queryKey: ["subscription", selectedOrgId],
         });

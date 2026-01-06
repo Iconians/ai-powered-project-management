@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMember } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { cancelSubscription } from "@/lib/stripe";
 
 export async function GET(
   _request: NextRequest,
@@ -110,6 +111,14 @@ export async function DELETE(
         members: {
           where: { role: "ADMIN" },
         },
+        subscriptions: {
+          where: {
+            stripeSubscriptionId: { not: null },
+            status: {
+              in: ["ACTIVE", "TRIALING", "PAST_DUE"],
+            },
+          },
+        },
       },
     });
 
@@ -120,11 +129,24 @@ export async function DELETE(
       );
     }
 
-    
-    
-    
+    if (organization.subscriptions.length > 0) {
+      for (const subscription of organization.subscriptions) {
+        if (subscription.stripeSubscriptionId) {
+          try {
+            await cancelSubscription(subscription.stripeSubscriptionId);
+            console.log(
+              `Cancelled Stripe subscription ${subscription.stripeSubscriptionId} for organization ${id}`
+            );
+          } catch (stripeError) {
+            console.error(
+              `Failed to cancel Stripe subscription ${subscription.stripeSubscriptionId}:`,
+              stripeError
+            );
+          }
+        }
+      }
+    }
 
-    
     await prisma.organization.delete({
       where: { id },
     });

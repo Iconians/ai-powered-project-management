@@ -57,33 +57,21 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  
   const isViewer = userBoardRole === "VIEWER";
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
       },
-      disabled: isViewer, 
+      disabled: isViewer,
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        
-        
         distance: 10,
       },
-      disabled: isViewer, 
+      disabled: isViewer,
     })
   );
-  
-  
-  
-  
-  
-  
-  
-  
-  
 
   const { data: board, isLoading } = useQuery<Board>({
     queryKey: ["board", boardId],
@@ -92,19 +80,17 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
       if (!res.ok) throw new Error("Failed to fetch board");
       return res.json();
     },
-    
+
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-    
+
     refetchInterval: false,
   });
 
-  
   useRealtime({
     channelName: `board-${boardId}`,
     eventName: "task-updated",
     callback: () => {
-      
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
     },
   });
@@ -187,7 +173,6 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
     const { active, over } = event;
     setActiveId(null);
 
-    
     if (isViewer) {
       return;
     }
@@ -199,10 +184,8 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
     const taskId = active.id as string;
     const overId = over.id as string;
 
-    
     const statusColumn = board.statuses.find((s) => s.id === overId);
 
-    
     if (!statusColumn) {
       const droppedOnTask = board.tasks.find((t) => t.id === overId);
       if (droppedOnTask) {
@@ -234,12 +217,9 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
     }
 
     if (task.status === statusColumn.status) {
-      
-      
       return;
     }
 
-    
     const tasksInNewStatus = board.tasks.filter(
       (t) => t.status === statusColumn.status
     );
@@ -271,9 +251,7 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
   const sortedStatuses = [...board.statuses].sort((a, b) => a.order - b.order);
   const activeTask = board.tasks.find((t) => t.id === activeId);
 
-  const handleDragOver = () => {
-    
-  };
+  const handleDragOver = () => {};
 
   return (
     <DndContext
