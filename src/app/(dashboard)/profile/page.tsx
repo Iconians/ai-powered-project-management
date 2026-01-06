@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { signOut } from "next-auth/react";
 import Link from "next/link";
 
 interface UserProfile {
@@ -21,6 +22,8 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   const { data: profile, isLoading } = useQuery<UserProfile>({
     queryKey: ["userProfile"],
@@ -88,6 +91,37 @@ export default function ProfilePage() {
       password: newPassword,
       currentPassword,
     });
+  };
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/user/account/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to delete account");
+      }
+      return res.json();
+    },
+    onSuccess: async () => {
+      // Sign out and redirect to home
+      await signOut({ callbackUrl: "/home" });
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+      setShowDeleteModal(false);
+      setDeleteConfirmText("");
+    },
+  });
+
+  const handleDeleteAccount = () => {
+    if (deleteConfirmText !== "DELETE") {
+      setError("Please type 'DELETE' to confirm");
+      return;
+    }
+    deleteAccountMutation.mutate();
   };
 
   if (isLoading) {
@@ -263,8 +297,87 @@ export default function ProfilePage() {
               </button>
             </form>
           </div>
+
+          {/* Delete Account */}
+          <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-4">
+              Danger Zone
+            </h2>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+                Once you delete your account, there is no going back. This will:
+              </p>
+              <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mb-4 space-y-1">
+                <li>Delete all your organizations (if you're the only member)</li>
+                <li>Delete all boards and tasks you created</li>
+                <li>Cancel all active Stripe subscriptions</li>
+                <li>Remove you from all organizations you're a member of</li>
+              </ul>
+              <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-4">
+                Note: You cannot delete your account if you are the only administrator for an organization with other members. Please assign another administrator first.
+              </p>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+              >
+                Delete Account
+              </button>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-bold text-red-600 dark:text-red-400 mb-4">
+              Delete Account
+            </h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-4">
+              This action cannot be undone. This will permanently delete your account and all associated data.
+            </p>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Type <span className="font-mono font-bold">DELETE</span> to confirm:
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-red-500 focus:border-red-500"
+                placeholder="DELETE"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setDeleteConfirmText("");
+                  setError(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                disabled={deleteAccountMutation.isPending}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={
+                  deleteAccountMutation.isPending ||
+                  deleteConfirmText !== "DELETE"
+                }
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {deleteAccountMutation.isPending
+                  ? "Deleting..."
+                  : "Delete Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

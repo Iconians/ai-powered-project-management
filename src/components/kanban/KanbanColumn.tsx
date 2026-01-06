@@ -83,7 +83,7 @@ export function KanbanColumn({
           strategy={verticalListSortingStrategy}
         >
           <div
-            className="space-y-2 max-h-[80vh] overflow-y-auto flex-1 scroll-smooth"
+            className="space-y-2 max-h-[80vh] overflow-y-auto flex-1 scroll-smooth scrollbar-thin"
             style={{ touchAction: "pan-y" }} // Allow vertical scrolling
           >
             {tasks.map((task) => (

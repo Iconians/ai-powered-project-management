@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth, requireBoardAccess, getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { encryptToken } from "@/lib/github";
+import { requireGitHubIntegrationLimit } from "@/lib/limits";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
@@ -119,7 +120,29 @@ export async function GET(request: NextRequest) {
 
       // Likely a boardId (cuid format)
       try {
-        await requireBoardAccess(state);
+        const { board } = await requireBoardAccess(state);
+        
+        // Check if board already has GitHub sync enabled (updating existing connection)
+        const existingBoard = await prisma.board.findUnique({
+          where: { id: state },
+          select: { githubSyncEnabled: true },
+        });
+
+        // Only check limit if this is a new connection
+        if (!existingBoard?.githubSyncEnabled) {
+          try {
+            await requireGitHubIntegrationLimit(board.organizationId);
+          } catch (limitError) {
+            return NextResponse.redirect(
+              `${NEXTAUTH_URL}/boards/${state}?error=${encodeURIComponent(
+                limitError instanceof Error
+                  ? limitError.message
+                  : "GitHub integration limit reached"
+              )}`
+            );
+          }
+        }
+
         const encryptedToken = encryptToken(accessToken);
 
         // Update board with GitHub access token

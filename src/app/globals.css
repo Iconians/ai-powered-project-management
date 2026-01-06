@@ -7,11 +7,9 @@
   --foreground: #171717;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0f172a;
+  --foreground: #f1f5f9;
 }
 
 html,
@@ -23,9 +21,10 @@ body {
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 * {
@@ -39,10 +38,141 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+/* Smooth transitions for theme changes */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Grid pattern background */
+.bg-grid-pattern {
+  background-image: linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0.1) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.dark .bg-grid-pattern {
+  background-image: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.1) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+}
+
+/* Custom Scrollbar Styles */
+/* Webkit browsers (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.3);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.6);
+}
+
+/* Hide scrollbar by default, show on hover */
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+/* Show scrollbar on hover */
+.scrollbar-hover:hover::-webkit-scrollbar {
+  display: block;
+}
+
+.scrollbar-hover::-webkit-scrollbar {
+  display: none;
+  width: 6px;
+}
+
+.scrollbar-hover::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.2);
+  border-radius: 3px;
+}
+
+.scrollbar-hover:hover::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+}
+
+.dark .scrollbar-hover::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.3);
+}
+
+.dark .scrollbar-hover:hover::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
+}
+
+/* Thin, modern scrollbar that appears on scroll/hover */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.3) transparent;
+}
+
+.scrollbar-thin:hover {
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.dark .scrollbar-thin {
+  scrollbar-color: rgba(75, 85, 99, 0.4) transparent;
+}
+
+.dark .scrollbar-thin:hover {
+  scrollbar-color: rgba(75, 85, 99, 0.6) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.2);
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+
+.scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.3);
+}
+
+.dark .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
 }
 
 /* React DatePicker Custom Styles */
