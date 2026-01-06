@@ -360,21 +360,6 @@ export default function BillingPage() {
 
                     return (
                       <>
-                        {isPaidPlan && (
-                          <button
-                            onClick={() =>
-                              syncSubscriptionMutation.mutate(selectedOrgId!)
-                            }
-                            disabled={syncSubscriptionMutation.isPending}
-                            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
-                            title="Sync subscription status from Stripe"
-                          >
-                            {syncSubscriptionMutation.isPending
-                              ? "Syncing..."
-                              : "Refresh Status"}
-                          </button>
-                        )}
-                        {}
                         {isPaidPlan && subscription?.stripeSubscriptionId && (
                           <button
                             onClick={() =>
