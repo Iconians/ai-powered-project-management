@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { Pool } from "pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -9,25 +10,12 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
-const connection = {
-  query: pool.query.bind(pool),
-  execute: pool.query.bind(pool),
-  dispose: async () => {
-  },
-};
-
-const adapter = {
-  provider: "postgres" as const,
-  adapterName: "pg" as const,
-  connect: async () => connection as any,
-  dispose: async () => {
-  },
-};
+const adapter = new PrismaPg(pool);
 
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    adapter: adapter as any,
+    adapter,
     log:
       process.env.NODE_ENV === "development"
         ? ["query", "error", "warn"]
