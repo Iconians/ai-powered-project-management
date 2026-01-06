@@ -63,33 +63,43 @@ export async function POST(request: NextRequest) {
       switch (event.type) {
         case "customer.subscription.created":
         case "customer.subscription.updated": {
+          console.log(`✅ Received ${event.type} event`);
           const subscription = event.data.object as Stripe.Subscription;
+          console.log("Stripe Subscription ID:", subscription.id);
+          console.log("Subscription metadata:", subscription.metadata);
+          
           // Type guard to ensure we have the subscription properties
           if (!("current_period_start" in subscription)) {
-            console.error("Subscription object missing expected properties");
+            console.error("❌ Subscription object missing expected properties");
             break;
           }
           let organizationId = subscription.metadata?.organizationId;
 
           // If no organizationId in metadata, try to find it by subscription ID
           if (!organizationId) {
+            console.log("⚠️ No organizationId in metadata, searching database...");
             const existing = await prisma.subscription.findUnique({
               where: { stripeSubscriptionId: subscription.id },
               select: { organizationId: true },
             });
             if (existing) {
               organizationId = existing.organizationId;
+              console.log("✅ Found organizationId in database:", organizationId);
             } else {
               console.error(
-                "No organizationId in subscription metadata and not found in database"
+                "❌ No organizationId in subscription metadata and not found in database"
               );
               break;
             }
+          } else {
+            console.log("📋 Organization ID from metadata:", organizationId);
           }
 
           const priceId = subscription.items.data[0]?.price.id;
+          console.log("💰 Stripe Price ID:", priceId);
+          
           if (!priceId) {
-            console.error("No price ID found in subscription items");
+            console.error("❌ No price ID found in subscription items");
             break;
           }
 
@@ -99,18 +109,20 @@ export async function POST(request: NextRequest) {
           });
 
           if (!plan) {
-            console.error("Plan not found for price ID:", priceId);
-            console.error(
-              "Available plans:",
-              await prisma.plan.findMany({
-                select: { name: true, stripePriceId: true },
-              })
-            );
+            console.error("❌ Plan not found for price ID:", priceId);
+            const allPlans = await prisma.plan.findMany({
+              select: { name: true, stripePriceId: true },
+            });
+            console.error("📋 Available plans in database:", allPlans);
+            console.error("💡 Make sure you've updated the plan's stripePriceId in the database");
             break;
           }
 
+          console.log("✅ Found plan:", plan.name, "for price ID:", priceId);
+
           // Update or create subscription
           try {
+            console.log("💾 Upserting subscription in database...");
             const updatedSubscription = await prisma.subscription.upsert({
               where: { organizationId },
               update: {
@@ -156,6 +168,13 @@ export async function POST(request: NextRequest) {
                 cancelAtPeriodEnd:
                   (subscription as any).cancel_at_period_end ?? false,
               },
+            });
+
+            console.log("✅ Successfully saved subscription to database:", {
+              subscriptionId: updatedSubscription.id,
+              organizationId: updatedSubscription.organizationId,
+              planId: updatedSubscription.planId,
+              status: updatedSubscription.status,
             });
 
             // Send subscription welcome email if subscription is newly created and active
@@ -435,19 +454,28 @@ export async function POST(request: NextRequest) {
         case "checkout.session.completed": {
           // Handle checkout completion - create/update subscription
           const session = event.data.object as Stripe.Checkout.Session;
+          console.log("✅ Received checkout.session.completed event");
+          console.log("Session ID:", session.id);
+          console.log("Session metadata:", session.metadata);
+          
           const organizationId = session.metadata?.organizationId;
 
           if (!organizationId) {
-            console.error("No organizationId in checkout session metadata");
+            console.error("❌ No organizationId in checkout session metadata");
+            console.error("Available metadata:", session.metadata);
             break;
           }
+
+          console.log("📋 Organization ID:", organizationId);
 
           // Get the subscription ID from the checkout session
           const subscriptionId = session.subscription as string;
           if (!subscriptionId) {
-            console.error("No subscription ID in checkout session");
+            console.error("❌ No subscription ID in checkout session");
             break;
           }
+
+          console.log("💳 Stripe Subscription ID:", subscriptionId);
 
           try {
             // Retrieve the subscription from Stripe
@@ -455,22 +483,36 @@ export async function POST(request: NextRequest) {
               subscriptionId
             )) as Stripe.Subscription;
 
+            const priceId = stripeSubscription.items.data[0]?.price.id;
+            console.log("💰 Stripe Price ID:", priceId);
+
+            if (!priceId) {
+              console.error("❌ No price ID found in subscription items");
+              break;
+            }
+
             // Find the plan by Stripe price ID
             const plan = await prisma.plan.findUnique({
               where: {
-                stripePriceId: stripeSubscription.items.data[0]?.price.id,
+                stripePriceId: priceId,
               },
             });
 
             if (!plan) {
-              console.error(
-                "Plan not found for price ID:",
-                stripeSubscription.items.data[0]?.price.id
-              );
+              // Log all available plans to help debug
+              const allPlans = await prisma.plan.findMany({
+                select: { name: true, stripePriceId: true },
+              });
+              console.error("❌ Plan not found for price ID:", priceId);
+              console.error("📋 Available plans in database:", allPlans);
+              console.error("💡 Make sure you've updated the plan's stripePriceId in the database");
               break;
             }
 
+            console.log("✅ Found plan:", plan.name, "for price ID:", priceId);
+
             // Update or create subscription
+            console.log("💾 Upserting subscription in database...");
             const updatedSubscription = await prisma.subscription.upsert({
               where: { organizationId },
               update: {
@@ -528,6 +570,13 @@ export async function POST(request: NextRequest) {
               },
             });
 
+            console.log("✅ Successfully saved subscription to database:", {
+              subscriptionId: updatedSubscription.id,
+              organizationId: updatedSubscription.organizationId,
+              planId: updatedSubscription.planId,
+              status: updatedSubscription.status,
+            });
+
             // Trigger Pusher event
             try {
               await pusherServer.trigger(
@@ -543,9 +592,16 @@ export async function POST(request: NextRequest) {
             }
           } catch (error) {
             console.error(
-              "Error processing checkout.session.completed:",
+              "❌ Error processing checkout.session.completed:",
               error
             );
+            // Log the full error details
+            if (error instanceof Error) {
+              console.error("Error message:", error.message);
+              console.error("Error stack:", error.stack);
+            }
+            // Don't break - let it continue to return success so Stripe doesn't retry
+            // But log the error for debugging
           }
           break;
         }
