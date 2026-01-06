@@ -177,7 +177,6 @@ export function ManageColumnsModal({
     });
   };
 
-  
   const usedStatuses = new Set(columns?.map((c) => c.status) || []);
 
   if (isLoading) {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, startTransition } from "react";
 import Link from "next/link";
 import { useRealtime } from "@/hooks/useRealtime";
 
@@ -28,8 +28,8 @@ interface Subscription {
 export default function BillingPage() {
   const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
+  const hasInitialized = useRef(false);
 
-  
   const { data: organizations } = useQuery({
     queryKey: ["organizations"],
     queryFn: async () => {
@@ -39,7 +39,6 @@ export default function BillingPage() {
     },
   });
 
-  
   const { data: subscription, isLoading: isLoadingSubscription } =
     useQuery<Subscription | null>({
       queryKey: ["subscription", selectedOrgId],
@@ -50,7 +49,6 @@ export default function BillingPage() {
         );
         if (!res.ok) {
           if (res.status === 404) {
-            
             return null;
           }
           throw new Error("Failed to fetch subscription");
@@ -60,7 +58,6 @@ export default function BillingPage() {
       enabled: !!selectedOrgId,
     });
 
-  
   const { data: plans } = useQuery<Plan[]>({
     queryKey: ["plans"],
     queryFn: async () => {
@@ -70,7 +67,6 @@ export default function BillingPage() {
     },
   });
 
-  
   const { data: usage } = useQuery({
     queryKey: ["usage", selectedOrgId],
     queryFn: async () => {
@@ -101,20 +97,17 @@ export default function BillingPage() {
       }
       const data = await res.json();
 
-      
       if (data.message && data.message.includes("Free plan")) {
         window.location.reload();
         return data;
       }
 
-      
       if (data.url) {
         window.location.href = data.url;
       }
       return data;
     },
     onSuccess: () => {
-      
       queryClient.invalidateQueries({
         queryKey: ["subscription", selectedOrgId],
       });
@@ -160,15 +153,12 @@ export default function BillingPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      
       queryClient.invalidateQueries({
         queryKey: ["subscription", selectedOrgId],
       });
-      
+
       if (data?.subscription) {
-        
         if (!data.subscription.plan) {
-          
           queryClient.invalidateQueries({
             queryKey: ["subscription", selectedOrgId],
           });
@@ -179,7 +169,7 @@ export default function BillingPage() {
           data.subscription
         );
       }
-      
+
       setTimeout(() => {
         queryClient.refetchQueries({
           queryKey: ["subscription", selectedOrgId],
@@ -192,21 +182,19 @@ export default function BillingPage() {
     },
   });
 
-  
-  
   useEffect(() => {
-    if (!selectedOrgId && organizations && organizations.length > 0) {
-      setSelectedOrgId(organizations[0].id);
+    if (!hasInitialized.current && organizations && organizations.length > 0) {
+      hasInitialized.current = true;
+      startTransition(() => {
+        setSelectedOrgId(organizations[0].id);
+      });
     }
-    
   }, [organizations]);
 
-  
   useRealtime({
     channelName: selectedOrgId ? `organization-${selectedOrgId}` : "",
     eventName: "subscription-updated",
     callback: () => {
-      
       if (selectedOrgId) {
         queryClient.invalidateQueries({
           queryKey: ["subscription", selectedOrgId],
@@ -215,23 +203,19 @@ export default function BillingPage() {
     },
   });
 
-  
   useEffect(() => {
     if (
       subscription?.stripeSubscriptionId &&
-      subscription.plan?.name === "Free" && 
+      subscription.plan?.name === "Free" &&
       selectedOrgId &&
       !syncSubscriptionMutation.isPending &&
       !syncSubscriptionMutation.isSuccess
     ) {
-      
-      
       syncSubscriptionMutation.mutate(selectedOrgId);
     }
-    
   }, [
     subscription?.stripeSubscriptionId,
-    subscription?.plan?.name, 
+    subscription?.plan?.name,
     selectedOrgId,
     syncSubscriptionMutation,
   ]);
@@ -256,7 +240,6 @@ export default function BillingPage() {
     );
   }
 
-  
   const currentPlan =
     subscription?.plan ||
     (plans ? plans.find((p) => p.name === "Free") || null : null);
@@ -271,7 +254,7 @@ export default function BillingPage() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-            Billing & Subscription
+            Plans
           </h1>
           <Link
             href="/boards"
@@ -357,7 +340,6 @@ export default function BillingPage() {
                 <div className="flex flex-col sm:flex-row gap-2">
                   {}
                   {(() => {
-                    
                     const priceValue = currentPlan?.price;
                     let planPrice = 0;
                     if (priceValue) {

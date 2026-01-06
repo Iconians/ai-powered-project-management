@@ -15,7 +15,6 @@ export function Navbar() {
     await signOut({ callbackUrl: "/login" });
   };
 
-  
   if (
     pathname?.startsWith("/login") ||
     pathname?.startsWith("/signup") ||
@@ -65,7 +64,7 @@ export function Navbar() {
                     : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                 }`}
               >
-                Billing
+                Plans
               </Link>
             </div>
           </div>
@@ -157,7 +156,7 @@ export function Navbar() {
                   : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
               }`}
             >
-              Billing
+              Plans
             </Link>
           </div>
         </div>

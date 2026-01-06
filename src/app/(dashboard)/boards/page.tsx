@@ -13,44 +13,44 @@ export default async function BoardsPage() {
   let organizations;
   try {
     organizations = await prisma.organization.findMany({
-    where: {
-      members: {
-        some: {
-          userId: user.id,
-        },
-      },
-    },
-    include: {
-      members: {
-        where: {
-          userId: user.id,
-        },
-      },
-      boards: {
-        include: {
-          _count: {
-            select: { tasks: true },
+      where: {
+        members: {
+          some: {
+            userId: user.id,
           },
-          boardMembers: {
-            include: {
-              member: {
-                include: {
-                  user: {
-                    select: {
-                      id: true,
-                      email: true,
-                      name: true,
+        },
+      },
+      include: {
+        members: {
+          where: {
+            userId: user.id,
+          },
+        },
+        boards: {
+          include: {
+            _count: {
+              select: { tasks: true },
+            },
+            boardMembers: {
+              include: {
+                member: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        email: true,
+                        name: true,
+                      },
                     },
                   },
                 },
               },
             },
           },
+          orderBy: { createdAt: "desc" },
         },
-        orderBy: { createdAt: "desc" },
       },
-    },
-  });
+    });
   } catch (error) {
     console.error("Error fetching organizations:", error);
     return (
@@ -78,12 +78,10 @@ export default async function BoardsPage() {
     const isOrgAdmin = userOrgMember?.role === "ADMIN";
 
     for (const board of org.boards) {
-      
       const boardMember = board.boardMembers.find(
         (bm) => bm.member && bm.member.userId === user.id
       );
 
-      
       if (boardMember || isOrgAdmin) {
         accessibleBoards.push({
           ...board,
@@ -94,7 +92,6 @@ export default async function BoardsPage() {
     }
   }
 
-  
   if (organizations.length === 0) {
     redirect("/organizations/new?onboarding=true");
   }
@@ -165,7 +162,10 @@ export default async function BoardsPage() {
                   className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow"
                 >
                   <div className="flex items-start justify-between gap-2 mb-2 overflow-hidden">
-                    <Link href={`/boards/${board.id}`} className="flex-1 min-w-0">
+                    <Link
+                      href={`/boards/${board.id}`}
+                      className="flex-1 min-w-0"
+                    >
                       <h3 className="text-xl font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate">
                         {board.name}
                       </h3>
