@@ -33,7 +33,7 @@ export default function SignupPage() {
         throw new Error(data.error || "Failed to create account");
       }
 
-      // Show success message and redirect to login
+      
       const data = await res.json();
       router.push(
         `/login?message=${encodeURIComponent(

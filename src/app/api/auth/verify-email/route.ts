@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Find user with this token
+    
     const user = await prisma.user.findUnique({
       where: { emailVerificationToken: token },
     });
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if token has expired (24 hours)
+    
     if (
       user.emailVerificationTokenExpires &&
       user.emailVerificationTokenExpires < new Date()
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify email
+    
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Redirect to login page with success message
+    
     return NextResponse.redirect(new URL("/login?verified=true", request.url));
   } catch (error) {
     const message =

@@ -7,6 +7,7 @@ import {
   createPortalSession,
 } from "@/lib/stripe";
 import { pusherServer } from "@/lib/pusher";
+import type Stripe from "stripe";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,8 +20,6 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Allow MEMBER role to check subscription status (needed for AI feature visibility)
     await requireMember(organizationId);
 
     const subscription = await prisma.subscription.findUnique({
@@ -30,7 +29,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Return null instead of 404 - the frontend will default to Free plan
     if (!subscription) {
       return NextResponse.json(null, { status: 200 });
     }
@@ -66,9 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!plan.stripePriceId) {
-      // For free plan or plans without Stripe setup, just update the subscription directly
       if (plan.price.toNumber() === 0) {
-        // Free plan - update subscription directly without Stripe
         const subscription = await prisma.subscription.upsert({
           where: { organizationId },
           update: {
@@ -96,7 +92,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get existing subscription
     const existingSubscription = await prisma.subscription.findUnique({
       where: { organizationId },
       include: {
@@ -104,9 +99,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Check if upgrading/downgrading to a different plan
     if (existingSubscription && existingSubscription.planId !== planId) {
-      // If there's an active Stripe subscription, cancel it first
       if (
         existingSubscription.stripeSubscriptionId &&
         existingSubscription.status === "ACTIVE"
@@ -116,7 +109,6 @@ export async function POST(request: NextRequest) {
             existingSubscription.stripeSubscriptionId
           );
 
-          // Update database subscription status to CANCELED
           await prisma.subscription.update({
             where: { organizationId },
             data: {
@@ -124,7 +116,6 @@ export async function POST(request: NextRequest) {
             },
           });
 
-          // Trigger Pusher event for subscription change
           try {
             await pusherServer.trigger(
               `organization-${organizationId}`,
@@ -139,12 +130,10 @@ export async function POST(request: NextRequest) {
           }
         } catch (error) {
           console.error("Error canceling subscription:", error);
-          // Continue with new subscription creation even if cancellation fails
         }
       }
     }
 
-    // If selecting the same plan, return error
     if (existingSubscription && existingSubscription.planId === planId) {
       return NextResponse.json(
         { error: "You are already subscribed to this plan" },
@@ -152,13 +141,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get or create Stripe customer
     let customerId: string;
 
     if (existingSubscription?.stripeCustomerId) {
       customerId = existingSubscription.stripeCustomerId;
     } else {
-      // Get organization to get owner email
       const organization = await prisma.organization.findUnique({
         where: { id: organizationId },
         include: {
@@ -188,7 +175,6 @@ export async function POST(request: NextRequest) {
       customerId = customer.id;
     }
 
-    // Create checkout session
     const session = await createCheckoutSession(
       customerId,
       plan.stripePriceId,
@@ -229,13 +215,9 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === "manage") {
-      // Create portal session for managing subscription
       let customerId = subscription.stripeCustomerId;
-
-      // If no customer ID, try to get it from Stripe subscription or sync first
       if (!customerId) {
         if (!subscription.stripeSubscriptionId) {
-          // No subscription ID - try to find it by looking up the customer
           const organization = await prisma.organization.findUnique({
             where: { id: organizationId },
             include: {
@@ -251,7 +233,6 @@ export async function PATCH(request: NextRequest) {
             const adminEmail = organization.members[0].user.email;
 
             try {
-              // Search for customer by email
               const customers = await stripe.customers.list({
                 email: adminEmail,
                 limit: 1,
@@ -260,8 +241,6 @@ export async function PATCH(request: NextRequest) {
               if (customers.data.length > 0) {
                 const customer = customers.data[0];
                 customerId = customer.id;
-
-                // Get the customer's subscriptions
                 const subscriptions = await stripe.subscriptions.list({
                   customer: customer.id,
                   status: "all",
@@ -269,9 +248,17 @@ export async function PATCH(request: NextRequest) {
                 });
 
                 if (subscriptions.data.length > 0) {
-                  const stripeSubscription = subscriptions.data[0];
+                  const stripeSubscription = subscriptions
+                    .data[0] as unknown as {
+                    id: string;
+                    customer: string | Stripe.Customer | Stripe.DeletedCustomer;
+                    status: Stripe.Subscription.Status;
+                    current_period_start: number;
+                    current_period_end: number;
+                    cancel_at_period_end: boolean;
+                    items: Stripe.ApiList<Stripe.SubscriptionItem>;
+                  } & Record<string, unknown>;
 
-                  // Find the plan by Stripe price ID
                   const foundPlan = await prisma.plan.findUnique({
                     where: {
                       stripePriceId: stripeSubscription.items.data[0]?.price.id,
@@ -279,7 +266,6 @@ export async function PATCH(request: NextRequest) {
                   });
 
                   if (foundPlan) {
-                    // Update the subscription with all the Stripe data
                     await prisma.subscription.update({
                       where: { organizationId },
                       data: {
@@ -294,23 +280,22 @@ export async function PATCH(request: NextRequest) {
                             : stripeSubscription.status === "past_due"
                             ? "PAST_DUE"
                             : "CANCELED",
-                        currentPeriodStart: (stripeSubscription as any)
-                          .current_period_start
-                          ? new Date(
-                              (stripeSubscription as any).current_period_start *
-                                1000
-                            )
-                          : null,
-                        currentPeriodEnd: (stripeSubscription as any)
-                          .current_period_end
-                          ? new Date(
-                              (stripeSubscription as any).current_period_end *
-                                1000
-                            )
-                          : null,
+                        currentPeriodStart:
+                          typeof stripeSubscription.current_period_start ===
+                          "number"
+                            ? new Date(
+                                stripeSubscription.current_period_start * 1000
+                              )
+                            : null,
+                        currentPeriodEnd:
+                          typeof stripeSubscription.current_period_end ===
+                          "number"
+                            ? new Date(
+                                stripeSubscription.current_period_end * 1000
+                              )
+                            : null,
                         cancelAtPeriodEnd:
-                          (stripeSubscription as any).cancel_at_period_end ||
-                          false,
+                          stripeSubscription.cancel_at_period_end || false,
                       },
                     });
                   }
@@ -331,21 +316,27 @@ export async function PATCH(request: NextRequest) {
             );
           }
         } else {
-          // We have a subscription ID, fetch it from Stripe
           try {
-            const stripeSubscription = await stripe.subscriptions.retrieve(
+            const retrievedSub = await stripe.subscriptions.retrieve(
               subscription.stripeSubscriptionId
             );
+            const stripeSubscription = retrievedSub as unknown as {
+              id: string;
+              customer: string | Stripe.Customer | Stripe.DeletedCustomer;
+              status: Stripe.Subscription.Status;
+              current_period_start: number;
+              current_period_end: number;
+              cancel_at_period_end: boolean;
+              items: Stripe.ApiList<Stripe.SubscriptionItem>;
+            };
             customerId = stripeSubscription.customer as string;
 
-            // Also update the plan and other details while we're at it
             const plan = await prisma.plan.findUnique({
               where: {
                 stripePriceId: stripeSubscription.items.data[0]?.price.id,
               },
             });
 
-            // Update the subscription with the customer ID and latest info
             await prisma.subscription.update({
               where: { organizationId },
               data: {
@@ -359,19 +350,16 @@ export async function PATCH(request: NextRequest) {
                     : stripeSubscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: (stripeSubscription as any)
-                  .current_period_start
-                  ? new Date(
-                      (stripeSubscription as any).current_period_start * 1000
-                    )
-                  : null,
-                currentPeriodEnd: (stripeSubscription as any).current_period_end
-                  ? new Date(
-                      (stripeSubscription as any).current_period_end * 1000
-                    )
-                  : null,
+                currentPeriodStart:
+                  typeof stripeSubscription.current_period_start === "number"
+                    ? new Date(stripeSubscription.current_period_start * 1000)
+                    : null,
+                currentPeriodEnd:
+                  typeof stripeSubscription.current_period_end === "number"
+                    ? new Date(stripeSubscription.current_period_end * 1000)
+                    : null,
                 cancelAtPeriodEnd:
-                  (stripeSubscription as any).cancel_at_period_end ?? false,
+                  stripeSubscription.cancel_at_period_end ?? false,
               },
             });
           } catch (error) {
@@ -413,13 +401,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === "sync") {
-      // Check if this is a free plan (which doesn't need Stripe sync)
       const plan = await prisma.plan.findUnique({
         where: { id: subscription.planId },
       });
 
       if (plan && plan.price.toNumber() === 0) {
-        // Re-fetch subscription with plan relation to ensure it's included
         const subscriptionWithPlan = await prisma.subscription.findUnique({
           where: { organizationId },
           include: {
@@ -433,10 +419,7 @@ export async function PATCH(request: NextRequest) {
         });
       }
 
-      // Manually sync subscription status from Stripe
       if (!subscription.stripeSubscriptionId) {
-        // Try to find the subscription in Stripe by looking up the customer
-        // Get organization admin email to find Stripe customer
         const organization = await prisma.organization.findUnique({
           where: { id: organizationId },
           include: {
@@ -452,7 +435,6 @@ export async function PATCH(request: NextRequest) {
           const adminEmail = organization.members[0].user.email;
 
           try {
-            // Search for customer by email
             const customers = await stripe.customers.list({
               email: adminEmail,
               limit: 1,
@@ -461,7 +443,6 @@ export async function PATCH(request: NextRequest) {
             if (customers.data.length > 0) {
               const customer = customers.data[0];
 
-              // Get the customer's subscriptions
               const subscriptions = await stripe.subscriptions.list({
                 customer: customer.id,
                 status: "all",
@@ -469,16 +450,22 @@ export async function PATCH(request: NextRequest) {
               });
 
               if (subscriptions.data.length > 0) {
-                const stripeSubscription = subscriptions.data[0];
+                const stripeSubscription = subscriptions.data[0] as unknown as {
+                  id: string;
+                  customer: string | Stripe.Customer | Stripe.DeletedCustomer;
+                  status: Stripe.Subscription.Status;
+                  current_period_start: number;
+                  current_period_end: number;
+                  cancel_at_period_end: boolean;
+                  items: Stripe.ApiList<Stripe.SubscriptionItem>;
+                } & Record<string, unknown>;
                 const priceId = stripeSubscription.items.data[0]?.price.id;
 
-                // Find the plan by Stripe price ID
                 const foundPlan = await prisma.plan.findUnique({
                   where: { stripePriceId: priceId },
                 });
 
                 if (!foundPlan) {
-                  // Log all available plans to help debug
                   const allPlans = await prisma.plan.findMany({
                     select: { name: true, stripePriceId: true },
                   });
@@ -494,7 +481,6 @@ export async function PATCH(request: NextRequest) {
                 }
 
                 if (foundPlan) {
-                  // Update the subscription with the Stripe data
                   const updatedSubscription = await prisma.subscription.update({
                     where: { organizationId },
                     data: {
@@ -509,30 +495,42 @@ export async function PATCH(request: NextRequest) {
                           : stripeSubscription.status === "past_due"
                           ? "PAST_DUE"
                           : "CANCELED",
-                      currentPeriodStart: (stripeSubscription as any)
-                        .current_period_start
-                        ? new Date(
-                            (stripeSubscription as any).current_period_start *
-                              1000
-                          )
-                        : null,
-                      currentPeriodEnd: (stripeSubscription as any)
-                        .current_period_end
-                        ? new Date(
-                            (stripeSubscription as any).current_period_end *
-                              1000
-                          )
-                        : null,
+                      currentPeriodStart:
+                        typeof (
+                          stripeSubscription as {
+                            current_period_start?: number;
+                          }
+                        ).current_period_start === "number"
+                          ? new Date(
+                              (
+                                stripeSubscription as {
+                                  current_period_start: number;
+                                }
+                              ).current_period_start * 1000
+                            )
+                          : null,
+                      currentPeriodEnd:
+                        typeof (
+                          stripeSubscription as {
+                            current_period_end?: number;
+                          }
+                        ).current_period_end === "number"
+                          ? new Date(
+                              (
+                                stripeSubscription as {
+                                  current_period_end: number;
+                                }
+                              ).current_period_end * 1000
+                            )
+                          : null,
                       cancelAtPeriodEnd:
-                        (stripeSubscription as any).cancel_at_period_end ||
-                        false,
+                        stripeSubscription.cancel_at_period_end || false,
                     },
                     include: {
                       plan: true,
                     },
                   });
 
-                  // Trigger Pusher event
                   try {
                     await pusherServer.trigger(
                       `organization-${organizationId}`,
@@ -568,11 +566,20 @@ export async function PATCH(request: NextRequest) {
       }
 
       try {
-        const stripeSubscription = await stripe.subscriptions.retrieve(
+        const retrievedSub = await stripe.subscriptions.retrieve(
           subscription.stripeSubscriptionId
         );
+        const stripeSubscription = retrievedSub as unknown as {
+          id: string;
+          customer: string | Stripe.Customer | Stripe.DeletedCustomer;
+          status: Stripe.Subscription.Status;
+          current_period_start: number;
+          current_period_end: number;
+          cancel_at_period_end: boolean;
+          items: Stripe.ApiList<Stripe.SubscriptionItem>;
+        } & Record<string, unknown>;
 
-        // Find the plan by Stripe price ID
+        
         const plan = await prisma.plan.findUnique({
           where: { stripePriceId: stripeSubscription.items.data[0]?.price.id },
         });
@@ -584,12 +591,11 @@ export async function PATCH(request: NextRequest) {
           );
         }
 
-        // Update subscription in database
         const updatedSubscription = await prisma.subscription.update({
           where: { organizationId },
           data: {
             planId: plan.id,
-            stripeCustomerId: stripeSubscription.customer as string, // Ensure customer ID is updated
+            stripeCustomerId: stripeSubscription.customer as string,
             status:
               stripeSubscription.status === "active"
                 ? "ACTIVE"
@@ -598,23 +604,21 @@ export async function PATCH(request: NextRequest) {
                 : stripeSubscription.status === "past_due"
                 ? "PAST_DUE"
                 : "CANCELED",
-            currentPeriodStart: (stripeSubscription as any).current_period_start
-              ? new Date(
-                  (stripeSubscription as any).current_period_start * 1000
-                )
-              : null,
-            currentPeriodEnd: (stripeSubscription as any).current_period_end
-              ? new Date((stripeSubscription as any).current_period_end * 1000)
-              : null,
-            cancelAtPeriodEnd:
-              (stripeSubscription as any).cancel_at_period_end || false,
+            currentPeriodStart:
+              typeof stripeSubscription.current_period_start === "number"
+                ? new Date(stripeSubscription.current_period_start * 1000)
+                : null,
+            currentPeriodEnd:
+              typeof stripeSubscription.current_period_end === "number"
+                ? new Date(stripeSubscription.current_period_end * 1000)
+                : null,
+            cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end || false,
           },
           include: {
             plan: true,
           },
         });
 
-        // Trigger Pusher event for real-time update
         try {
           await pusherServer.trigger(
             `organization-${organizationId}`,
@@ -626,7 +630,6 @@ export async function PATCH(request: NextRequest) {
           );
         } catch (error) {
           console.error("Failed to trigger Pusher event:", error);
-          // Don't fail the request if Pusher fails
         }
 
         return NextResponse.json({

@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logSecurityEvent } from "./security-logger";
 
-// Import env validation to ensure it runs
 import "./env-validation";
 
-// In-memory rate limit store (for development/single-instance)
-// In production with multiple instances, use Redis
 interface RateLimitEntry {
   count: number;
   resetTime: number;
@@ -13,7 +10,6 @@ interface RateLimitEntry {
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Clean up expired entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
   for (const [key, entry] of rateLimitStore.entries()) {
@@ -24,21 +20,15 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 export interface RateLimitConfig {
-  limit: number; // Maximum number of requests
-  window: number; // Time window in seconds
-  identifier?: (req: NextRequest) => string; // Custom identifier function
+  limit: number;
+  window: number;
+  identifier?: (req: NextRequest) => string;
 }
 
-/**
- * Rate limiting middleware
- * @param config Rate limit configuration
- * @returns Middleware function that returns NextResponse if rate limited, null otherwise
- */
 export async function rateLimit(
   req: NextRequest,
   config: RateLimitConfig
 ): Promise<NextResponse | null> {
-  // Get identifier (IP address by default)
   const identifier =
     config.identifier?.(req) ||
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
@@ -49,21 +39,17 @@ export async function rateLimit(
   const now = Date.now();
   const resetTime = now + config.window * 1000;
 
-  // Get or create entry
   let entry = rateLimitStore.get(key);
 
   if (!entry || entry.resetTime < now) {
-    // Create new entry or reset expired one
     entry = { count: 1, resetTime };
     rateLimitStore.set(key, entry);
-    return null; // Not rate limited
+    return null;
   }
 
-  // Increment count
   entry.count++;
 
   if (entry.count > config.limit) {
-    // Rate limited - log security event
     const url = new URL(req.url);
     logSecurityEvent("rate_limit", url.pathname, identifier, {
       limit: config.limit,
@@ -88,49 +74,39 @@ export async function rateLimit(
     );
   }
 
-  // Update entry
   rateLimitStore.set(key, entry);
 
-  // Return null to continue
   return null;
 }
 
-/**
- * Pre-configured rate limiters for common use cases
- */
 export const rateLimiters = {
-  // Login: 5 attempts per 15 minutes
   login: (req: NextRequest) =>
     rateLimit(req, {
       limit: 5,
-      window: 15 * 60, // 15 minutes
+      window: 15 * 60,
     }),
 
-  // Signup: 3 attempts per hour
   signup: (req: NextRequest) =>
     rateLimit(req, {
       limit: 3,
-      window: 60 * 60, // 1 hour
+      window: 60 * 60,
     }),
 
-  // Password reset: 3 attempts per hour
   passwordReset: (req: NextRequest) =>
     rateLimit(req, {
       limit: 3,
-      window: 60 * 60, // 1 hour
+      window: 60 * 60,
     }),
 
-  // Forgot password: 3 attempts per hour
   forgotPassword: (req: NextRequest) =>
     rateLimit(req, {
       limit: 3,
-      window: 60 * 60, // 1 hour
+      window: 60 * 60,
     }),
 
-  // General API: 100 requests per minute
   api: (req: NextRequest) =>
     rateLimit(req, {
       limit: 100,
-      window: 60, // 1 minute
+      window: 60,
     }),
 };

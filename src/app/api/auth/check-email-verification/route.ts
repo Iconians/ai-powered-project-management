@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      // Don't reveal if user exists (security)
+      
       return NextResponse.json({ emailVerified: false });
     }
 

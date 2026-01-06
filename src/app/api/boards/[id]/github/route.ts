@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireBoardAccess } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// PATCH /api/boards/[id]/github - Set GitHub repository for a board
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -12,7 +12,7 @@ export async function PATCH(
     const body = await request.json();
     const { githubRepoName, githubProjectId } = body;
 
-    // Validate that at least one field is provided
+    
     if (!githubRepoName && githubProjectId === undefined) {
       return NextResponse.json(
         { error: "Either githubRepoName or githubProjectId is required" },
@@ -20,7 +20,7 @@ export async function PATCH(
       );
     }
 
-    // Validate repo name format if provided
+    
     if (githubRepoName && !/^[\w\-\.]+\/[\w\-\.]+$/.test(githubRepoName)) {
       return NextResponse.json(
         { error: "Invalid repository format. Use 'owner/repo'" },
@@ -28,7 +28,7 @@ export async function PATCH(
       );
     }
 
-    // Validate project ID if provided
+    
     if (
       githubProjectId !== undefined &&
       (typeof githubProjectId !== "number" || githubProjectId <= 0)
@@ -39,7 +39,7 @@ export async function PATCH(
       );
     }
 
-    // Check board access - need ADMIN role to configure GitHub
+    
     await requireBoardAccess(id, "ADMIN");
 
     const updateData: {

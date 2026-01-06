@@ -57,7 +57,7 @@ export function AssignTaskModal({
     },
   });
 
-  // Transform boardMembers to members for the dropdown
+  
   const members: Member[] | undefined = boardMembers?.map((bm) => bm.member);
 
   const assignTaskMutation = useMutation({

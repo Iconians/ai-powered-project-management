@@ -6,14 +6,12 @@ import { requireGitHubIntegrationLimit } from "@/lib/limits";
 
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-// Normalize NEXTAUTH_URL to remove trailing slash
 const NEXTAUTH_URL = (
   process.env.NEXTAUTH_URL || "http://localhost:3000"
 ).replace(/\/$/, "");
 
 export async function GET(request: NextRequest) {
   try {
-    // Ensure user is authenticated
     await requireAuth();
     const { searchParams } = new URL(request.url);
     const code = searchParams.get("code");
@@ -42,7 +40,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Exchange code for access token
     const tokenResponse = await fetch(
       "https://github.com/login/oauth/access_token",
       {
@@ -78,7 +75,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get user's GitHub info
     const userResponse = await fetch("https://api.github.com/user", {
       headers: {
         Authorization: `token ${accessToken}`,
@@ -86,7 +82,6 @@ export async function GET(request: NextRequest) {
     });
     const githubUser = await userResponse.json();
 
-    // Update the current user's GitHub username
     const currentUser = await getCurrentUser();
     if (currentUser?.email) {
       try {
@@ -101,15 +96,10 @@ export async function GET(request: NextRequest) {
         );
       } catch (error) {
         console.error("Failed to update GitHub username:", error);
-        // Don't fail the OAuth flow if this fails
       }
     }
 
-    // If state is a boardId, update that board
-    // Security: Validate state parameter to prevent CSRF
     if (state && state.length > 10 && state.length < 50) {
-      // Validate format (cuid is typically 25 characters)
-      // Only allow alphanumeric and hyphens
       if (!/^[a-zA-Z0-9_-]+$/.test(state)) {
         return NextResponse.redirect(
           `${NEXTAUTH_URL}/boards?error=${encodeURIComponent(
@@ -118,17 +108,14 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Likely a boardId (cuid format)
       try {
         const { board } = await requireBoardAccess(state);
-        
-        // Check if board already has GitHub sync enabled (updating existing connection)
+
         const existingBoard = await prisma.board.findUnique({
           where: { id: state },
           select: { githubSyncEnabled: true },
         });
 
-        // Only check limit if this is a new connection
         if (!existingBoard?.githubSyncEnabled) {
           try {
             await requireGitHubIntegrationLimit(board.organizationId);
@@ -145,14 +132,11 @@ export async function GET(request: NextRequest) {
 
         const encryptedToken = encryptToken(accessToken);
 
-        // Update board with GitHub access token
-        // Note: githubRepoName will be set separately via UI or API
         await prisma.board.update({
           where: { id: state },
           data: {
             githubAccessToken: encryptedToken,
             githubSyncEnabled: true,
-            // githubRepoName will be set separately via UI or API
           },
         });
 
@@ -160,7 +144,6 @@ export async function GET(request: NextRequest) {
           `${NEXTAUTH_URL}/boards/${state}?github=connected`
         );
       } catch (error) {
-        // If board access fails, just redirect to boards
         return NextResponse.redirect(
           `${NEXTAUTH_URL}/boards?error=${encodeURIComponent(
             "Failed to connect GitHub"
@@ -169,7 +152,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Otherwise, just redirect to boards
     return NextResponse.redirect(`${NEXTAUTH_URL}/boards?github=connected`);
   } catch (error) {
     const message =

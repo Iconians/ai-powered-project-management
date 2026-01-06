@@ -43,7 +43,7 @@ export async function GET(
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    // Check board access (requires both org membership and board access)
+    
     await requireBoardAccess(id);
 
     return NextResponse.json(board);
@@ -100,7 +100,7 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Check board access - only org admins can delete board
+    
     const { orgMember } = await requireBoardAccess(id);
     if (orgMember.role !== "ADMIN") {
       return NextResponse.json(

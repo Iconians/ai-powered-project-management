@@ -3,7 +3,7 @@ import { authOptions } from "./auth-config";
 import { getServerSession } from "next-auth";
 import type { BoardMember, Member, User } from "@prisma/client";
 
-// Type for BoardMember with includes (as returned by getBoardMember)
+
 type BoardMemberWithIncludes = BoardMember & {
   member: Member & {
     user: User;
@@ -20,7 +20,7 @@ export async function getCurrentUser(): Promise<{
     return null;
   }
 
-  // Return user in format compatible with existing code
+  
   return {
     id: session.user.id,
     email: session.user.email || "",
@@ -75,7 +75,7 @@ export async function getBoardMember(
   const user = userId ? { id: userId } : await getCurrentUser();
   if (!user) return null;
 
-  // First check if user is a member of the organization
+  
   const board = await prisma.board.findUnique({
     where: { id: boardId },
     select: { organizationId: true },
@@ -92,7 +92,7 @@ export async function getBoardMember(
 
   if (!orgMember) return null;
 
-  // Then check board-specific access
+  
   const boardMember = await prisma.boardMember.findUnique({
     where: {
       boardId_memberId: {
@@ -129,7 +129,7 @@ export async function requireBoardAccess(
     throw new Error("Unauthorized");
   }
 
-  // Get the board to check organization
+  
   const board = await prisma.board.findUnique({
     where: { id: boardId },
     include: {
@@ -141,16 +141,16 @@ export async function requireBoardAccess(
     throw new Error("Board not found");
   }
 
-  // Check organization membership
+  
   const orgMember = await requireMember(board.organizationId);
 
-  // Check board access
+  
   let boardMember = await getBoardMember(boardId, user.id);
 
-  // Organization admins have access to all boards in their organization
-  // If they don't have explicit board access, grant them ADMIN access
+  
+  
   if (!boardMember && orgMember.role === "ADMIN") {
-    // Get the user for the virtual board member
+    
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
     });
@@ -159,8 +159,8 @@ export async function requireBoardAccess(
       throw new Error("User not found");
     }
 
-    // Create a virtual board member for organization admins
-    // This is a synthetic BoardMember that represents org admin access
+    
+    
     boardMember = {
       id: `org-admin-${boardId}`,
       boardId,
@@ -179,7 +179,7 @@ export async function requireBoardAccess(
     throw new Error("No access to this board");
   }
 
-  // Check role if specified
+  
   if (role && !hasBoardRole(boardMember.role, role)) {
     throw new Error(`Requires ${role} role on this board`);
   }
@@ -199,14 +199,14 @@ export async function requirePaidSubscription(organizationId: string) {
     throw new Error("No subscription found for this organization");
   }
 
-  // Check if plan is paid (price > 0)
+  
   if (subscription.plan.price.toNumber() === 0) {
     throw new Error(
       "AI features require a paid subscription (Pro or Enterprise)"
     );
   }
 
-  // Check if subscription is still active (either ACTIVE, or CANCELED but period hasn't ended)
+  
   const isActive =
     subscription.status === "ACTIVE" ||
     subscription.status === "TRIALING" ||

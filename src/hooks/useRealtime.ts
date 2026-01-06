@@ -9,7 +9,7 @@ interface RealtimeOptions {
   callback: (data: unknown) => void;
 }
 
-// Shared Pusher instance across all hooks
+
 let globalPusher: Pusher | null = null;
 
 export function useRealtime({
@@ -32,17 +32,17 @@ export function useRealtime({
       return;
     }
 
-    // Initialize shared Pusher instance
+    
     if (!globalPusher) {
       globalPusher = new Pusher(pusherKey, {
         cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER || "us2",
-        // Only use auth endpoint for private/presence channels
+        
         authEndpoint:
           channelName.startsWith("private-") ||
           channelName.startsWith("presence-")
             ? "/api/pusher/auth"
             : undefined,
-        enabledTransports: ["ws", "wss"], // Force WebSocket transport
+        enabledTransports: ["ws", "wss"], 
       });
 
       globalPusher.connection.bind("connected", () => {
@@ -58,21 +58,21 @@ export function useRealtime({
       });
     }
 
-    // Subscribe to channel and wait for subscription
+    
     const channel = globalPusher.subscribe(channelName);
     channelRef.current = channel;
 
-    // Handler for the event
+    
     const eventHandler = (data: unknown) => {
       callbackRef.current(data);
     };
 
-    // Handler for subscription success
+    
     const subscriptionHandler = () => {
       channel.bind(eventName, eventHandler);
     };
 
-    // Handler for subscription error
+    
     const errorHandler = (status: number | Error) => {
       console.error(
         `Pusher subscription error for channel ${channelName}:`,
@@ -80,11 +80,11 @@ export function useRealtime({
       );
     };
 
-    // Always bind to subscription events first
+    
     channel.bind("pusher:subscription_succeeded", subscriptionHandler);
     channel.bind("pusher:subscription_error", errorHandler);
 
-    // If already subscribed, bind immediately (but subscription handler will also fire)
+    
     if (channel.subscribed) {
       channel.bind(eventName, eventHandler);
     }
@@ -106,7 +106,7 @@ export function useRealtime({
   return { isConnected };
 }
 
-// Alternative: Polling-based realtime (simpler, no external service)
+
 export function useRealtimePolling<T>(
   fetchFn: () => Promise<T>,
   interval: number = 2000

@@ -18,7 +18,7 @@ export async function POST(
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Validate email format
+    
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -27,16 +27,16 @@ export async function POST(
       );
     }
 
-    // Rate limiting
+    
     const rateLimitResponse = await rateLimiters.api(request);
     if (rateLimitResponse) {
       return rateLimitResponse;
     }
 
-    // Check if user is an ADMIN of the organization
+    
     await requireMember(id, "ADMIN");
 
-    // Check member limit
+    
     try {
       await requireLimit(id, "members");
     } catch (error) {
@@ -54,7 +54,7 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Get organization details
+    
     const organization = await prisma.organization.findUnique({
       where: { id },
     });
@@ -66,13 +66,13 @@ export async function POST(
       );
     }
 
-    // Check if user with this email already exists
+    
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
 
     if (existingUser) {
-      // User exists - check if they're already a member
+      
       const existingMember = await prisma.member.findUnique({
         where: {
           userId_organizationId: {
@@ -89,7 +89,7 @@ export async function POST(
         );
       }
 
-      // User exists but not a member - add them directly
+      
       const member = await prisma.member.create({
         data: {
           userId: existingUser.id,
@@ -110,8 +110,8 @@ export async function POST(
       return NextResponse.json(member, { status: 201 });
     }
 
-    // User doesn't exist - create invitation
-    // Check for existing pending invitation
+    
+    
     const existingInvitation = await prisma.invitation.findFirst({
       where: {
         email,
@@ -131,10 +131,10 @@ export async function POST(
       );
     }
 
-    // Create invitation
+    
     const token = generateToken();
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + 7); 
 
     const invitation = await prisma.invitation.create({
       data: {
@@ -148,7 +148,7 @@ export async function POST(
       },
     });
 
-    // Send invitation email
+    
     try {
       const inviter = await prisma.user.findUnique({
         where: { id: user.id },
@@ -163,7 +163,7 @@ export async function POST(
       );
     } catch (emailError) {
       console.error("Failed to send invitation email:", emailError);
-      // Don't fail the request if email fails
+      
     }
 
     return NextResponse.json(

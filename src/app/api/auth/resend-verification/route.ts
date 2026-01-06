@@ -4,7 +4,7 @@ import { generateToken, sendEmailVerificationEmail } from "@/lib/email";
 import { rateLimiters } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
-  // Rate limiting
+  
   const rateLimitResponse = await rateLimiters.forgotPassword(request);
   if (rateLimitResponse) {
     return rateLimitResponse;
@@ -18,12 +18,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Find user by email
+    
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
-    // Don't reveal if user exists or not (security best practice)
+    
     if (!user) {
       return NextResponse.json({
         message:
@@ -31,19 +31,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // If already verified, no need to resend
+    
     if (user.emailVerified) {
       return NextResponse.json({
         message: "Email is already verified. You can log in.",
       });
     }
 
-    // Generate new verification token
+    
     const verificationToken = generateToken();
     const tokenExpires = new Date();
-    tokenExpires.setHours(tokenExpires.getHours() + 24); // 24 hours
+    tokenExpires.setHours(tokenExpires.getHours() + 24); 
 
-    // Update user with new verification token
+    
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send verification email
+    
     try {
       await sendEmailVerificationEmail(user, verificationToken);
     } catch (emailError) {

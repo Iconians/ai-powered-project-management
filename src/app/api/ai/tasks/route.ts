@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    // Check if organization has a paid subscription
+    
     try {
       await requirePaidSubscription(board.organizationId);
     } catch (error) {
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check board access - need MEMBER role to generate tasks
+    
     await requireBoardAccess(boardId, "MEMBER");
 
     const systemPrompt = `You are a project management assistant. Given a project description or requirements, break it down into actionable tasks. 
@@ -77,7 +77,7 @@ Example format:
         systemPrompt
       );
     } catch (error) {
-      // If AI fails, try demo mode as fallback
+      
       console.error("AI generation failed, falling back to demo mode:", error);
       try {
         aiResponse = await generateWithAI("demo", userPrompt, systemPrompt);
@@ -92,7 +92,7 @@ Example format:
       }
     }
 
-    // Parse AI response (handle both JSON and markdown code blocks)
+    
     let tasks;
     try {
       const jsonMatch = aiResponse.match(/\[[\s\S]*\]/);
@@ -115,7 +115,7 @@ Example format:
       );
     }
 
-    // Get default status column
+    
     const statusColumn = await prisma.taskStatusColumn.findFirst({
       where: {
         boardId,
@@ -123,13 +123,13 @@ Example format:
       },
     });
 
-    // Get max order
+    
     const maxOrderTask = await prisma.task.findFirst({
       where: { boardId },
       orderBy: { order: "desc" },
     });
 
-    // Create tasks
+    
     const createdTasks = await Promise.all(
       tasks.map((task, index) =>
         prisma.task.create({
@@ -157,7 +157,7 @@ Example format:
       )
     );
 
-    // Emit Pusher events for real-time updates (one event for all tasks)
+    
     try {
       await pusherServer.trigger(`board-${boardId}`, "tasks-generated", {
         tasks: createdTasks,
@@ -165,7 +165,7 @@ Example format:
       });
     } catch (pusherError) {
       console.error("Pusher error:", pusherError);
-      // Don't fail the request if Pusher fails
+      
     }
 
     return NextResponse.json({ tasks: createdTasks }, { status: 201 });

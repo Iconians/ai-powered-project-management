@@ -1,22 +1,18 @@
 import { Resend } from "resend";
 import crypto from "crypto";
 
-// Resend configuration
 const resendApiKey = process.env.RESEND_API_KEY;
 const customFromEmail = process.env.RESEND_FROM_EMAIL || process.env.SMTP_FROM;
-// Use default Resend domain for testing if custom domain not verified
+
 const fromEmail = customFromEmail || "onboarding@resend.dev";
 
-// Normalize NEXTAUTH_URL to remove trailing slash
 const baseUrl = (process.env.NEXTAUTH_URL || "http://localhost:3000").replace(
   /\/$/,
   ""
 );
 
-// Initialize Resend client
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
-// Generic email sender
 export async function sendEmail(
   to: string,
   subject: string,
@@ -31,7 +27,6 @@ export async function sendEmail(
     return;
   }
 
-  // Validate fromEmail format (must be a valid email address)
   if (!fromEmail || !fromEmail.includes("@")) {
     console.error(
       "❌ RESEND_FROM_EMAIL must be a valid email address (e.g., noreply@yourdomain.com)"
@@ -46,11 +41,10 @@ export async function sendEmail(
       to,
       subject,
       html,
-      text: text || html.replace(/<[^>]*>/g, ""), // Strip HTML for text version
+      text: text || html.replace(/<[^>]*>/g, ""),
     });
 
     if (result.error) {
-      // Check if it's a domain verification error
       if (result.error.message?.includes("domain is not verified")) {
         console.error("❌ Resend domain verification error:");
         console.error(
@@ -74,14 +68,13 @@ export async function sendEmail(
     );
   } catch (error) {
     console.error("❌ Error sending email:", error);
-    // Log more details for debugging
+
     if (error instanceof Error) {
       console.error("   Error message:", error.message);
       console.error("   To:", to);
       console.error("   From:", fromEmail);
       console.error("   Subject:", subject);
 
-      // If it's a domain verification error, provide helpful guidance
       if (error.message.includes("domain is not verified")) {
         console.error("\n💡 Quick fix for testing:");
         console.error(
@@ -96,12 +89,10 @@ export async function sendEmail(
   }
 }
 
-// Generate secure random token
 export function generateToken(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
-// Email templates
 const emailTemplates = {
   verification: (name: string | null, token: string) => ({
     subject: "Verify your email address",
@@ -441,7 +432,6 @@ const emailTemplates = {
   }),
 };
 
-// Email helper functions
 export async function sendEmailVerificationEmail(
   user: { email: string; name: string | null },
   token: string

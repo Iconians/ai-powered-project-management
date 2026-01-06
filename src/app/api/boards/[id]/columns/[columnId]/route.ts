@@ -12,7 +12,7 @@ export async function PATCH(
     const body = await request.json();
     const { name, order } = body;
 
-    // Check board access - need MEMBER role to update columns
+    
     await requireBoardAccess(boardId, "MEMBER");
 
     const column = await prisma.taskStatusColumn.findUnique({
@@ -66,7 +66,7 @@ export async function DELETE(
   try {
     const { id: boardId, columnId } = await params;
 
-    // Check board access - need MEMBER role to delete columns
+    
     await requireBoardAccess(boardId, "MEMBER");
 
     const column = await prisma.taskStatusColumn.findUnique({
@@ -89,7 +89,7 @@ export async function DELETE(
       );
     }
 
-    // Prevent deletion if column has tasks
+    
     if (column._count.tasks > 0) {
       return NextResponse.json(
         {
@@ -99,7 +99,7 @@ export async function DELETE(
       );
     }
 
-    // Check if this is the last column
+    
     const columnCount = await prisma.taskStatusColumn.count({
       where: { boardId },
     });

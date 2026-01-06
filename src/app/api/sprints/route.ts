@@ -23,10 +23,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    // Check board access - need MEMBER role to create sprints
+    
     await requireBoardAccess(boardId, "MEMBER");
 
-    // If this is set as active, deactivate other active sprints on this board
+    
     const isActive = body.isActive === true;
     if (isActive) {
       await prisma.sprint.updateMany({
@@ -55,14 +55,14 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Emit Pusher event for real-time updates
+    
     try {
       await pusherServer.trigger(`board-${boardId}`, "sprint-created", {
         sprint,
       });
     } catch (pusherError) {
       console.error("Pusher error:", pusherError);
-      // Don't fail the request if Pusher fails
+      
     }
 
     return NextResponse.json(sprint, { status: 201 });
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    // Check board access - need at least VIEWER role to see sprints
+    
     await requireBoardAccess(boardId, "VIEWER");
 
     const sprints = await prisma.sprint.findMany({

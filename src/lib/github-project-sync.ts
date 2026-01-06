@@ -2,7 +2,6 @@ import { Octokit } from "@octokit/rest";
 import { graphql } from "@octokit/graphql";
 import { TaskStatus } from "@prisma/client";
 
-// Type definitions for GitHub GraphQL API responses
 interface GitHubIssueResponse {
   repository: {
     issue: {
@@ -80,7 +79,6 @@ interface GitHubGraphQLError {
   message?: string;
 }
 
-// Sync task to GitHub Project (using GraphQL API v2)
 export async function syncTaskToGitHubProject(
   githubClient: { rest: Octokit; graphql: typeof graphql },
   issueNumber: number,
@@ -89,7 +87,6 @@ export async function syncTaskToGitHubProject(
   repoName: string
 ) {
   try {
-    // Map task status to project field value
     const statusMap: Record<TaskStatus, string> = {
       TODO: "Todo",
       IN_PROGRESS: "In Progress",
@@ -101,7 +98,6 @@ export async function syncTaskToGitHubProject(
 
     const [owner, repo] = repoName.split("/");
 
-    // First, get the issue node ID
     const issueQuery = `
       query GetIssue($owner: String!, $repo: String!, $number: Int!) {
         repository(owner: $owner, name: $repo) {
@@ -128,9 +124,6 @@ export async function syncTaskToGitHubProject(
 
     const issueNodeId = issueData.repository.issue.id;
 
-    // Get the project using owner and project number
-    // This works for both user and organization projects
-    // First, try as a user project, then as an organization project
     const userProjectQuery = `
       query GetUserProject($login: String!, $number: Int!) {
         user(login: $login) {
@@ -187,7 +180,6 @@ export async function syncTaskToGitHubProject(
 
     let project: GitHubProject | null = null;
     try {
-      // Try user project first
       const userProjectData =
         await githubClient.graphql<GitHubUserProjectResponse>(
           userProjectQuery,
@@ -198,7 +190,6 @@ export async function syncTaskToGitHubProject(
         );
       project = userProjectData.user?.projectV2 ?? null;
 
-      // If not found, try organization project
       if (!project) {
         const orgProjectData =
           await githubClient.graphql<GitHubOrgProjectResponse>(
@@ -231,8 +222,6 @@ export async function syncTaskToGitHubProject(
       throw new Error(`Project ${projectId} not found`);
     }
 
-    // Find the status field (usually named "Status")
-    // Try exact match first, then case-insensitive
     let statusField = project.fields.nodes.find(
       (field): field is GitHubProjectSingleSelectField =>
         field.name === "Status" &&
@@ -255,7 +244,6 @@ export async function syncTaskToGitHubProject(
           .map((f) => f.name)
           .join(", ")}`
       );
-      // Still try to add the issue to the project even without status field
     } else {
       console.log(
         `✅ Found status field: "${
@@ -266,8 +254,6 @@ export async function syncTaskToGitHubProject(
       );
     }
 
-    // Find if issue is already in project
-    // Query all items and check if any match our issue
     const itemsQuery = `
       query GetProjectItems($projectId: ID!) {
         node(id: $projectId) {
@@ -295,14 +281,11 @@ export async function syncTaskToGitHubProject(
       }
     );
 
-    // Find the item that matches our issue
     const existingItem = itemsData.node?.items?.nodes?.find(
       (item) => item.content?.id === issueNodeId
     );
 
     if (existingItem && statusField) {
-      // Update existing project item status
-      // Try exact match first, then case-insensitive
       let statusOption = statusField.options.find(
         (opt) => opt.name === statusValue
       );
@@ -349,7 +332,6 @@ export async function syncTaskToGitHubProject(
         );
       }
     } else if (!existingItem) {
-      // Add issue to project
       const addItemMutation = `
         mutation AddProjectItem($projectId: ID!, $contentId: ID!) {
           addProjectV2ItemById(input: { projectId: $projectId, contentId: $contentId }) {
@@ -369,8 +351,6 @@ export async function syncTaskToGitHubProject(
       );
 
       if (addResult.addProjectV2ItemById?.item?.id && statusField) {
-        // Update the status after adding
-        // Try exact match first, then case-insensitive
         let statusOption = statusField.options.find(
           (opt) => opt.name === statusValue
         );
@@ -407,7 +387,6 @@ export async function syncTaskToGitHubProject(
             }
           );
 
-          // Also update the issue label to match the project status
           try {
             const statusLabel =
               statusValue === "Todo"
@@ -424,7 +403,6 @@ export async function syncTaskToGitHubProject(
 
             const [owner, repo] = repoName.split("/");
 
-            // Get current labels
             const { data: currentIssue } = await githubClient.rest.issues.get({
               owner,
               repo,
@@ -446,7 +424,6 @@ export async function syncTaskToGitHubProject(
               statusLabels.includes(l.toLowerCase())
             );
 
-            // Remove old status labels
             for (const label of labelsToRemove) {
               if (label.toLowerCase() !== statusLabel) {
                 try {
@@ -456,13 +433,10 @@ export async function syncTaskToGitHubProject(
                     issue_number: issueNumber,
                     name: label,
                   });
-                } catch {
-                  // Label might not exist, continue
-                }
+                } catch {}
               }
             }
 
-            // Add new status label
             if (!currentLabels.some((l) => l.toLowerCase() === statusLabel)) {
               try {
                 await githubClient.rest.issues.addLabels({
@@ -475,7 +449,6 @@ export async function syncTaskToGitHubProject(
                   `✅ Updated issue label to "${statusLabel}" to match project status`
                 );
               } catch {
-                // Try creating the label if it doesn't exist
                 try {
                   await githubClient.rest.issues.createLabel({
                     owner,
@@ -496,7 +469,6 @@ export async function syncTaskToGitHubProject(
             }
           } catch (labelError) {
             console.error("Failed to update issue label:", labelError);
-            // Don't fail the whole sync if label update fails
           }
         }
 

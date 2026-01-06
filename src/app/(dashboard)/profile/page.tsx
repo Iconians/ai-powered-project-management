@@ -106,7 +106,7 @@ export default function ProfilePage() {
       return res.json();
     },
     onSuccess: async () => {
-      // Sign out and redirect to home
+      
       await signOut({ callbackUrl: "/home" });
     },
     onError: (err: Error) => {
@@ -179,7 +179,7 @@ export default function ProfilePage() {
             </div>
           )}
 
-          {/* Account Information */}
+          {}
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Account Information
@@ -204,7 +204,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Update Name */}
+          {}
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Display Name
@@ -234,7 +234,7 @@ export default function ProfilePage() {
             </form>
           </div>
 
-          {/* Update Password */}
+          {}
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
               Change Password
@@ -298,7 +298,7 @@ export default function ProfilePage() {
             </form>
           </div>
 
-          {/* Delete Account */}
+          {}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
             <h2 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-4">
               Danger Zone
@@ -308,13 +308,17 @@ export default function ProfilePage() {
                 Once you delete your account, there is no going back. This will:
               </p>
               <ul className="list-disc list-inside text-sm text-gray-700 dark:text-gray-300 mb-4 space-y-1">
-                <li>Delete all your organizations (if you're the only member)</li>
+                <li>
+                  Delete all your organizations (if you're the only member)
+                </li>
                 <li>Delete all boards and tasks you created</li>
                 <li>Cancel all active Stripe subscriptions</li>
                 <li>Remove you from all organizations you're a member of</li>
               </ul>
               <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-4">
-                Note: You cannot delete your account if you are the only administrator for an organization with other members. Please assign another administrator first.
+                Note: You cannot delete your account if you are the only
+                administrator for an organization with other members. Please
+                assign another administrator first.
               </p>
               <button
                 onClick={() => setShowDeleteModal(true)}
@@ -327,7 +331,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Delete Account Confirmation Modal */}
+      {}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
@@ -335,11 +339,13 @@ export default function ProfilePage() {
               Delete Account
             </h3>
             <p className="text-gray-700 dark:text-gray-300 mb-4">
-              This action cannot be undone. This will permanently delete your account and all associated data.
+              This action cannot be undone. This will permanently delete your
+              account and all associated data.
             </p>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Type <span className="font-mono font-bold">DELETE</span> to confirm:
+                Type <span className="font-mono font-bold">DELETE</span> to
+                confirm:
               </label>
               <input
                 type="text"

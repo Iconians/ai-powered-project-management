@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Find invitation
+    
     const invitation = await prisma.invitation.findUnique({
       where: { token },
       include: {
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if invitation is already accepted
+    
     if (invitation.acceptedAt) {
       return NextResponse.json(
         { error: "This invitation has already been accepted" },
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if invitation is expired
+    
     if (invitation.expiresAt < new Date()) {
       return NextResponse.json(
         { error: "This invitation has expired" },
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if invitation is for organization
+    
     if (invitation.type !== "ORGANIZATION" || !invitation.organizationId) {
       return NextResponse.json(
         { error: "Invalid invitation type" },
@@ -53,15 +53,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if user is logged in
+    
     const user = await getCurrentUser();
     if (!user) {
-      // Redirect to login with invitation token
+      
       const loginUrl = `/login?invite=${encodeURIComponent(token)}&type=organization`;
       return NextResponse.redirect(new URL(loginUrl, request.url));
     }
 
-    // Check if email matches
+    
     if (user.email.toLowerCase() !== invitation.email.toLowerCase()) {
       return NextResponse.json(
         {
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Check if user is already a member
+    
     const existingMember = await prisma.member.findUnique({
       where: {
         userId_organizationId: {
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (existingMember) {
-      // Mark invitation as accepted even though user is already a member
+      
       await prisma.invitation.update({
         where: { id: invitation.id },
         data: { acceptedAt: new Date() },
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Create member
+    
     await prisma.member.create({
       data: {
         userId: user.id,
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Mark invitation as accepted
+    
     await prisma.invitation.update({
       where: { id: invitation.id },
       data: { acceptedAt: new Date() },

@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    // Check if organization has a paid subscription
+    
     try {
       await requirePaidSubscription(board.organizationId);
     } catch (error) {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     await requireMember(board.organizationId);
 
-    // Get backlog tasks
+    
     const backlogTasks = await prisma.task.findMany({
       where: {
         boardId,
@@ -110,11 +110,11 @@ Example:
         systemPrompt
       );
     } catch (error) {
-      // Fall back to simple rule-based selection if AI fails
+      
       console.error("AI generation failed, using rule-based selection:", error);
       const selectedTasks = backlogTasks
         .filter((t) => (t.estimatedHours || 0) <= capacity)
-        .slice(0, Math.floor(capacity / 8)); // Rough estimate: 8 hours per task
+        .slice(0, Math.floor(capacity / 8)); 
 
       return NextResponse.json({
         goal: `Complete ${selectedTasks.length} high-priority tasks`,
@@ -129,7 +129,7 @@ Example:
       });
     }
 
-    // Parse AI response
+    
     let suggestion;
     try {
       const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
@@ -139,7 +139,7 @@ Example:
         suggestion = JSON.parse(aiResponse);
       }
     } catch (error) {
-      // Fall back to rule-based
+      
       const selectedTasks = backlogTasks
         .filter((t) => (t.estimatedHours || 0) <= capacity)
         .slice(0, Math.floor(capacity / 8));
@@ -157,7 +157,7 @@ Example:
       });
     }
 
-    // Validate task IDs exist and get task details
+    
     const validTasks = backlogTasks.filter((t) =>
       suggestion.taskIds?.includes(t.id)
     );

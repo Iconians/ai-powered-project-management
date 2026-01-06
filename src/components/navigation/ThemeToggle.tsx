@@ -6,21 +6,21 @@ import { useEffect, useState } from "react";
 export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
-  // Call hook at top level - will throw if provider not available, but that's OK for client components
+  
   let themeContext:
     | { theme: "light" | "dark"; toggleTheme: () => void }
     | undefined;
   try {
     themeContext = useTheme();
   } catch {
-    // Provider not available during SSR - will be available on client
+    
   }
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Fallback for when provider isn't available
+  
   const [fallbackTheme, setFallbackTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export function ThemeToggle() {
     }
   };
 
-  // Prevent hydration mismatch
+  
   if (!mounted) {
     return (
       <button

@@ -5,14 +5,14 @@ import { redirect } from "next/navigation";
 export default async function HomePage() {
   const user = await getCurrentUser();
 
-  // If user is logged in, redirect to boards
+  
   if (user) {
     redirect("/boards");
   }
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
-      {/* Hero Section */}
+      {}
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
         <div className="absolute inset-0 bg-grid-pattern opacity-5 dark:opacity-10"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 sm:pt-24 sm:pb-20">
@@ -47,7 +47,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {}
       <section className="py-20 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -61,7 +61,7 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Feature 1 */}
+            {}
             <div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all hover:shadow-lg">
               <div className="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center mb-4">
                 <svg
@@ -87,7 +87,7 @@ export default async function HomePage() {
               </p>
             </div>
 
-            {/* Feature 2 */}
+            {}
             <div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all hover:shadow-lg">
               <div className="w-12 h-12 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center mb-4">
                 <svg
@@ -114,7 +114,7 @@ export default async function HomePage() {
               </p>
             </div>
 
-            {/* Feature 3 */}
+            {}
             <div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all hover:shadow-lg">
               <div className="w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/50 flex items-center justify-center mb-4">
                 <svg
@@ -140,7 +140,7 @@ export default async function HomePage() {
               </p>
             </div>
 
-            {/* Feature 4 */}
+            {}
             <div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all hover:shadow-lg">
               <div className="w-12 h-12 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center mb-4">
                 <svg
@@ -166,7 +166,7 @@ export default async function HomePage() {
               </p>
             </div>
 
-            {/* Feature 5 */}
+            {}
             <div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 transition-all hover:shadow-lg">
               <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center mb-4">
                 <svg
@@ -192,7 +192,7 @@ export default async function HomePage() {
               </p>
             </div>
 
-            {/* Feature 6 */}
+            {}
             <div className="p-6 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 transition-all hover:shadow-lg">
               <div className="w-12 h-12 rounded-lg bg-pink-100 dark:bg-pink-900/50 flex items-center justify-center mb-4">
                 <svg
@@ -221,7 +221,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Pricing Preview Section */}
+      {}
       <section className="py-20 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -234,7 +234,7 @@ export default async function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {/* Free Plan */}
+            {}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-8 shadow-sm">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Free
@@ -327,7 +327,7 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {/* Pro Plan */}
+            {}
             <div className="bg-white dark:bg-gray-900 rounded-xl border-2 border-blue-500 dark:border-blue-400 p-8 shadow-lg relative">
               <div className="absolute top-0 right-0 -mt-4 -mr-4 bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
                 POPULAR
@@ -423,7 +423,7 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {/* Enterprise Plan */}
+            {}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-8 shadow-sm">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
                 Enterprise
@@ -519,7 +519,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">

@@ -4,7 +4,7 @@ import { generateToken, sendPasswordResetEmail } from "@/lib/email";
 import { rateLimiters } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
-  // Rate limiting
+  
   const rateLimitResponse = await rateLimiters.forgotPassword(request);
   if (rateLimitResponse) {
     return rateLimitResponse;
@@ -18,12 +18,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    // Find user by email
+    
     const user = await prisma.user.findUnique({
       where: { email },
     });
 
-    // Don't reveal if user exists or not (security best practice)
+    
     if (!user) {
       return NextResponse.json({
         message:
@@ -31,12 +31,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Generate reset token
+    
     const resetToken = generateToken();
     const tokenExpires = new Date();
-    tokenExpires.setHours(tokenExpires.getHours() + 1); // 1 hour
+    tokenExpires.setHours(tokenExpires.getHours() + 1); 
 
-    // Update user with reset token
+    
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send password reset email
+    
     try {
       await sendPasswordResetEmail(user, resetToken);
     } catch (emailError) {

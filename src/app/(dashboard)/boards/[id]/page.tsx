@@ -10,7 +10,7 @@ export default async function BoardPage({
   const { id } = await params;
 
   try {
-    // Check board access (requires both org membership and board access)
+    
     const { board, boardMember } = await requireBoardAccess(id);
 
     return (
@@ -23,7 +23,7 @@ export default async function BoardPage({
       />
     );
   } catch (error) {
-    // Redirect if no access
+    
     redirect("/boards");
   }
 }

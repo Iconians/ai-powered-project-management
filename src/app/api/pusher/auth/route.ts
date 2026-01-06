@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { socket_id, channel_name } = body;
 
-    // Authorize private channels (you can add more logic here)
+    
     if (channel_name.startsWith("private-")) {
       const auth = pusherServer.authorizeChannel(socket_id, channel_name, {
         user_id: user.id,
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(auth);
     }
 
-    // For presence channels
+    
     if (channel_name.startsWith("presence-")) {
       const auth = pusherServer.authorizeChannel(socket_id, channel_name, {
         user_id: user.id,

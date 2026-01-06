@@ -29,7 +29,7 @@ export default function BillingPage() {
   const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
 
-  // Fetch user's organizations
+  
   const { data: organizations } = useQuery({
     queryKey: ["organizations"],
     queryFn: async () => {
@@ -39,7 +39,7 @@ export default function BillingPage() {
     },
   });
 
-  // Fetch subscription for selected organization
+  
   const { data: subscription, isLoading: isLoadingSubscription } =
     useQuery<Subscription | null>({
       queryKey: ["subscription", selectedOrgId],
@@ -50,7 +50,7 @@ export default function BillingPage() {
         );
         if (!res.ok) {
           if (res.status === 404) {
-            // Return null for 404 - we'll use Free plan as default
+            
             return null;
           }
           throw new Error("Failed to fetch subscription");
@@ -60,7 +60,7 @@ export default function BillingPage() {
       enabled: !!selectedOrgId,
     });
 
-  // Fetch all plans
+  
   const { data: plans } = useQuery<Plan[]>({
     queryKey: ["plans"],
     queryFn: async () => {
@@ -70,7 +70,7 @@ export default function BillingPage() {
     },
   });
 
-  // Fetch usage
+  
   const { data: usage } = useQuery({
     queryKey: ["usage", selectedOrgId],
     queryFn: async () => {
@@ -101,20 +101,20 @@ export default function BillingPage() {
       }
       const data = await res.json();
 
-      // If it's a free plan, just refresh the page
+      
       if (data.message && data.message.includes("Free plan")) {
         window.location.reload();
         return data;
       }
 
-      // Otherwise redirect to Stripe checkout
+      
       if (data.url) {
         window.location.href = data.url;
       }
       return data;
     },
     onSuccess: () => {
-      // Invalidate subscription query to refresh data
+      
       queryClient.invalidateQueries({
         queryKey: ["subscription", selectedOrgId],
       });
@@ -160,15 +160,15 @@ export default function BillingPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      // Invalidate subscription query to refresh data
+      
       queryClient.invalidateQueries({
         queryKey: ["subscription", selectedOrgId],
       });
-      // Also update the query data directly if we got subscription data back
+      
       if (data?.subscription) {
-        // Ensure plan is included before setting query data
+        
         if (!data.subscription.plan) {
-          // If plan is missing, just invalidate and refetch
+          
           queryClient.invalidateQueries({
             queryKey: ["subscription", selectedOrgId],
           });
@@ -179,7 +179,7 @@ export default function BillingPage() {
           data.subscription
         );
       }
-      // Force a refetch to ensure we have the latest data
+      
       setTimeout(() => {
         queryClient.refetchQueries({
           queryKey: ["subscription", selectedOrgId],
@@ -192,21 +192,21 @@ export default function BillingPage() {
     },
   });
 
-  // Auto-select first organization if none selected
-  // This must be called before any conditional returns (Rules of Hooks)
+  
+  
   useEffect(() => {
     if (!selectedOrgId && organizations && organizations.length > 0) {
       setSelectedOrgId(organizations[0].id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [organizations]);
 
-  // Listen for real-time subscription updates via Pusher
+  
   useRealtime({
     channelName: selectedOrgId ? `organization-${selectedOrgId}` : "",
     eventName: "subscription-updated",
     callback: () => {
-      // Invalidate subscription query when update is received
+      
       if (selectedOrgId) {
         queryClient.invalidateQueries({
           queryKey: ["subscription", selectedOrgId],
@@ -215,23 +215,23 @@ export default function BillingPage() {
     },
   });
 
-  // Auto-sync subscription if it has a Stripe subscription ID but might be out of date
+  
   useEffect(() => {
     if (
       subscription?.stripeSubscriptionId &&
-      subscription.plan?.name === "Free" && // Add optional chaining
+      subscription.plan?.name === "Free" && 
       selectedOrgId &&
       !syncSubscriptionMutation.isPending &&
       !syncSubscriptionMutation.isSuccess
     ) {
-      // If subscription has Stripe ID but shows Free plan, it's likely out of sync
-      // Auto-sync it
+      
+      
       syncSubscriptionMutation.mutate(selectedOrgId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, [
     subscription?.stripeSubscriptionId,
-    subscription?.plan?.name, // Add optional chaining
+    subscription?.plan?.name, 
     selectedOrgId,
     syncSubscriptionMutation,
   ]);
@@ -256,7 +256,7 @@ export default function BillingPage() {
     );
   }
 
-  // Get current plan - use subscription plan if available, otherwise default to Free plan
+  
   const currentPlan =
     subscription?.plan ||
     (plans ? plans.find((p) => p.name === "Free") || null : null);
@@ -281,7 +281,7 @@ export default function BillingPage() {
           </Link>
         </div>
 
-        {/* Organization Selector */}
+        {}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Select Organization
@@ -305,7 +305,7 @@ export default function BillingPage() {
           </div>
         ) : (
           <>
-            {/* Current Subscription - Always show when organization is selected */}
+            {}
             {selectedOrgId && currentPlan && (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6 border border-gray-200 dark:border-gray-700">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
@@ -355,9 +355,9 @@ export default function BillingPage() {
                   </div>
                 )}
                 <div className="flex flex-col sm:flex-row gap-2">
-                  {/* Only show Refresh Status for paid plans */}
+                  {}
                   {(() => {
-                    // Handle Decimal type from Prisma
+                    
                     const priceValue = currentPlan?.price;
                     let planPrice = 0;
                     if (priceValue) {
@@ -392,7 +392,7 @@ export default function BillingPage() {
                               : "Refresh Status"}
                           </button>
                         )}
-                        {/* Only show Manage Subscription for paid plans with Stripe subscription */}
+                        {}
                         {isPaidPlan && subscription?.stripeSubscriptionId && (
                           <button
                             onClick={() =>
@@ -413,7 +413,7 @@ export default function BillingPage() {
               </div>
             )}
 
-            {/* Available Plans */}
+            {}
             {plans && (
               <div>
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">

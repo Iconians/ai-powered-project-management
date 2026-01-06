@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
-import Stripe from "stripe";
+import type Stripe from "stripe";
 import { pusherServer } from "@/lib/pusher";
 import {
   sendSubscriptionWelcomeEmail,
@@ -10,16 +10,31 @@ import {
   sendSubscriptionCancelledEmail,
 } from "@/lib/email";
 
-// Disable body parsing for this route - we need the raw body for signature verification
+function isStripeSubscription(obj: unknown): obj is {
+  id: string;
+  customer: string | Stripe.Customer | Stripe.DeletedCustomer;
+  status: string;
+  current_period_start: number;
+  current_period_end: number;
+  cancel_at_period_end: boolean;
+  metadata: Stripe.Metadata | null;
+  items: { data: Array<{ price: { id: string } }> };
+} {
+  return (
+    typeof obj === "object" &&
+    obj !== null &&
+    "id" in obj &&
+    "current_period_start" in obj &&
+    "current_period_end" in obj
+  );
+}
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
   try {
-    // Get the raw body as text (not parsed JSON)
-    // This is critical - Stripe needs the exact raw body for signature verification
-    // In Next.js 16, we need to use request.body directly or ensure bodyParser is disabled
     const body = await request.text();
     const signature = (await headers()).get("stripe-signature");
 
@@ -56,19 +71,18 @@ export async function POST(request: NextRequest) {
       switch (event.type) {
         case "customer.subscription.created":
         case "customer.subscription.updated": {
-          const subscription = event.data.object as Stripe.Subscription;
-
-          // Type guard to ensure we have the subscription properties
-          if (!("current_period_start" in subscription)) {
-            console.error("Subscription object missing expected properties");
+          const eventObj = event.data.object;
+          if (!isStripeSubscription(eventObj)) {
+            console.error("Invalid subscription object in webhook");
             break;
           }
-          let organizationId = subscription.metadata?.organizationId;
+          const stripeSubscription = eventObj;
 
-          // If no organizationId in metadata, try to find it by subscription ID
+          let organizationId = stripeSubscription.metadata?.organizationId;
+
           if (!organizationId) {
             const existing = await prisma.subscription.findUnique({
-              where: { stripeSubscriptionId: subscription.id },
+              where: { stripeSubscriptionId: stripeSubscription.id },
               select: { organizationId: true },
             });
             if (existing) {
@@ -81,14 +95,13 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          const priceId = subscription.items.data[0]?.price.id;
+          const priceId = stripeSubscription.items.data[0]?.price.id;
 
           if (!priceId) {
             console.error("No price ID found in subscription items");
             break;
           }
 
-          // Find the plan by Stripe price ID
           const plan = await prisma.plan.findUnique({
             where: { stripePriceId: priceId },
           });
@@ -98,7 +111,6 @@ export async function POST(request: NextRequest) {
             break;
           }
 
-          // Test database connection first
           try {
             await prisma.$queryRaw`SELECT 1`;
           } catch (dbConnError) {
@@ -112,7 +124,6 @@ export async function POST(request: NextRequest) {
             );
           }
 
-          // Verify organization exists
           const organization = await prisma.organization.findUnique({
             where: { id: organizationId },
             select: { id: true, name: true },
@@ -125,56 +136,58 @@ export async function POST(request: NextRequest) {
             );
           }
 
-          // Update or create subscription
           try {
             const updatedSubscription = await prisma.subscription.upsert({
               where: { organizationId },
               update: {
                 planId: plan.id,
-                stripeCustomerId: subscription.customer as string,
-                stripeSubscriptionId: subscription.id,
+                stripeCustomerId: stripeSubscription.customer as string,
+                stripeSubscriptionId: stripeSubscription.id,
                 status:
-                  subscription.status === "active"
+                  stripeSubscription.status === "active"
                     ? "ACTIVE"
-                    : subscription.status === "trialing"
+                    : stripeSubscription.status === "trialing"
                     ? "TRIALING"
-                    : subscription.status === "past_due"
+                    : stripeSubscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: (subscription as any).current_period_start
-                  ? new Date((subscription as any).current_period_start * 1000)
-                  : null,
-                currentPeriodEnd: (subscription as any).current_period_end
-                  ? new Date((subscription as any).current_period_end * 1000)
-                  : null,
+                currentPeriodStart:
+                  typeof stripeSubscription.current_period_start === "number"
+                    ? new Date(stripeSubscription.current_period_start * 1000)
+                    : null,
+                currentPeriodEnd:
+                  typeof stripeSubscription.current_period_end === "number"
+                    ? new Date(stripeSubscription.current_period_end * 1000)
+                    : null,
                 cancelAtPeriodEnd:
-                  (subscription as any).cancel_at_period_end ?? false,
+                  stripeSubscription.cancel_at_period_end ?? false,
               },
               create: {
                 organizationId,
                 planId: plan.id,
-                stripeCustomerId: subscription.customer as string,
-                stripeSubscriptionId: subscription.id,
+                stripeCustomerId: stripeSubscription.customer as string,
+                stripeSubscriptionId: stripeSubscription.id,
                 status:
-                  subscription.status === "active"
+                  stripeSubscription.status === "active"
                     ? "ACTIVE"
-                    : subscription.status === "trialing"
+                    : stripeSubscription.status === "trialing"
                     ? "TRIALING"
-                    : subscription.status === "past_due"
+                    : stripeSubscription.status === "past_due"
                     ? "PAST_DUE"
                     : "CANCELED",
-                currentPeriodStart: (subscription as any).current_period_start
-                  ? new Date((subscription as any).current_period_start * 1000)
-                  : null,
-                currentPeriodEnd: (subscription as any).current_period_end
-                  ? new Date((subscription as any).current_period_end * 1000)
-                  : null,
+                currentPeriodStart:
+                  typeof stripeSubscription.current_period_start === "number"
+                    ? new Date(stripeSubscription.current_period_start * 1000)
+                    : null,
+                currentPeriodEnd:
+                  typeof stripeSubscription.current_period_end === "number"
+                    ? new Date(stripeSubscription.current_period_end * 1000)
+                    : null,
                 cancelAtPeriodEnd:
-                  (subscription as any).cancel_at_period_end ?? false,
+                  stripeSubscription.cancel_at_period_end ?? false,
               },
             });
 
-            // Send subscription welcome email if subscription is newly created and active
             if (
               event.type === "customer.subscription.created" &&
               updatedSubscription.status === "ACTIVE" &&
@@ -203,11 +216,9 @@ export async function POST(request: NextRequest) {
                   "Failed to send subscription welcome email:",
                   emailError
                 );
-                // Don't fail the webhook if email fails
               }
             }
 
-            // Trigger Pusher event for real-time update
             try {
               await pusherServer.trigger(
                 `organization-${organizationId}`,
@@ -219,27 +230,30 @@ export async function POST(request: NextRequest) {
               );
             } catch (error) {
               console.error("Failed to trigger Pusher event:", error);
-              // Don't fail the webhook if Pusher fails
             }
           } catch (error) {
             console.error(
               "Error upserting subscription in customer.subscription.created/updated:",
               error
             );
-            throw error; // Re-throw to be caught by outer try-catch
+            throw error;
           }
           break;
         }
 
         case "customer.subscription.deleted": {
-          const subscription = event.data.object as Stripe.Subscription;
-          const organizationId = subscription.metadata?.organizationId;
+          const eventObj = event.data.object;
+          if (!isStripeSubscription(eventObj)) {
+            console.error("Invalid subscription object in webhook");
+            break;
+          }
+          const stripeSubscription = eventObj;
+          const organizationId = stripeSubscription.metadata?.organizationId;
 
           let updatedSubscription;
           if (!organizationId) {
-            // Try to find by subscription ID
             const existing = await prisma.subscription.findUnique({
-              where: { stripeSubscriptionId: subscription.id },
+              where: { stripeSubscriptionId: stripeSubscription.id },
               include: { plan: true },
             });
             if (existing) {
@@ -248,7 +262,7 @@ export async function POST(request: NextRequest) {
                 data: { status: "CANCELED" },
                 include: { plan: true },
               });
-              // Send cancellation email
+
               try {
                 const organization = await prisma.organization.findUnique({
                   where: { id: existing.organizationId },
@@ -277,7 +291,6 @@ export async function POST(request: NextRequest) {
                   emailError
                 );
               }
-              // Trigger Pusher event
               try {
                 await pusherServer.trigger(
                   `organization-${existing.organizationId}`,
@@ -301,7 +314,7 @@ export async function POST(request: NextRequest) {
               data: { status: "CANCELED" },
               include: { plan: true },
             });
-            // Send cancellation email
+
             try {
               const organization = await prisma.organization.findUnique({
                 where: { id: organizationId },
@@ -330,7 +343,7 @@ export async function POST(request: NextRequest) {
                 emailError
               );
             }
-            // Trigger Pusher event
+
             try {
               await pusherServer.trigger(
                 `organization-${organizationId}`,
@@ -349,10 +362,13 @@ export async function POST(request: NextRequest) {
 
         case "invoice.payment_succeeded": {
           const invoice = event.data.object as Stripe.Invoice;
+          const invoiceSubscription = (
+            invoice as { subscription?: string | Stripe.Subscription | null }
+          ).subscription;
           const subscriptionId =
-            typeof (invoice as any).subscription === "string"
-              ? (invoice as any).subscription
-              : (invoice as any).subscription?.id || null;
+            typeof invoiceSubscription === "string"
+              ? invoiceSubscription
+              : invoiceSubscription?.id || null;
 
           if (subscriptionId) {
             const subscription = await prisma.subscription.findUnique({
@@ -365,7 +381,6 @@ export async function POST(request: NextRequest) {
                 data: { status: "ACTIVE" },
               });
 
-              // Trigger Pusher event
               try {
                 await pusherServer.trigger(
                   `organization-${subscription.organizationId}`,
@@ -385,10 +400,13 @@ export async function POST(request: NextRequest) {
 
         case "invoice.payment_failed": {
           const invoice = event.data.object as Stripe.Invoice;
+          const invoiceSubscription = (
+            invoice as { subscription?: string | Stripe.Subscription | null }
+          ).subscription;
           const subscriptionId =
-            typeof (invoice as any).subscription === "string"
-              ? (invoice as any).subscription
-              : (invoice as any).subscription?.id || null;
+            typeof invoiceSubscription === "string"
+              ? invoiceSubscription
+              : invoiceSubscription?.id || null;
 
           if (subscriptionId) {
             const subscription = await prisma.subscription.findUnique({
@@ -401,7 +419,6 @@ export async function POST(request: NextRequest) {
                 data: { status: "PAST_DUE" },
               });
 
-              // Send payment failed email
               try {
                 const organization = await prisma.organization.findUnique({
                   where: { id: subscription.organizationId },
@@ -427,7 +444,6 @@ export async function POST(request: NextRequest) {
                 );
               }
 
-              // Trigger Pusher event
               try {
                 await pusherServer.trigger(
                   `organization-${subscription.organizationId}`,
@@ -446,7 +462,6 @@ export async function POST(request: NextRequest) {
         }
 
         case "checkout.session.completed": {
-          // Handle checkout completion - create/update subscription
           const session = event.data.object as Stripe.Checkout.Session;
           const organizationId = session.metadata?.organizationId;
 
@@ -455,7 +470,6 @@ export async function POST(request: NextRequest) {
             break;
           }
 
-          // Get the subscription ID from the checkout session
           const subscriptionId = session.subscription as string;
           if (!subscriptionId) {
             console.error("No subscription ID in checkout session");
@@ -463,10 +477,13 @@ export async function POST(request: NextRequest) {
           }
 
           try {
-            // Retrieve the subscription from Stripe
-            const stripeSubscription = (await stripe.subscriptions.retrieve(
+            const retrievedSub = await stripe.subscriptions.retrieve(
               subscriptionId
-            )) as Stripe.Subscription;
+            );
+            if (!isStripeSubscription(retrievedSub)) {
+              throw new Error("Invalid subscription retrieved from Stripe");
+            }
+            const stripeSubscription = retrievedSub;
 
             const priceId = stripeSubscription.items.data[0]?.price.id;
 
@@ -475,7 +492,6 @@ export async function POST(request: NextRequest) {
               break;
             }
 
-            // Find the plan by Stripe price ID
             const plan = await prisma.plan.findUnique({
               where: {
                 stripePriceId: priceId,
@@ -487,7 +503,6 @@ export async function POST(request: NextRequest) {
               break;
             }
 
-            // Test database connection first
             try {
               await prisma.$queryRaw`SELECT 1`;
             } catch (dbConnError) {
@@ -501,7 +516,6 @@ export async function POST(request: NextRequest) {
               );
             }
 
-            // Verify organization exists
             const organization = await prisma.organization.findUnique({
               where: { id: organizationId },
               select: { id: true, name: true },
@@ -514,7 +528,6 @@ export async function POST(request: NextRequest) {
               );
             }
 
-            // Update or create subscription
             let updatedSubscription;
             try {
               updatedSubscription = await prisma.subscription.upsert({
@@ -531,20 +544,16 @@ export async function POST(request: NextRequest) {
                       : stripeSubscription.status === "past_due"
                       ? "PAST_DUE"
                       : "CANCELED",
-                  currentPeriodStart: (stripeSubscription as any)
-                    .current_period_start
-                    ? new Date(
-                        (stripeSubscription as any).current_period_start * 1000
-                      )
-                    : null,
-                  currentPeriodEnd: (stripeSubscription as any)
-                    .current_period_end
-                    ? new Date(
-                        (stripeSubscription as any).current_period_end * 1000
-                      )
-                    : null,
+                  currentPeriodStart:
+                    typeof stripeSubscription.current_period_start === "number"
+                      ? new Date(stripeSubscription.current_period_start * 1000)
+                      : null,
+                  currentPeriodEnd:
+                    typeof stripeSubscription.current_period_end === "number"
+                      ? new Date(stripeSubscription.current_period_end * 1000)
+                      : null,
                   cancelAtPeriodEnd:
-                    (stripeSubscription as any).cancel_at_period_end ?? false,
+                    stripeSubscription.cancel_at_period_end ?? false,
                 },
                 create: {
                   organizationId,
@@ -559,20 +568,16 @@ export async function POST(request: NextRequest) {
                       : stripeSubscription.status === "past_due"
                       ? "PAST_DUE"
                       : "CANCELED",
-                  currentPeriodStart: (stripeSubscription as any)
-                    .current_period_start
-                    ? new Date(
-                        (stripeSubscription as any).current_period_start * 1000
-                      )
-                    : null,
-                  currentPeriodEnd: (stripeSubscription as any)
-                    .current_period_end
-                    ? new Date(
-                        (stripeSubscription as any).current_period_end * 1000
-                      )
-                    : null,
+                  currentPeriodStart:
+                    typeof stripeSubscription.current_period_start === "number"
+                      ? new Date(stripeSubscription.current_period_start * 1000)
+                      : null,
+                  currentPeriodEnd:
+                    typeof stripeSubscription.current_period_end === "number"
+                      ? new Date(stripeSubscription.current_period_end * 1000)
+                      : null,
                   cancelAtPeriodEnd:
-                    (stripeSubscription as any).cancel_at_period_end ?? false,
+                    stripeSubscription.cancel_at_period_end ?? false,
                 },
               });
             } catch (dbError) {
@@ -580,11 +585,9 @@ export async function POST(request: NextRequest) {
                 "Database error during subscription upsert:",
                 dbError
               );
-              // Re-throw to be caught by outer catch
               throw dbError;
             }
 
-            // Trigger Pusher event
             try {
               await pusherServer.trigger(
                 `organization-${organizationId}`,
@@ -608,14 +611,12 @@ export async function POST(request: NextRequest) {
         }
 
         default:
-          // Unhandled event type - silently continue
           break;
       }
 
       return NextResponse.json({ received: true });
     } catch (error) {
       console.error("Error processing webhook:", error);
-      // Return 200 to prevent Stripe from retrying
       return NextResponse.json(
         { error: "Webhook processing failed" },
         { status: 200 }
@@ -623,7 +624,6 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error("Outer webhook error:", error);
-    // Return 200 to prevent Stripe from retrying
     return NextResponse.json(
       { error: "Webhook processing failed" },
       { status: 200 }

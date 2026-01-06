@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface TaskGeneratorProps {
@@ -34,7 +35,6 @@ export function TaskGenerator({ boardId, onClose }: TaskGeneratorProps) {
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
       setIsGenerating(false);
       onClose();
-      // Show success message
       alert(`Successfully generated ${data.tasks?.length || 0} tasks!`);
     },
     onError: (error) => {
@@ -64,14 +64,18 @@ export function TaskGenerator({ boardId, onClose }: TaskGeneratorProps) {
             ✕
           </button>
         </div>
-        
+
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Describe your project or feature, and AI will break it down into actionable tasks with priorities and time estimates.
+          Describe your project or feature, and AI will break it down into
+          actionable tasks with priorities and time estimates.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            >
               Project Description *
             </label>
             <textarea
@@ -130,19 +134,22 @@ export function TaskGenerator({ boardId, onClose }: TaskGeneratorProps) {
               Error generating tasks
             </p>
             <p className="text-red-500 dark:text-red-500 text-xs mt-1">
-              {generateTasksMutation.error?.message || "Failed to generate tasks. Please try again."}
+              {generateTasksMutation.error?.message ||
+                "Failed to generate tasks. Please try again."}
             </p>
-            {generateTasksMutation.error?.message?.includes("paid subscription") && (
+            {generateTasksMutation.error?.message?.includes(
+              "paid subscription"
+            ) && (
               <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800">
                 <p className="text-sm text-gray-700 dark:text-gray-300 mb-2">
                   AI features require a Pro or Enterprise subscription.
                 </p>
-                <a
+                <Link
                   href="/billing"
                   className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium"
                 >
                   Upgrade to Pro or Enterprise
-                </a>
+                </Link>
               </div>
             )}
           </div>
@@ -151,4 +158,3 @@ export function TaskGenerator({ boardId, onClose }: TaskGeneratorProps) {
     </div>
   );
 }
-

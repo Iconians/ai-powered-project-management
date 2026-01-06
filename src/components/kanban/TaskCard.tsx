@@ -124,11 +124,11 @@ export function TaskCard({
       ref={setNodeRef}
       style={{
         ...style,
-        // Allow vertical scrolling but prevent horizontal panning when not dragging
-        touchAction: isViewer ? "auto" : "pan-y", // Allow vertical scrolling, prevent horizontal panning
-        WebkitTouchCallout: "none", // Prevent iOS callout menu
-        WebkitUserSelect: "none", // Prevent text selection on iOS
-        userSelect: "none", // Prevent text selection
+        
+        touchAction: isViewer ? "auto" : "pan-y", 
+        WebkitTouchCallout: "none", 
+        WebkitUserSelect: "none", 
+        userSelect: "none", 
       }}
       {...(isViewer ? {} : { ...attributes, ...listeners })}
       className={`bg-white dark:bg-gray-700 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
@@ -184,7 +184,7 @@ export function TaskCard({
             {showAssignee ? (
               <button
                 onClick={handleAssigneeClick}
-                onTouchStart={(e) => e.stopPropagation()} // Prevent drag when touching button
+                onTouchStart={(e) => e.stopPropagation()} 
                 className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 flex items-center gap-1 hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors cursor-pointer"
                 title="Click to change assignee"
               >
@@ -194,7 +194,7 @@ export function TaskCard({
             ) : (
               <button
                 onClick={handleAssigneeClick}
-                onTouchStart={(e) => e.stopPropagation()} // Prevent drag when touching button
+                onTouchStart={(e) => e.stopPropagation()} 
                 className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-800 transition-colors cursor-pointer"
                 title="Click to assign"
               >

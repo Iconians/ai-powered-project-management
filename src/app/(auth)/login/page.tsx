@@ -25,7 +25,7 @@ function LoginForm() {
     }
   }, [searchParams]);
 
-  // Redirect if already logged in
+  
   useEffect(() => {
     if (status === "authenticated" && session) {
       router.push("/boards");
@@ -38,8 +38,8 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      // Check email verification status before attempting login
-      // This gives us a better error message
+      
+      
       try {
         const checkRes = await fetch("/api/auth/check-email-verification", {
           method: "POST",
@@ -58,7 +58,7 @@ function LoginForm() {
           }
         }
       } catch (checkError) {
-        // If check fails, continue with login attempt
+        
         console.warn("Failed to check email verification:", checkError);
       }
 
@@ -70,7 +70,7 @@ function LoginForm() {
 
       if (result?.error) {
         console.error("Login error:", result.error);
-        // Handle specific error cases
+        
         if (result.error === "EMAIL_NOT_VERIFIED") {
           setError(
             "Please verify your email address before logging in. Check your inbox for the verification email."
@@ -96,8 +96,8 @@ function LoginForm() {
         return;
       }
 
-      // Wait for the session to be established
-      // Poll the session endpoint until we get a valid session
+      
+      
       let sessionEstablished = false;
       for (let i = 0; i < 10; i++) {
         await new Promise((resolve) => setTimeout(resolve, 200));
@@ -109,7 +109,7 @@ function LoginForm() {
       }
 
       if (sessionEstablished) {
-        // Session is confirmed, do a full page reload
+        
         window.location.href = "/boards";
       } else {
         setError("Session not established. Please try again.");

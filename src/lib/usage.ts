@@ -111,7 +111,7 @@ function getCurrentPeriod(): string {
   return `${year}-${month}`;
 }
 
-// Get actual counts from database (not just usage records)
+
 export async function getActualCounts(organizationId: string) {
   const [boardCount, memberCount, taskCount] = await Promise.all([
     prisma.board.count({

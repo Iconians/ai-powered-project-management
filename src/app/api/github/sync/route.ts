@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const githubClient = getGitHubClient(board.githubAccessToken);
 
     if (direction === "to-github" || direction === "both") {
-      // Sync board to GitHub
+      
       await syncBoardToGitHub(
         board,
         board.tasks,
@@ -71,10 +71,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (direction === "from-github" || direction === "both") {
-      // Sync GitHub to board
+      
       await syncGitHubToBoard(githubClient, board.githubRepoName, boardId);
-      // Process issues and update/create tasks
-      // This is simplified - you'd want more sophisticated conflict resolution
+      
+      
     }
 
     return NextResponse.json({

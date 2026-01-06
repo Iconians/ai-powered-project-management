@@ -18,7 +18,7 @@ export async function POST(
       );
     }
 
-    // Check that requester is org admin (only org admins can add board members)
+    
     const { board, orgMember } = await requireBoardAccess(boardId);
 
     if (orgMember.role !== "ADMIN") {
@@ -28,7 +28,7 @@ export async function POST(
       );
     }
 
-    // Verify the member belongs to the organization
+    
     const member = await prisma.member.findUnique({
       where: { id: memberId },
     });
@@ -40,7 +40,7 @@ export async function POST(
       );
     }
 
-    // Check if already a board member
+    
     const existingBoardMember = await prisma.boardMember.findUnique({
       where: {
         boardId_memberId: {
@@ -57,7 +57,7 @@ export async function POST(
       );
     }
 
-    // Add board member
+    
     const boardMember = await prisma.boardMember.create({
       data: {
         boardId,
@@ -94,7 +94,7 @@ export async function GET(
   try {
     const { id: boardId } = await params;
 
-    // Check board access
+    
     await requireBoardAccess(boardId);
 
     const boardMembers = await prisma.boardMember.findMany({

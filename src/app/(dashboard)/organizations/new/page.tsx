@@ -29,7 +29,7 @@ function NewOrganizationForm() {
         throw new Error(data.error || "Failed to create organization");
       }
 
-      await res.json(); // Response not needed, just ensure it's successful
+      await res.json(); 
       router.push("/boards");
       router.refresh();
     } catch (error) {

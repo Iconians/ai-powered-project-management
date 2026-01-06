@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
-    // Input validation
+    
     if (name.length > 100) {
       return NextResponse.json(
         { error: "Organization name must be less than 100 characters" },
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Sanitize: Remove potentially dangerous characters
+    
     if (/[<>\"'&]/.test(name)) {
       return NextResponse.json(
         { error: "Organization name contains invalid characters" },
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify the user exists in the database
+    
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
     });
@@ -54,12 +54,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check organization limit for Free plan users
-    // Free plan users can only create 1 organization
+    
+    
     const userOrganizations = await prisma.member.findMany({
       where: {
         userId: user.id,
-        role: "ADMIN", // Only count organizations where user is admin
+        role: "ADMIN", 
       },
       include: {
         organization: {
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Check if user already has a Free plan organization
+    
     const hasFreePlanOrg = userOrganizations.some((member) => {
       const activeSubscription = member.organization.subscriptions.find(
         (sub) => sub.status === "ACTIVE"
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get the free plan for new organizations
+    
     const freePlan = await prisma.plan.findFirst({
       where: { name: "Free" },
     });
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Send welcome email and subscription required email
+    
     try {
       const adminMember = organization.members.find((m) => m.role === "ADMIN");
       if (adminMember && adminMember.user) {
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (emailError) {
       console.error("Failed to send welcome emails:", emailError);
-      // Don't fail organization creation if email fails
+      
     }
 
     return NextResponse.json(organization, { status: 201 });
@@ -187,7 +187,7 @@ export async function GET(_request: NextRequest) {
       },
     });
 
-    // Filter members to only show the current user's membership
+    
     const filteredOrganizations = organizations.map((org) => ({
       ...org,
       members: org.members.filter((m) => m.userId === user.id),
@@ -198,7 +198,7 @@ export async function GET(_request: NextRequest) {
     console.error("Error fetching organizations:", error);
     const message =
       error instanceof Error ? error.message : "Failed to fetch organizations";
-    // Return 401 for auth errors, 500 for others
+    
     const status =
       error instanceof Error && error.message === "Unauthorized" ? 401 : 500;
     return NextResponse.json({ error: message }, { status });

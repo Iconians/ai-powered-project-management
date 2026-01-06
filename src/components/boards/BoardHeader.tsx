@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { TaskGenerator } from "../ai/TaskGenerator";
 import { SprintPlanner } from "../ai/SprintPlanner";
 import { CreateSprintModal } from "../sprints/CreateSprintModal";
@@ -56,7 +57,7 @@ export function BoardHeader({
       setIsEditingTitle(false);
     },
     onError: () => {
-      setEditTitle(boardName); // Revert on error
+      setEditTitle(boardName);
       setIsEditingTitle(false);
     },
   });
@@ -70,7 +71,6 @@ export function BoardHeader({
     }
   };
 
-  // Fetch active sprint
   const { data: activeSprint } = useQuery({
     queryKey: ["sprints", boardId, "active"],
     queryFn: async () => {
@@ -81,7 +81,6 @@ export function BoardHeader({
     },
   });
 
-  // Fetch subscription to check if AI features are available
   const { data: subscription } = useQuery({
     queryKey: ["subscription", organizationId],
     queryFn: async () => {
@@ -94,15 +93,14 @@ export function BoardHeader({
           return null;
         }
         return await res.json();
-      } catch (error) {
+      } catch (e) {
         return null;
       }
     },
     enabled: !!organizationId,
-    retry: false, // Don't retry on auth errors
+    retry: false,
   });
 
-  // Fetch board to check GitHub connection
   const { data: board } = useQuery({
     queryKey: ["board", boardId],
     queryFn: async () => {
@@ -112,20 +110,21 @@ export function BoardHeader({
     },
   });
 
-  // Handle price - can be Decimal (server), number, or string (JSON serialized Decimal)
   const planPrice = subscription?.plan?.price;
-  const priceValue =
-    typeof planPrice === "object" &&
-    planPrice !== null &&
-    "toNumber" in planPrice
-      ? (planPrice as any).toNumber()
-      : typeof planPrice === "number"
-      ? planPrice
-      : typeof planPrice === "string"
-      ? parseFloat(planPrice) || 0
-      : 0;
+  const priceValue = (() => {
+    if (planPrice === null || planPrice === undefined) return 0;
+    if (typeof planPrice === "number") return planPrice;
+    if (typeof planPrice === "string") return parseFloat(planPrice) || 0;
+    if (
+      typeof planPrice === "object" &&
+      "toNumber" in planPrice &&
+      typeof (planPrice as { toNumber: () => number }).toNumber === "function"
+    ) {
+      return (planPrice as { toNumber: () => number }).toNumber();
+    }
+    return 0;
+  })();
 
-  // Check if subscription is still active (either ACTIVE, or CANCELED but period hasn't ended)
   let isSubscriptionActive = false;
   if (subscription) {
     if (
@@ -146,13 +145,11 @@ export function BoardHeader({
   const hasPaidSubscription = priceValue > 0 && isSubscriptionActive;
   const isGitHubConnected =
     board?.githubSyncEnabled && board?.githubAccessToken;
-  // Check if GitHub is connected but repo name is not set
   const needsRepoName =
     board?.githubSyncEnabled &&
     board?.githubAccessToken &&
     !board?.githubRepoName;
 
-  // Check GitHub integration limit
   const { data: githubLimit } = useQuery({
     queryKey: ["githubLimit", organizationId],
     queryFn: async () => {
@@ -312,18 +309,17 @@ export function BoardHeader({
                 )}
               </>
             )}
-            <a
+            <Link
               href="/boards"
               className="px-2 sm:px-4 py-1.5 sm:py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors text-xs sm:text-sm whitespace-nowrap"
             >
               ← Back
-            </a>
+            </Link>
           </div>
         </div>
 
-        {/* Tabs */}
         {onTabChange && (
-          <div className="flex gap-1 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+          <div className="flex gap-1 border-gray-200 dark:border-gray-700 overflow-x-auto">
             <button
               onClick={() => onTabChange("board")}
               className={`px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
