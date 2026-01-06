@@ -34,16 +34,25 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:36',message:'Webhook POST entry',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   try {
     const body = await request.text();
     const signature = (await headers()).get("stripe-signature");
 
     if (!signature) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:42',message:'No signature header',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       console.error("Webhook error: No signature header found");
       return NextResponse.json({ error: "No signature" }, { status: 400 });
     }
 
     if (!process.env.STRIPE_WEBHOOK_SECRET) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:48',message:'Webhook secret not configured',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       console.error("Webhook error: STRIPE_WEBHOOK_SECRET not configured");
       return NextResponse.json(
         { error: "Webhook secret not configured" },
@@ -58,8 +67,14 @@ export async function POST(request: NextRequest) {
         signature,
         process.env.STRIPE_WEBHOOK_SECRET
       );
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:60',message:'Event verified',data:{eventType:event.type,eventId:event.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
     } catch (err) {
       const error = err as Error;
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:64',message:'Signature verification failed',data:{error:error.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
       console.error("Webhook signature verification failed:", error.message);
       return NextResponse.json(
         { error: `Webhook Error: ${error.message}` },
@@ -193,6 +208,9 @@ export async function POST(request: NextRequest) {
               updatedSubscription.status === "ACTIVE" &&
               plan.price.toNumber() > 0
             ) {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:192',message:'Email condition met',data:{eventType:event.type,status:updatedSubscription.status,planPrice:plan.price.toNumber()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F,G'})}).catch(()=>{});
+              // #endregion
               try {
                 const organization = await prisma.organization.findUnique({
                   where: { id: organizationId },
@@ -204,19 +222,35 @@ export async function POST(request: NextRequest) {
                     },
                   },
                 });
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:207',message:'Organization lookup result',data:{found:!!organization,hasMembers:organization?.members.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
+                // #endregion
                 if (organization && organization.members.length > 0) {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:208',message:'Before sendSubscriptionWelcomeEmail',data:{userEmail:organization.members[0].user.email,orgName:organization.name,planName:plan.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G,H'})}).catch(()=>{});
+                  // #endregion
                   await sendSubscriptionWelcomeEmail(
                     organization.members[0].user,
                     organization,
                     plan
                   );
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:213',message:'sendSubscriptionWelcomeEmail success',data:{userEmail:organization.members[0].user.email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G,H'})}).catch(()=>{});
+                  // #endregion
                 }
               } catch (emailError) {
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:214',message:'Email send error',data:{error:emailError instanceof Error?emailError.message:String(emailError)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G,H'})}).catch(()=>{});
+                // #endregion
                 console.error(
                   "Failed to send subscription welcome email:",
                   emailError
                 );
               }
+            } else {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:220',message:'Email condition not met',data:{eventType:event.type,status:updatedSubscription.status,planPrice:plan.price.toNumber()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+              // #endregion
             }
 
             try {
@@ -462,10 +496,19 @@ export async function POST(request: NextRequest) {
         }
 
         case "checkout.session.completed": {
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:464',message:'checkout.session.completed handler entry',data:{eventId:event.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B'})}).catch(()=>{});
+          // #endregion
           const session = event.data.object as Stripe.Checkout.Session;
           const organizationId = session.metadata?.organizationId;
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:467',message:'checkout.session.completed metadata',data:{organizationId:organizationId||null,subscriptionId:session.subscription||null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
 
           if (!organizationId) {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:469',message:'No organizationId in metadata',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
             console.error("No organizationId in checkout session metadata");
             break;
           }
@@ -478,17 +521,40 @@ export async function POST(request: NextRequest) {
 
           try {
             const retrievedSub = await stripe.subscriptions.retrieve(
-              subscriptionId
+              subscriptionId,
+              {
+                expand: ['items.data.price'],
+              }
             );
-            if (!isStripeSubscription(retrievedSub)) {
-              throw new Error("Invalid subscription retrieved from Stripe");
+            if (!retrievedSub || !retrievedSub.id) {
+              console.error('[checkout.session.completed] Invalid subscription object:', retrievedSub);
+              throw new Error("Invalid subscription retrieved from Stripe: no subscription ID");
             }
-            const stripeSubscription = retrievedSub;
+            
+            console.log('[checkout.session.completed] Retrieved subscription successfully:', {
+              id: retrievedSub.id,
+              status: retrievedSub.status,
+              currentPeriodStart: (retrievedSub as any).current_period_start,
+              currentPeriodEnd: (retrievedSub as any).current_period_end,
+              itemsCount: (retrievedSub as any).items?.data?.length || 0
+            });
+            
+            const stripeSubscription = retrievedSub as any;
 
-            const priceId = stripeSubscription.items.data[0]?.price.id;
+            const priceId = stripeSubscription.items?.data?.[0]?.price?.id;
+
+            console.log('[checkout.session.completed] Price ID extraction:', {
+              hasItems: !!stripeSubscription.items,
+              hasData: !!stripeSubscription.items?.data,
+              dataLength: stripeSubscription.items?.data?.length || 0,
+              priceId
+            });
 
             if (!priceId) {
-              console.error("No price ID found in subscription items");
+              console.error("[checkout.session.completed] No price ID found in subscription items:", {
+                items: stripeSubscription.items,
+                itemsData: stripeSubscription.items?.data
+              });
               break;
             }
 
@@ -530,6 +596,9 @@ export async function POST(request: NextRequest) {
 
             let updatedSubscription;
             try {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:533',message:'Before subscription upsert',data:{organizationId,planId:plan.id,planName:plan.name,status:stripeSubscription.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+              // #endregion
               updatedSubscription = await prisma.subscription.upsert({
                 where: { organizationId },
                 update: {
@@ -545,15 +614,15 @@ export async function POST(request: NextRequest) {
                       ? "PAST_DUE"
                       : "CANCELED",
                   currentPeriodStart:
-                    typeof stripeSubscription.current_period_start === "number"
-                      ? new Date(stripeSubscription.current_period_start * 1000)
+                    typeof (stripeSubscription as any).current_period_start === "number"
+                      ? new Date((stripeSubscription as any).current_period_start * 1000)
                       : null,
                   currentPeriodEnd:
-                    typeof stripeSubscription.current_period_end === "number"
-                      ? new Date(stripeSubscription.current_period_end * 1000)
+                    typeof (stripeSubscription as any).current_period_end === "number"
+                      ? new Date((stripeSubscription as any).current_period_end * 1000)
                       : null,
                   cancelAtPeriodEnd:
-                    stripeSubscription.cancel_at_period_end ?? false,
+                    (stripeSubscription as any).cancel_at_period_end ?? false,
                 },
                 create: {
                   organizationId,
@@ -569,18 +638,24 @@ export async function POST(request: NextRequest) {
                       ? "PAST_DUE"
                       : "CANCELED",
                   currentPeriodStart:
-                    typeof stripeSubscription.current_period_start === "number"
-                      ? new Date(stripeSubscription.current_period_start * 1000)
+                    typeof (stripeSubscription as any).current_period_start === "number"
+                      ? new Date((stripeSubscription as any).current_period_start * 1000)
                       : null,
                   currentPeriodEnd:
-                    typeof stripeSubscription.current_period_end === "number"
-                      ? new Date(stripeSubscription.current_period_end * 1000)
+                    typeof (stripeSubscription as any).current_period_end === "number"
+                      ? new Date((stripeSubscription as any).current_period_end * 1000)
                       : null,
                   cancelAtPeriodEnd:
-                    stripeSubscription.cancel_at_period_end ?? false,
+                    (stripeSubscription as any).cancel_at_period_end ?? false,
                 },
               });
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:582',message:'After subscription upsert success',data:{subscriptionId:updatedSubscription.id,planId:updatedSubscription.planId,status:updatedSubscription.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+              // #endregion
             } catch (dbError) {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:584',message:'Database upsert error',data:{error:dbError instanceof Error?dbError.message:String(dbError)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+              // #endregion
               console.error(
                 "Database error during subscription upsert:",
                 dbError
@@ -588,7 +663,82 @@ export async function POST(request: NextRequest) {
               throw dbError;
             }
 
+            const planPrice = typeof plan.price === 'object' && 'toNumber' in plan.price 
+              ? (plan.price as { toNumber: () => number }).toNumber()
+              : typeof plan.price === 'number' 
+              ? plan.price 
+              : parseFloat(String(plan.price)) || 0;
+            
+            console.log('[checkout.session.completed] Email check:', {
+              status: updatedSubscription.status,
+              planPrice,
+              shouldSend: (updatedSubscription.status === "ACTIVE" || updatedSubscription.status === "TRIALING") && planPrice > 0
+            });
+
+            if (
+              (updatedSubscription.status === "ACTIVE" || updatedSubscription.status === "TRIALING") &&
+              planPrice > 0
+            ) {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:650',message:'checkout.session.completed email condition met',data:{status:updatedSubscription.status,planPrice},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+              // #endregion
+              console.log('[checkout.session.completed] Sending welcome email for organization:', organizationId);
+              try {
+                const orgWithMembers = await prisma.organization.findUnique({
+                  where: { id: organizationId },
+                  include: {
+                    members: {
+                      where: { role: "ADMIN" },
+                      include: { user: true },
+                      take: 1,
+                    },
+                  },
+                });
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:658',message:'checkout.session.completed org lookup',data:{found:!!orgWithMembers,hasMembers:orgWithMembers?.members.length||0},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
+                // #endregion
+                if (orgWithMembers && orgWithMembers.members.length > 0) {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:660',message:'checkout.session.completed before email',data:{userEmail:orgWithMembers.members[0].user.email,orgName:orgWithMembers.name,planName:plan.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F,G'})}).catch(()=>{});
+                  // #endregion
+                  await sendSubscriptionWelcomeEmail(
+                    orgWithMembers.members[0].user,
+                    orgWithMembers,
+                    plan
+                  );
+                  console.log('[checkout.session.completed] Welcome email sent successfully to:', orgWithMembers.members[0].user.email);
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:675',message:'checkout.session.completed email success',data:{userEmail:orgWithMembers.members[0].user.email},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F,G'})}).catch(()=>{});
+                  // #endregion
+                }
+              } catch (emailError) {
+                // #region agent log
+                fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:682',message:'checkout.session.completed email error',data:{error:emailError instanceof Error?emailError.message:String(emailError)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G,H'})}).catch(()=>{});
+                // #endregion
+                console.error(
+                  "[checkout.session.completed] Failed to send subscription welcome email:",
+                  emailError
+                );
+                console.error("[checkout.session.completed] Email error details:", {
+                  error: emailError instanceof Error ? emailError.message : String(emailError),
+                  stack: emailError instanceof Error ? emailError.stack : undefined
+                });
+              }
+            } else {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:690',message:'checkout.session.completed email condition not met',data:{status:updatedSubscription.status,planPrice},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+              // #endregion
+              console.log('[checkout.session.completed] Email condition not met:', {
+                status: updatedSubscription.status,
+                planPrice,
+                reason: updatedSubscription.status !== "ACTIVE" ? "Status is not ACTIVE" : "Plan is free"
+              });
+            }
+
             try {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:682',message:'Before Pusher trigger checkout',data:{channel:`organization-${organizationId}`,event:'subscription-updated'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+              // #endregion
               await pusherServer.trigger(
                 `organization-${organizationId}`,
                 "subscription-updated",
@@ -597,10 +747,20 @@ export async function POST(request: NextRequest) {
                   organizationId,
                 }
               );
+              console.log('[checkout.session.completed] Pusher event triggered for organization:', organizationId);
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:704',message:'Pusher trigger success checkout',data:{channel:`organization-${organizationId}`},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+              // #endregion
             } catch (error) {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:694',message:'Pusher trigger failed checkout',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+              // #endregion
               console.error("Failed to trigger Pusher event:", error);
             }
           } catch (error) {
+            // #region agent log
+            fetch('http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'stripe/webhook/route.ts:699',message:'checkout.session.completed error',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+            // #endregion
             console.error(
               "Error processing checkout.session.completed:",
               error
