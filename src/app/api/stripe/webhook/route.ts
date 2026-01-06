@@ -16,15 +16,20 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
+  console.log("🔔 Webhook received at:", new Date().toISOString());
+  
   try {
     // Get the raw body as text (not parsed JSON)
     // This is critical - Stripe needs the exact raw body for signature verification
     // In Next.js 16, we need to use request.body directly or ensure bodyParser is disabled
     const body = await request.text();
+    console.log("📦 Webhook body length:", body.length);
+    
     const signature = (await headers()).get("stripe-signature");
+    console.log("🔐 Webhook signature present:", !!signature);
 
     if (!signature) {
-      console.error("Webhook error: No signature header found");
+      console.error("❌ Webhook error: No signature header found");
       return NextResponse.json({ error: "No signature" }, { status: 400 });
     }
 
@@ -37,16 +42,19 @@ export async function POST(request: NextRequest) {
     }
 
     let event: Stripe.Event;
-
     try {
+      console.log("🔍 Verifying webhook signature...");
       event = stripe.webhooks.constructEvent(
         body,
         signature,
         process.env.STRIPE_WEBHOOK_SECRET
       );
+      console.log("✅ Webhook signature verified");
+      console.log("📋 Event type:", event.type);
+      console.log("📋 Event ID:", event.id);
     } catch (err) {
       const error = err as Error;
-      console.error("Webhook signature verification failed:", error.message);
+      console.error("❌ Webhook signature verification failed:", error.message);
       console.error("Body length:", body.length);
       console.error("Signature:", signature.substring(0, 20) + "...");
       console.error(
@@ -60,6 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      console.log("🔄 Processing webhook event:", event.type);
       switch (event.type) {
         case "customer.subscription.created":
         case "customer.subscription.updated": {
@@ -119,6 +128,28 @@ export async function POST(request: NextRequest) {
           }
 
           console.log("✅ Found plan:", plan.name, "for price ID:", priceId);
+
+          // Test database connection first
+          try {
+            await prisma.$queryRaw`SELECT 1`;
+            console.log("✅ Database connection verified");
+          } catch (dbConnError) {
+            console.error("❌ Database connection failed:", dbConnError);
+            throw new Error(`Database connection failed: ${dbConnError instanceof Error ? dbConnError.message : "Unknown error"}`);
+          }
+
+          // Verify organization exists
+          const organization = await prisma.organization.findUnique({
+            where: { id: organizationId },
+            select: { id: true, name: true },
+          });
+
+          if (!organization) {
+            console.error("❌ Organization not found:", organizationId);
+            throw new Error(`Organization ${organizationId} not found in database`);
+          }
+
+          console.log("✅ Organization found:", organization.name);
 
           // Update or create subscription
           try {
@@ -226,12 +257,29 @@ export async function POST(request: NextRequest) {
             }
           } catch (error) {
             console.error(
-              "Error upserting subscription in customer.subscription.created/updated:",
+              "❌ Error upserting subscription in customer.subscription.created/updated:",
               error
             );
             console.error("Organization ID:", organizationId);
             console.error("Plan ID:", plan.id);
             console.error("Stripe Subscription ID:", subscription.id);
+            
+            if (error instanceof Error) {
+              console.error("Error message:", error.message);
+              console.error("Error stack:", error.stack);
+              
+              // Check for specific Prisma errors
+              if (error.message.includes("Unique constraint")) {
+                console.error("💡 Unique constraint violation - subscription may already exist");
+              }
+              if (error.message.includes("Foreign key constraint")) {
+                console.error("💡 Foreign key constraint violation - check organizationId or planId");
+              }
+              if (error.message.includes("Connection")) {
+                console.error("💡 Database connection issue - check DATABASE_URL");
+              }
+            }
+            
             throw error; // Re-throw to be caught by outer try-catch
           }
           break;
@@ -511,71 +559,124 @@ export async function POST(request: NextRequest) {
 
             console.log("✅ Found plan:", plan.name, "for price ID:", priceId);
 
-            // Update or create subscription
-            console.log("💾 Upserting subscription in database...");
-            const updatedSubscription = await prisma.subscription.upsert({
-              where: { organizationId },
-              update: {
-                planId: plan.id,
-                stripeCustomerId: stripeSubscription.customer as string,
-                stripeSubscriptionId: stripeSubscription.id,
-                status:
-                  stripeSubscription.status === "active"
-                    ? "ACTIVE"
-                    : stripeSubscription.status === "trialing"
-                    ? "TRIALING"
-                    : stripeSubscription.status === "past_due"
-                    ? "PAST_DUE"
-                    : "CANCELED",
-                currentPeriodStart: (stripeSubscription as any)
-                  .current_period_start
-                  ? new Date(
-                      (stripeSubscription as any).current_period_start * 1000
-                    )
-                  : null,
-                currentPeriodEnd: (stripeSubscription as any).current_period_end
-                  ? new Date(
-                      (stripeSubscription as any).current_period_end * 1000
-                    )
-                  : null,
-                cancelAtPeriodEnd:
-                  (stripeSubscription as any).cancel_at_period_end ?? false,
-              },
-              create: {
-                organizationId,
-                planId: plan.id,
-                stripeCustomerId: stripeSubscription.customer as string,
-                stripeSubscriptionId: stripeSubscription.id,
-                status:
-                  stripeSubscription.status === "active"
-                    ? "ACTIVE"
-                    : stripeSubscription.status === "trialing"
-                    ? "TRIALING"
-                    : stripeSubscription.status === "past_due"
-                    ? "PAST_DUE"
-                    : "CANCELED",
-                currentPeriodStart: (stripeSubscription as any)
-                  .current_period_start
-                  ? new Date(
-                      (stripeSubscription as any).current_period_start * 1000
-                    )
-                  : null,
-                currentPeriodEnd: (stripeSubscription as any).current_period_end
-                  ? new Date(
-                      (stripeSubscription as any).current_period_end * 1000
-                    )
-                  : null,
-                cancelAtPeriodEnd:
-                  (stripeSubscription as any).cancel_at_period_end ?? false,
-              },
+            // Test database connection first
+            try {
+              await prisma.$queryRaw`SELECT 1`;
+              console.log("✅ Database connection verified");
+            } catch (dbConnError) {
+              console.error("❌ Database connection failed:", dbConnError);
+              throw new Error(`Database connection failed: ${dbConnError instanceof Error ? dbConnError.message : "Unknown error"}`);
+            }
+
+            // Verify organization exists
+            const organization = await prisma.organization.findUnique({
+              where: { id: organizationId },
+              select: { id: true, name: true },
             });
 
-            console.log("✅ Successfully saved subscription to database:", {
-              subscriptionId: updatedSubscription.id,
-              organizationId: updatedSubscription.organizationId,
-              planId: updatedSubscription.planId,
-              status: updatedSubscription.status,
+            if (!organization) {
+              console.error("❌ Organization not found:", organizationId);
+              throw new Error(`Organization ${organizationId} not found in database`);
+            }
+
+            console.log("✅ Organization found:", organization.name);
+
+            // Update or create subscription
+            console.log("💾 Upserting subscription in database...");
+            console.log("📊 Upsert data:", {
+              organizationId,
+              planId: plan.id,
+              stripeCustomerId: stripeSubscription.customer as string,
+              stripeSubscriptionId: stripeSubscription.id,
+              status: stripeSubscription.status,
             });
+
+            let updatedSubscription;
+            try {
+              updatedSubscription = await prisma.subscription.upsert({
+                where: { organizationId },
+                update: {
+                  planId: plan.id,
+                  stripeCustomerId: stripeSubscription.customer as string,
+                  stripeSubscriptionId: stripeSubscription.id,
+                  status:
+                    stripeSubscription.status === "active"
+                      ? "ACTIVE"
+                      : stripeSubscription.status === "trialing"
+                      ? "TRIALING"
+                      : stripeSubscription.status === "past_due"
+                      ? "PAST_DUE"
+                      : "CANCELED",
+                  currentPeriodStart: (stripeSubscription as any)
+                    .current_period_start
+                    ? new Date(
+                        (stripeSubscription as any).current_period_start * 1000
+                      )
+                    : null,
+                  currentPeriodEnd: (stripeSubscription as any).current_period_end
+                    ? new Date(
+                        (stripeSubscription as any).current_period_end * 1000
+                      )
+                    : null,
+                  cancelAtPeriodEnd:
+                    (stripeSubscription as any).cancel_at_period_end ?? false,
+                },
+                create: {
+                  organizationId,
+                  planId: plan.id,
+                  stripeCustomerId: stripeSubscription.customer as string,
+                  stripeSubscriptionId: stripeSubscription.id,
+                  status:
+                    stripeSubscription.status === "active"
+                      ? "ACTIVE"
+                      : stripeSubscription.status === "trialing"
+                      ? "TRIALING"
+                      : stripeSubscription.status === "past_due"
+                      ? "PAST_DUE"
+                      : "CANCELED",
+                  currentPeriodStart: (stripeSubscription as any)
+                    .current_period_start
+                    ? new Date(
+                        (stripeSubscription as any).current_period_start * 1000
+                      )
+                    : null,
+                  currentPeriodEnd: (stripeSubscription as any).current_period_end
+                    ? new Date(
+                        (stripeSubscription as any).current_period_end * 1000
+                      )
+                    : null,
+                  cancelAtPeriodEnd:
+                    (stripeSubscription as any).cancel_at_period_end ?? false,
+                },
+              });
+
+              console.log("✅ Successfully saved subscription to database:", {
+                subscriptionId: updatedSubscription.id,
+                organizationId: updatedSubscription.organizationId,
+                planId: updatedSubscription.planId,
+                status: updatedSubscription.status,
+                stripeSubscriptionId: updatedSubscription.stripeSubscriptionId,
+              });
+            } catch (dbError) {
+              console.error("❌ Database error during subscription upsert:", dbError);
+              if (dbError instanceof Error) {
+                console.error("Error message:", dbError.message);
+                console.error("Error stack:", dbError.stack);
+                
+                // Check for specific Prisma errors
+                if (dbError.message.includes("Unique constraint")) {
+                  console.error("💡 Unique constraint violation - subscription may already exist");
+                }
+                if (dbError.message.includes("Foreign key constraint")) {
+                  console.error("💡 Foreign key constraint violation - check organizationId or planId");
+                }
+                if (dbError.message.includes("Connection")) {
+                  console.error("💡 Database connection issue - check DATABASE_URL");
+                }
+              }
+              // Re-throw to be caught by outer catch
+              throw dbError;
+            }
 
             // Trigger Pusher event
             try {
@@ -600,8 +701,9 @@ export async function POST(request: NextRequest) {
               console.error("Error message:", error.message);
               console.error("Error stack:", error.stack);
             }
-            // Don't break - let it continue to return success so Stripe doesn't retry
-            // But log the error for debugging
+            // Re-throw the error so it's caught by the outer handler
+            // This ensures we return proper error status
+            throw error;
           }
           break;
         }
@@ -610,19 +712,31 @@ export async function POST(request: NextRequest) {
           console.log(`Unhandled event type: ${event.type}`);
       }
 
+      console.log("✅ Webhook processed successfully, returning 200");
       return NextResponse.json({ received: true });
     } catch (error) {
-      console.error("Error processing webhook:", error);
+      console.error("❌ Error processing webhook:", error);
+      if (error instanceof Error) {
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+      // Return 200 to prevent Stripe from retrying (we'll handle manually if needed)
+      // But log the error for debugging
       return NextResponse.json(
-        { error: "Webhook processing failed" },
-        { status: 500 }
+        { error: "Webhook processing failed", details: error instanceof Error ? error.message : "Unknown error" },
+        { status: 200 }
       );
     }
   } catch (error) {
-    console.error("Outer webhook error:", error);
+    console.error("❌ Outer webhook error:", error);
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+    // Return 200 to prevent Stripe from retrying
     return NextResponse.json(
-      { error: "Webhook processing failed" },
-      { status: 500 }
+      { error: "Webhook processing failed", details: error instanceof Error ? error.message : "Unknown error" },
+      { status: 200 }
     );
   }
 }
