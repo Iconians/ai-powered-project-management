@@ -53,7 +53,6 @@ async function initRedis() {
 
     await redisClient.connect();
     redisAvailable = true;
-    console.log("✅ Redis connected for rate limiting");
     return redisClient;
   } catch (error) {
     console.warn(

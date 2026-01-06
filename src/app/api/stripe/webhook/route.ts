@@ -16,20 +16,15 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
-  console.log("🔔 Webhook received at:", new Date().toISOString());
-  
   try {
     // Get the raw body as text (not parsed JSON)
     // This is critical - Stripe needs the exact raw body for signature verification
     // In Next.js 16, we need to use request.body directly or ensure bodyParser is disabled
     const body = await request.text();
-    console.log("📦 Webhook body length:", body.length);
-    
     const signature = (await headers()).get("stripe-signature");
-    console.log("🔐 Webhook signature present:", !!signature);
 
     if (!signature) {
-      console.error("❌ Webhook error: No signature header found");
+      console.error("Webhook error: No signature header found");
       return NextResponse.json({ error: "No signature" }, { status: 400 });
     }
 
@@ -43,24 +38,14 @@ export async function POST(request: NextRequest) {
 
     let event: Stripe.Event;
     try {
-      console.log("🔍 Verifying webhook signature...");
       event = stripe.webhooks.constructEvent(
         body,
         signature,
         process.env.STRIPE_WEBHOOK_SECRET
       );
-      console.log("✅ Webhook signature verified");
-      console.log("📋 Event type:", event.type);
-      console.log("📋 Event ID:", event.id);
     } catch (err) {
       const error = err as Error;
-      console.error("❌ Webhook signature verification failed:", error.message);
-      console.error("Body length:", body.length);
-      console.error("Signature:", signature.substring(0, 20) + "...");
-      console.error(
-        "Webhook secret configured:",
-        !!process.env.STRIPE_WEBHOOK_SECRET
-      );
+      console.error("Webhook signature verification failed:", error.message);
       return NextResponse.json(
         { error: `Webhook Error: ${error.message}` },
         { status: 400 }
@@ -68,47 +53,38 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      console.log("🔄 Processing webhook event:", event.type);
       switch (event.type) {
         case "customer.subscription.created":
         case "customer.subscription.updated": {
-          console.log(`✅ Received ${event.type} event`);
           const subscription = event.data.object as Stripe.Subscription;
-          console.log("Stripe Subscription ID:", subscription.id);
-          console.log("Subscription metadata:", subscription.metadata);
-          
+
           // Type guard to ensure we have the subscription properties
           if (!("current_period_start" in subscription)) {
-            console.error("❌ Subscription object missing expected properties");
+            console.error("Subscription object missing expected properties");
             break;
           }
           let organizationId = subscription.metadata?.organizationId;
 
           // If no organizationId in metadata, try to find it by subscription ID
           if (!organizationId) {
-            console.log("⚠️ No organizationId in metadata, searching database...");
             const existing = await prisma.subscription.findUnique({
               where: { stripeSubscriptionId: subscription.id },
               select: { organizationId: true },
             });
             if (existing) {
               organizationId = existing.organizationId;
-              console.log("✅ Found organizationId in database:", organizationId);
             } else {
               console.error(
-                "❌ No organizationId in subscription metadata and not found in database"
+                "No organizationId in subscription metadata and not found in database"
               );
               break;
             }
-          } else {
-            console.log("📋 Organization ID from metadata:", organizationId);
           }
 
           const priceId = subscription.items.data[0]?.price.id;
-          console.log("💰 Stripe Price ID:", priceId);
-          
+
           if (!priceId) {
-            console.error("❌ No price ID found in subscription items");
+            console.error("No price ID found in subscription items");
             break;
           }
 
@@ -118,24 +94,22 @@ export async function POST(request: NextRequest) {
           });
 
           if (!plan) {
-            console.error("❌ Plan not found for price ID:", priceId);
-            const allPlans = await prisma.plan.findMany({
-              select: { name: true, stripePriceId: true },
-            });
-            console.error("📋 Available plans in database:", allPlans);
-            console.error("💡 Make sure you've updated the plan's stripePriceId in the database");
+            console.error("Plan not found for price ID:", priceId);
             break;
           }
-
-          console.log("✅ Found plan:", plan.name, "for price ID:", priceId);
 
           // Test database connection first
           try {
             await prisma.$queryRaw`SELECT 1`;
-            console.log("✅ Database connection verified");
           } catch (dbConnError) {
-            console.error("❌ Database connection failed:", dbConnError);
-            throw new Error(`Database connection failed: ${dbConnError instanceof Error ? dbConnError.message : "Unknown error"}`);
+            console.error("Database connection failed:", dbConnError);
+            throw new Error(
+              `Database connection failed: ${
+                dbConnError instanceof Error
+                  ? dbConnError.message
+                  : "Unknown error"
+              }`
+            );
           }
 
           // Verify organization exists
@@ -145,15 +119,14 @@ export async function POST(request: NextRequest) {
           });
 
           if (!organization) {
-            console.error("❌ Organization not found:", organizationId);
-            throw new Error(`Organization ${organizationId} not found in database`);
+            console.error("Organization not found:", organizationId);
+            throw new Error(
+              `Organization ${organizationId} not found in database`
+            );
           }
-
-          console.log("✅ Organization found:", organization.name);
 
           // Update or create subscription
           try {
-            console.log("💾 Upserting subscription in database...");
             const updatedSubscription = await prisma.subscription.upsert({
               where: { organizationId },
               update: {
@@ -199,13 +172,6 @@ export async function POST(request: NextRequest) {
                 cancelAtPeriodEnd:
                   (subscription as any).cancel_at_period_end ?? false,
               },
-            });
-
-            console.log("✅ Successfully saved subscription to database:", {
-              subscriptionId: updatedSubscription.id,
-              organizationId: updatedSubscription.organizationId,
-              planId: updatedSubscription.planId,
-              status: updatedSubscription.status,
             });
 
             // Send subscription welcome email if subscription is newly created and active
@@ -257,29 +223,9 @@ export async function POST(request: NextRequest) {
             }
           } catch (error) {
             console.error(
-              "❌ Error upserting subscription in customer.subscription.created/updated:",
+              "Error upserting subscription in customer.subscription.created/updated:",
               error
             );
-            console.error("Organization ID:", organizationId);
-            console.error("Plan ID:", plan.id);
-            console.error("Stripe Subscription ID:", subscription.id);
-            
-            if (error instanceof Error) {
-              console.error("Error message:", error.message);
-              console.error("Error stack:", error.stack);
-              
-              // Check for specific Prisma errors
-              if (error.message.includes("Unique constraint")) {
-                console.error("💡 Unique constraint violation - subscription may already exist");
-              }
-              if (error.message.includes("Foreign key constraint")) {
-                console.error("💡 Foreign key constraint violation - check organizationId or planId");
-              }
-              if (error.message.includes("Connection")) {
-                console.error("💡 Database connection issue - check DATABASE_URL");
-              }
-            }
-            
             throw error; // Re-throw to be caught by outer try-catch
           }
           break;
@@ -502,28 +448,19 @@ export async function POST(request: NextRequest) {
         case "checkout.session.completed": {
           // Handle checkout completion - create/update subscription
           const session = event.data.object as Stripe.Checkout.Session;
-          console.log("✅ Received checkout.session.completed event");
-          console.log("Session ID:", session.id);
-          console.log("Session metadata:", session.metadata);
-          
           const organizationId = session.metadata?.organizationId;
 
           if (!organizationId) {
-            console.error("❌ No organizationId in checkout session metadata");
-            console.error("Available metadata:", session.metadata);
+            console.error("No organizationId in checkout session metadata");
             break;
           }
-
-          console.log("📋 Organization ID:", organizationId);
 
           // Get the subscription ID from the checkout session
           const subscriptionId = session.subscription as string;
           if (!subscriptionId) {
-            console.error("❌ No subscription ID in checkout session");
+            console.error("No subscription ID in checkout session");
             break;
           }
-
-          console.log("💳 Stripe Subscription ID:", subscriptionId);
 
           try {
             // Retrieve the subscription from Stripe
@@ -532,10 +469,9 @@ export async function POST(request: NextRequest) {
             )) as Stripe.Subscription;
 
             const priceId = stripeSubscription.items.data[0]?.price.id;
-            console.log("💰 Stripe Price ID:", priceId);
 
             if (!priceId) {
-              console.error("❌ No price ID found in subscription items");
+              console.error("No price ID found in subscription items");
               break;
             }
 
@@ -547,25 +483,22 @@ export async function POST(request: NextRequest) {
             });
 
             if (!plan) {
-              // Log all available plans to help debug
-              const allPlans = await prisma.plan.findMany({
-                select: { name: true, stripePriceId: true },
-              });
-              console.error("❌ Plan not found for price ID:", priceId);
-              console.error("📋 Available plans in database:", allPlans);
-              console.error("💡 Make sure you've updated the plan's stripePriceId in the database");
+              console.error("Plan not found for price ID:", priceId);
               break;
             }
-
-            console.log("✅ Found plan:", plan.name, "for price ID:", priceId);
 
             // Test database connection first
             try {
               await prisma.$queryRaw`SELECT 1`;
-              console.log("✅ Database connection verified");
             } catch (dbConnError) {
-              console.error("❌ Database connection failed:", dbConnError);
-              throw new Error(`Database connection failed: ${dbConnError instanceof Error ? dbConnError.message : "Unknown error"}`);
+              console.error("Database connection failed:", dbConnError);
+              throw new Error(
+                `Database connection failed: ${
+                  dbConnError instanceof Error
+                    ? dbConnError.message
+                    : "Unknown error"
+                }`
+              );
             }
 
             // Verify organization exists
@@ -575,22 +508,13 @@ export async function POST(request: NextRequest) {
             });
 
             if (!organization) {
-              console.error("❌ Organization not found:", organizationId);
-              throw new Error(`Organization ${organizationId} not found in database`);
+              console.error("Organization not found:", organizationId);
+              throw new Error(
+                `Organization ${organizationId} not found in database`
+              );
             }
 
-            console.log("✅ Organization found:", organization.name);
-
             // Update or create subscription
-            console.log("💾 Upserting subscription in database...");
-            console.log("📊 Upsert data:", {
-              organizationId,
-              planId: plan.id,
-              stripeCustomerId: stripeSubscription.customer as string,
-              stripeSubscriptionId: stripeSubscription.id,
-              status: stripeSubscription.status,
-            });
-
             let updatedSubscription;
             try {
               updatedSubscription = await prisma.subscription.upsert({
@@ -613,7 +537,8 @@ export async function POST(request: NextRequest) {
                         (stripeSubscription as any).current_period_start * 1000
                       )
                     : null,
-                  currentPeriodEnd: (stripeSubscription as any).current_period_end
+                  currentPeriodEnd: (stripeSubscription as any)
+                    .current_period_end
                     ? new Date(
                         (stripeSubscription as any).current_period_end * 1000
                       )
@@ -640,7 +565,8 @@ export async function POST(request: NextRequest) {
                         (stripeSubscription as any).current_period_start * 1000
                       )
                     : null,
-                  currentPeriodEnd: (stripeSubscription as any).current_period_end
+                  currentPeriodEnd: (stripeSubscription as any)
+                    .current_period_end
                     ? new Date(
                         (stripeSubscription as any).current_period_end * 1000
                       )
@@ -649,31 +575,11 @@ export async function POST(request: NextRequest) {
                     (stripeSubscription as any).cancel_at_period_end ?? false,
                 },
               });
-
-              console.log("✅ Successfully saved subscription to database:", {
-                subscriptionId: updatedSubscription.id,
-                organizationId: updatedSubscription.organizationId,
-                planId: updatedSubscription.planId,
-                status: updatedSubscription.status,
-                stripeSubscriptionId: updatedSubscription.stripeSubscriptionId,
-              });
             } catch (dbError) {
-              console.error("❌ Database error during subscription upsert:", dbError);
-              if (dbError instanceof Error) {
-                console.error("Error message:", dbError.message);
-                console.error("Error stack:", dbError.stack);
-                
-                // Check for specific Prisma errors
-                if (dbError.message.includes("Unique constraint")) {
-                  console.error("💡 Unique constraint violation - subscription may already exist");
-                }
-                if (dbError.message.includes("Foreign key constraint")) {
-                  console.error("💡 Foreign key constraint violation - check organizationId or planId");
-                }
-                if (dbError.message.includes("Connection")) {
-                  console.error("💡 Database connection issue - check DATABASE_URL");
-                }
-              }
+              console.error(
+                "Database error during subscription upsert:",
+                dbError
+              );
               // Re-throw to be caught by outer catch
               throw dbError;
             }
@@ -693,49 +599,33 @@ export async function POST(request: NextRequest) {
             }
           } catch (error) {
             console.error(
-              "❌ Error processing checkout.session.completed:",
+              "Error processing checkout.session.completed:",
               error
             );
-            // Log the full error details
-            if (error instanceof Error) {
-              console.error("Error message:", error.message);
-              console.error("Error stack:", error.stack);
-            }
-            // Re-throw the error so it's caught by the outer handler
-            // This ensures we return proper error status
             throw error;
           }
           break;
         }
 
         default:
-          console.log(`Unhandled event type: ${event.type}`);
+          // Unhandled event type - silently continue
+          break;
       }
 
-      console.log("✅ Webhook processed successfully, returning 200");
       return NextResponse.json({ received: true });
     } catch (error) {
-      console.error("❌ Error processing webhook:", error);
-      if (error instanceof Error) {
-        console.error("Error message:", error.message);
-        console.error("Error stack:", error.stack);
-      }
-      // Return 200 to prevent Stripe from retrying (we'll handle manually if needed)
-      // But log the error for debugging
+      console.error("Error processing webhook:", error);
+      // Return 200 to prevent Stripe from retrying
       return NextResponse.json(
-        { error: "Webhook processing failed", details: error instanceof Error ? error.message : "Unknown error" },
+        { error: "Webhook processing failed" },
         { status: 200 }
       );
     }
   } catch (error) {
-    console.error("❌ Outer webhook error:", error);
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      console.error("Error stack:", error.stack);
-    }
+    console.error("Outer webhook error:", error);
     // Return 200 to prevent Stripe from retrying
     return NextResponse.json(
-      { error: "Webhook processing failed", details: error instanceof Error ? error.message : "Unknown error" },
+      { error: "Webhook processing failed" },
       { status: 200 }
     );
   }

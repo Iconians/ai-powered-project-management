@@ -489,7 +489,6 @@ export async function syncTaskToGitHubProject(
                     issue_number: issueNumber,
                     labels: [statusLabel],
                   });
-                  console.log(`✅ Created and added label "${statusLabel}"`);
                 } catch (createError) {
                   console.error("Failed to create/add label:", createError);
                 }
@@ -505,7 +504,6 @@ export async function syncTaskToGitHubProject(
           `✅ Added issue #${issueNumber} to project and set status to "${statusValue}"`
         );
       } else {
-        console.log(`✅ Added issue #${issueNumber} to project`);
       }
     }
   } catch (error) {

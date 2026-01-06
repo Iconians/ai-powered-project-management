@@ -435,7 +435,6 @@ export async function PATCH(request: NextRequest) {
 
       // Manually sync subscription status from Stripe
       if (!subscription.stripeSubscriptionId) {
-
         // Try to find the subscription in Stripe by looking up the customer
         // Get organization admin email to find Stripe customer
         const organization = await prisma.organization.findUnique({
@@ -473,12 +472,6 @@ export async function PATCH(request: NextRequest) {
                 const stripeSubscription = subscriptions.data[0];
                 const priceId = stripeSubscription.items.data[0]?.price.id;
 
-                console.log("Found Stripe subscription:", {
-                  subscriptionId: stripeSubscription.id,
-                  priceId,
-                  status: stripeSubscription.status,
-                });
-
                 // Find the plan by Stripe price ID
                 const foundPlan = await prisma.plan.findUnique({
                   where: { stripePriceId: priceId },
@@ -490,7 +483,6 @@ export async function PATCH(request: NextRequest) {
                     select: { name: true, stripePriceId: true },
                   });
                   console.error("Plan not found for price ID:", priceId);
-                  console.error("Available plans in database:", allPlans);
                   return NextResponse.json(
                     {
                       error: `Plan not found for Stripe price ID: ${priceId}. Please update your plans with the correct Stripe price IDs.`,
@@ -538,12 +530,6 @@ export async function PATCH(request: NextRequest) {
                     include: {
                       plan: true,
                     },
-                  });
-
-                  console.log("Synced subscription:", {
-                    organizationId,
-                    planName: foundPlan.name,
-                    stripeSubscriptionId: stripeSubscription.id,
                   });
 
                   // Trigger Pusher event
