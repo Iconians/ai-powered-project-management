@@ -44,18 +44,30 @@ export default function BillingPage() {
       queryKey: ["subscription", selectedOrgId],
       queryFn: async () => {
         if (!selectedOrgId) return null;
+        console.log(
+          "[BillingPage] Fetching subscription for org:",
+          selectedOrgId
+        );
         const res = await fetch(
           `/api/subscriptions?organizationId=${selectedOrgId}`
         );
         if (!res.ok) {
           if (res.status === 404) {
+            console.log("[BillingPage] No subscription found (404)");
             return null;
           }
           throw new Error("Failed to fetch subscription");
         }
-        return res.json();
+        const data = await res.json();
+        console.log("[BillingPage] Subscription fetched:", {
+          planName: data?.plan?.name,
+          status: data?.status,
+        });
+        return data;
       },
       enabled: !!selectedOrgId,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     });
 
   const { data: plans } = useQuery<Plan[]>({
@@ -195,10 +207,64 @@ export default function BillingPage() {
     channelName: selectedOrgId ? `organization-${selectedOrgId}` : "",
     eventName: "subscription-updated",
     callback: () => {
+      console.log(
+        "[BillingPage] Realtime callback fired for subscription-updated event"
+      );
+      // #region agent log
+      if (typeof window !== "undefined") {
+        fetch(
+          "http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              location: "billing/page.tsx:197",
+              message: "Realtime callback fired",
+              data: { selectedOrgId },
+              timestamp: Date.now(),
+              sessionId: "debug-session",
+              runId: "run1",
+              hypothesisId: "D,E",
+            }),
+          }
+        ).catch(() => {});
+      }
+      // #endregion
       if (selectedOrgId) {
+        console.log(
+          "[BillingPage] Invalidating and refetching subscription for org:",
+          selectedOrgId
+        );
+        // #region agent log
+        if (typeof window !== "undefined") {
+          fetch(
+            "http://127.0.0.1:7243/ingest/5c61bcc5-e979-4246-b96f-ea85c7efc9ad",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                location: "billing/page.tsx:199",
+                message: "Invalidating and refetching queries",
+                data: { selectedOrgId },
+                timestamp: Date.now(),
+                sessionId: "debug-session",
+                runId: "run1",
+                hypothesisId: "E",
+              }),
+            }
+          ).catch(() => {});
+        }
+        // #endregion
         queryClient.invalidateQueries({
           queryKey: ["subscription", selectedOrgId],
         });
+        queryClient.refetchQueries({
+          queryKey: ["subscription", selectedOrgId],
+        });
+      } else {
+        console.warn(
+          "[BillingPage] Realtime callback fired but selectedOrgId is null"
+        );
       }
     },
   });
