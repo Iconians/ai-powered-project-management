@@ -46,12 +46,6 @@ export async function POST(request: NextRequest) {
     const eventType = request.headers.get("x-github-event");
 
     // Log all incoming webhook events for debugging
-    console.log(`📥 GitHub webhook received: ${eventType}`, {
-      action: event.action,
-      issueNumber:
-        event.issue?.number || event.projects_v2_item?.content?.number,
-      projectNumber: event.projects_v2_item?.project?.number,
-    });
 
     // Handle different GitHub events
     switch (eventType) {
@@ -177,10 +171,6 @@ export async function POST(request: NextRequest) {
         const project = event.projects_v2_item?.project;
         let board = null;
 
-        console.log("🔍 Looking for board", {
-          projectNumber: project?.number,
-          hasRepository: !!event.repository,
-        });
 
         if (project?.number) {
           const projectNumber = parseInt(project.number);
@@ -194,9 +184,7 @@ export async function POST(request: NextRequest) {
             },
           });
           if (board) {
-            console.log(`✅ Found board by project ID: ${board.id}`);
           } else {
-            console.log(`❌ No board found with project ID: ${projectNumber}`);
           }
         }
 
@@ -206,7 +194,6 @@ export async function POST(request: NextRequest) {
           const repoName = `${repository.owner?.login || repository.owner}/${
             repository.name
           }`;
-          console.log(`🔍 Searching for board by repository: ${repoName}`);
           board = await prisma.board.findFirst({
             where: {
               githubRepoName: repoName,
@@ -214,14 +201,12 @@ export async function POST(request: NextRequest) {
             },
           });
           if (board) {
-            console.log(`✅ Found board by repository: ${board.id}`);
           } else {
-            console.log(`❌ No board found with repository: ${repoName}`);
           }
         }
 
         if (!board || !board.githubAccessToken || !board.githubRepoName) {
-          console.log("❌ Board not found or sync disabled", {
+          console.error("Board not found or sync disabled", {
             hasBoard: !!board,
             hasToken: !!board?.githubAccessToken,
             hasRepoName: !!board?.githubRepoName,
@@ -281,7 +266,7 @@ export async function POST(request: NextRequest) {
 
       default:
         // Log unhandled event types for debugging
-        console.log(`⚠️ Unhandled webhook event type: ${eventType}`, {
+        console.warn(`Unhandled webhook event type: ${eventType}`, {
           action: event.action,
           hasIssue: !!event.issue,
           hasProjectItem: !!event.projects_v2_item,

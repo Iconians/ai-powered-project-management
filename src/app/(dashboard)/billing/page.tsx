@@ -90,7 +90,6 @@ export default function BillingPage() {
       organizationId: string;
       planId: string;
     }) => {
-      console.log("Creating subscription with:", { organizationId, planId });
       const res = await fetch("/api/subscriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -161,7 +160,6 @@ export default function BillingPage() {
       return res.json();
     },
     onSuccess: (data) => {
-      console.log("Sync successful:", data);
       // Invalidate subscription query to refresh data
       queryClient.invalidateQueries({
         queryKey: ["subscription", selectedOrgId],
@@ -502,12 +500,6 @@ export default function BillingPage() {
                             <li className="flex items-center">
                               <span className="text-green-500 mr-2">✓</span>
                               Advanced AI Features
-                            </li>
-                          )}
-                          {plan.features.slaGuarantees && (
-                            <li className="flex items-center">
-                              <span className="text-green-500 mr-2">✓</span>
-                              SLA Guarantees
                             </li>
                           )}
                         </ul>

@@ -2,7 +2,37 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { TaskPriority } from "@prisma/client";
+import type { TaskPriority, TaskStatus } from "@prisma/client";
+
+interface Board {
+  id: string;
+  name: string;
+  statuses: Array<{
+    id: string;
+    name: string;
+    status: TaskStatus;
+    order: number;
+  }>;
+  tasks: Array<{
+    id: string;
+    title: string;
+    description: string | null;
+    status: TaskStatus;
+    priority: string;
+    assigneeId: string | null;
+    assignee: {
+      id: string;
+      userId: string;
+      role: string;
+      user: {
+        id: string;
+        name: string | null;
+        email: string;
+      };
+    } | null;
+    order: number;
+  }>;
+}
 
 interface CreateTaskModalProps {
   boardId: string;
@@ -33,12 +63,76 @@ export function CreateTaskModal({
           priority,
         }),
       });
-      if (!res.ok) throw new Error("Failed to create task");
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to create task");
+      }
       return res.json();
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: ["board", boardId] });
+
+      // Snapshot the previous value
+      const previousBoard = queryClient.getQueryData<Board>(["board", boardId]);
+
+      // Optimistically update the board with the new task
+      if (previousBoard) {
+        const status = (defaultStatus as TaskStatus) || "TODO";
+        const tasksInStatus = previousBoard.tasks.filter(
+          (t) => t.status === status
+        );
+        const newOrder = tasksInStatus.length;
+
+        // Create optimistic task with temporary ID
+        const optimisticTask = {
+          id: `temp-${Date.now()}`,
+          title,
+          description: description || null,
+          status: status as TaskStatus,
+          priority,
+          assigneeId: null,
+          assignee: null,
+          order: newOrder,
+        };
+
+        queryClient.setQueryData<Board>(["board", boardId], (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            tasks: [...old.tasks, optimisticTask],
+          };
+        });
+      }
+
+      return { previousBoard };
+    },
+    onError: (_error, _variables, context) => {
+      // Rollback to previous state on error
+      if (context?.previousBoard) {
+        queryClient.setQueryData(["board", boardId], context.previousBoard);
+      }
+    },
+    onSuccess: (data) => {
+      // Replace optimistic task with real task from server
+      queryClient.setQueryData<Board>(["board", boardId], (old) => {
+        if (!old) return old;
+        // Remove optimistic task and add real task
+        const tasksWithoutTemp = old.tasks.filter(
+          (task) => !task.id.startsWith("temp-")
+        );
+        return {
+          ...old,
+          tasks: [...tasksWithoutTemp, data],
+        };
+      });
+      // Invalidate to ensure we have the latest data
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
       onClose();
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ["board", boardId] });
     },
   });
 
@@ -125,8 +219,11 @@ export function CreateTaskModal({
           </div>
         </form>
         {createTaskMutation.isError && (
-          <div className="mt-4 text-red-600 dark:text-red-400 text-sm">
-            {createTaskMutation.error?.message || "Failed to create task"}
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md text-red-600 dark:text-red-400 text-sm">
+            <p className="font-medium">Failed to create task</p>
+            <p className="mt-1">
+              {createTaskMutation.error?.message || "An error occurred. The task was not created."}
+            </p>
           </div>
         )}
       </div>

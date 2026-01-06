@@ -122,7 +122,6 @@ export const authOptions: NextAuthOptions = {
             return null; // This will trigger CredentialsSignin, but we'll check emailVerified in a custom endpoint
           }
 
-          console.log("✅ User authenticated successfully:", credentials.email);
           return {
             id: user.id,
             email: user.email,
