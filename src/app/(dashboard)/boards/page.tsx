@@ -10,7 +10,9 @@ export default async function BoardsPage() {
     redirect("/login");
   }
 
-  const organizations = await prisma.organization.findMany({
+  let organizations;
+  try {
+    organizations = await prisma.organization.findMany({
     where: {
       members: {
         some: {
@@ -49,9 +51,27 @@ export default async function BoardsPage() {
       },
     },
   });
+  } catch (error) {
+    console.error("Error fetching organizations:", error);
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <p className="text-red-600 dark:text-red-400 mb-4">
+              An error occurred while loading boards. Please try again later.
+            </p>
+            <Link
+              href="/boards"
+              className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+            >
+              Refresh
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  
-  
   const accessibleBoards = [];
   for (const org of organizations) {
     const userOrgMember = org.members.find((m) => m.userId === user.id);

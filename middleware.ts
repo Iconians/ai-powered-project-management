@@ -5,22 +5,22 @@ import type { NextRequest } from "next/server";
 export default withAuth(
   function middleware(req: NextRequest) {
     const pathname = req.nextUrl.pathname;
-    
+
     if (pathname === "/" || pathname === "/home") {
       return NextResponse.next();
     }
-    
+
     return NextResponse.next();
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname;
-        
+
         if (pathname === "/" || pathname === "/home") {
           return true;
         }
-        
+
         return !!token;
       },
     },
