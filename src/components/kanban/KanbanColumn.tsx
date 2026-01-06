@@ -84,7 +84,7 @@ export function KanbanColumn({
         >
           <div
             className="space-y-2 max-h-[80vh] overflow-y-auto flex-1 scroll-smooth scrollbar-thin"
-            style={{ touchAction: "pan-y" }} 
+            style={{ touchAction: "pan-y" }}
           >
             {tasks.map((task) => (
               <TaskCard
