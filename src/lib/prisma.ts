@@ -13,6 +13,8 @@ const adapter = {
   provider: "postgres" as const,
   adapterName: "pg" as const,
   connect: async () => pool as any,
+  dispose: async () => {
+  },
 };
 
 export const prisma =
