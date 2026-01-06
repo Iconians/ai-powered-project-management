@@ -30,11 +30,9 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // Return null instead of 404 - the frontend will default to Free plan
     if (!subscription) {
-      return NextResponse.json(
-        { error: "No subscription found" },
-        { status: 404 }
-      );
+      return NextResponse.json(null, { status: 200 });
     }
 
     return NextResponse.json(subscription);
