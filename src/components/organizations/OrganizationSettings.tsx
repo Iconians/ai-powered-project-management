@@ -3,15 +3,18 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { BrandingSettings } from "./BrandingSettings";
 
 interface OrganizationSettingsProps {
   organizationId: string;
   organizationName: string;
+  userRole?: "ADMIN" | "MEMBER" | "VIEWER";
 }
 
 export function OrganizationSettings({
   organizationId,
   organizationName,
+  userRole,
 }: OrganizationSettingsProps) {
   const [showModal, setShowModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -148,6 +151,15 @@ export function OrganizationSettings({
                 </button>
               </div>
             </form>
+
+            {userRole === "ADMIN" && (
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <BrandingSettings
+                  organizationId={organizationId}
+                  userRole={userRole}
+                />
+              </div>
+            )}
 
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">

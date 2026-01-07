@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ThemeToggle } from "./ThemeToggle";
+import { NotificationBell } from "../notifications/NotificationBell";
 
 export function Navbar() {
   const { data: session } = useSession();
@@ -70,7 +71,7 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
-            {}
+            {session?.user && <NotificationBell />}
             <ThemeToggle />
 
             {session?.user && (

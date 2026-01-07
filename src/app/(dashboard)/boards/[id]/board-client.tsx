@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KanbanBoard } from "@/components/kanban/KanbanBoard";
+import { BoardViewSelector } from "@/components/boards/BoardViewSelector";
 import { BoardHeader } from "@/components/boards/BoardHeader";
 import { SprintsView } from "@/components/sprints/SprintsView";
 
@@ -35,7 +35,11 @@ export function BoardPageClient({
       />
       <div className="flex-1 overflow-hidden">
         {activeTab === "board" ? (
-          <KanbanBoard boardId={boardId} userBoardRole={userBoardRole} />
+          <BoardViewSelector
+            boardId={boardId}
+            organizationId={organizationId}
+            userBoardRole={userBoardRole}
+          />
         ) : (
           <div className="h-full overflow-y-auto">
             <SprintsView boardId={boardId} userBoardRole={userBoardRole} />

@@ -50,6 +50,24 @@ export function CreateTaskModal({
   const [priority, setPriority] = useState<TaskPriority>("MEDIUM");
   const queryClient = useQueryClient();
 
+  const generateDescriptionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/ai/describe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, boardId }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to generate description");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setDescription(data.description || "");
+    },
+  });
+
   const createTaskMutation = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/tasks", {
@@ -167,12 +185,28 @@ export function CreateTaskModal({
             />
           </div>
           <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Description
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Description
+              </label>
+              {title.trim() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    generateDescriptionMutation.mutate();
+                  }}
+                  disabled={generateDescriptionMutation.isPending}
+                  className="text-xs px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {generateDescriptionMutation.isPending
+                    ? "Generating..."
+                    : "✨ AI Generate"}
+                </button>
+              )}
+            </div>
             <textarea
               id="description"
               value={description}

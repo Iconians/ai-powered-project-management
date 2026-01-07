@@ -42,6 +42,7 @@ interface KanbanColumnProps {
   status: Status;
   tasks: Task[];
   boardId: string;
+  organizationId?: string;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
 }
 
@@ -50,6 +51,7 @@ export function KanbanColumn({
   status,
   tasks,
   boardId,
+  organizationId,
   userBoardRole,
 }: KanbanColumnProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -91,6 +93,7 @@ export function KanbanColumn({
                 key={task.id}
                 task={task}
                 boardId={boardId}
+                organizationId={organizationId}
                 userBoardRole={userBoardRole}
               />
             ))}

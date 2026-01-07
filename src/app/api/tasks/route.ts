@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireBoardAccess } from "@/lib/auth";
+import { requireBoardAccess, getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { triggerPusherEvent } from "@/lib/pusher";
 import { getGitHubClient } from "@/lib/github";
 import { TaskStatus } from "@prisma/client";
+import { executeAutomations } from "@/lib/automation-engine";
+import { logActivity } from "@/lib/activity-logger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,6 +57,7 @@ export async function POST(request: NextRequest) {
       where: { id: boardId },
       select: {
         id: true,
+        organizationId: true,
         githubSyncEnabled: true,
         githubAccessToken: true,
         githubRepoName: true,
@@ -210,7 +213,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    
+    // Trigger automation rules
+    try {
+      await executeAutomations("TASK_CREATED", {
+        taskId: task.id,
+        boardId: task.boardId,
+        organizationId: board.organizationId,
+        newStatus: task.status,
+        assigneeId: task.assigneeId || undefined,
+      });
+    } catch (automationError) {
+      console.error("Failed to execute automations:", automationError);
+    }
+
+    // Log activity
+    try {
+      const user = await getCurrentUser();
+      if (user) {
+        await logActivity("TASK_CREATED", user.id, {
+          organizationId: board.organizationId,
+          boardId: task.boardId,
+          taskId: task.id,
+          metadata: {
+            title: task.title,
+            status: task.status,
+            priority: task.priority,
+          },
+        });
+      }
+    } catch (activityError) {
+      console.error("Failed to log activity:", activityError);
+    }
+
     try {
       await triggerPusherEvent(`board-${boardId}`, "task-created", {
         taskId: task.id,
@@ -218,8 +252,7 @@ export async function POST(request: NextRequest) {
         status: task.status,
       });
     } catch (pusherError) {
-      
-      
+      console.error("Failed to trigger Pusher event:", pusherError);
     }
 
     return NextResponse.json(task, { status: 201 });

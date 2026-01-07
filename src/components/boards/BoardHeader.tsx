@@ -9,6 +9,10 @@ import { CreateSprintModal } from "../sprints/CreateSprintModal";
 import { BoardMembersModal } from "./BoardMembersModal";
 import { GitHubRepoModal } from "./GitHubRepoModal";
 import { ManageColumnsModal } from "./ManageColumnsModal";
+import { TaskSearch } from "../tasks/TaskSearch";
+import { TaskFilters } from "../tasks/TaskFilters";
+import { ExportModal } from "./ExportModal";
+import { ImportModal } from "./ImportModal";
 
 interface BoardHeaderProps {
   boardId: string;
@@ -35,9 +39,16 @@ export function BoardHeader({
   const [showBoardMembers, setShowBoardMembers] = useState(false);
   const [showGitHubRepo, setShowGitHubRepo] = useState(false);
   const [showManageColumns, setShowManageColumns] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(boardName);
   const queryClient = useQueryClient();
+  
+  // TaskFilters manages its own state, we just need a callback
+  const handleFilterChange = (_filters: any) => {
+    // Filters are managed internally by TaskFilters component
+  };
 
   const updateBoardTitleMutation = useMutation({
     mutationFn: async (name: string) => {
@@ -217,14 +228,32 @@ export function BoardHeader({
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
-              <button
-                onClick={() => setShowManageColumns(true)}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
-                title="Manage Columns"
-              >
-                <span>📊</span>
-                <span className="hidden sm:inline">Columns</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  title="Export Board"
+                >
+                  <span>📥</span>
+                  <span className="hidden sm:inline">Export</span>
+                </button>
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  title="Import Tasks"
+                >
+                  <span>📤</span>
+                  <span className="hidden sm:inline">Import</span>
+                </button>
+                <button
+                  onClick={() => setShowManageColumns(true)}
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  title="Manage Columns"
+                >
+                  <span>📊</span>
+                  <span className="hidden sm:inline">Columns</span>
+                </button>
+              </>
             )}
             {userBoardRole === "ADMIN" && (
               <>
@@ -342,6 +371,21 @@ export function BoardHeader({
             </button>
           </div>
         )}
+
+        {activeTab === "board" && (
+          <div className="mt-4 space-y-2">
+            <div className="max-w-md">
+              <TaskSearch
+                boardId={boardId}
+                onTaskSelect={(taskId) => {
+                  // Could open task detail modal here
+                  console.log("Selected task:", taskId);
+                }}
+              />
+            </div>
+            <TaskFilters boardId={boardId} onFilterChange={handleFilterChange} />
+          </div>
+        )}
       </div>
 
       {showTaskGenerator && (
@@ -387,6 +431,21 @@ export function BoardHeader({
           boardId={boardId}
           userBoardRole={userBoardRole}
           onClose={() => setShowManageColumns(false)}
+        />
+      )}
+
+      {showExportModal && (
+        <ExportModal
+          boardId={boardId}
+          boardName={boardName}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
+
+      {showImportModal && (
+        <ImportModal
+          boardId={boardId}
+          onClose={() => setShowImportModal(false)}
         />
       )}
     </>

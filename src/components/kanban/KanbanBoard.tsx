@@ -16,6 +16,9 @@ import { useState } from "react";
 import { KanbanColumn } from "./KanbanColumn";
 import { TaskCard } from "./TaskCard";
 import { useRealtime } from "@/hooks/useRealtime";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { ShortcutHelp } from "../shared/ShortcutHelp";
+import { RiskAlerts } from "../ai/RiskAlerts";
 import type { TaskStatus } from "@prisma/client";
 
 interface Board {
@@ -50,12 +53,48 @@ interface Board {
 
 interface KanbanBoardProps {
   boardId: string;
+  organizationId?: string;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
 }
 
-export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
+export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
   const queryClient = useQueryClient();
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: "k",
+      meta: true,
+      handler: () => {
+        // Quick task creation - could open modal
+        console.log("Quick task creation");
+      },
+    },
+    {
+      key: "f",
+      meta: true,
+      handler: () => {
+        // Focus search
+        const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+        searchInput?.focus();
+      },
+    },
+    {
+      key: "/",
+      meta: true,
+      handler: () => {
+        setShowShortcuts(true);
+      },
+    },
+    {
+      key: "Escape",
+      handler: () => {
+        setShowShortcuts(false);
+      },
+    },
+  ]);
 
   const isViewer = userBoardRole === "VIEWER";
   const sensors = useSensors(
@@ -254,14 +293,16 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
   const handleDragOver = () => {};
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={rectIntersection}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="flex flex-col md:flex-row gap-2 sm:gap-4 p-2 sm:p-4 overflow-y-auto md:overflow-x-auto md:overflow-y-visible h-full md:justify-center">
+    <div className="h-full flex flex-col">
+      <RiskAlerts boardId={boardId} />
+      <DndContext
+        sensors={sensors}
+        collisionDetection={rectIntersection}
+        onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="flex flex-col md:flex-row gap-2 sm:gap-4 p-2 sm:p-4 overflow-y-auto md:overflow-x-auto md:overflow-y-visible flex-1 md:justify-center">
         {sortedStatuses.map((status) => {
           const columnTasks = board.tasks
             .filter((t) => t.status === status.status)
@@ -274,6 +315,7 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
               status={status}
               tasks={columnTasks}
               boardId={boardId}
+              organizationId={organizationId}
               userBoardRole={userBoardRole}
             />
           );
@@ -285,10 +327,17 @@ export function KanbanBoard({ boardId, userBoardRole }: KanbanBoardProps) {
             task={activeTask}
             isDragging
             boardId={boardId}
+            organizationId={organizationId}
             userBoardRole={userBoardRole}
           />
         ) : null}
       </DragOverlay>
-    </DndContext>
+
+        <ShortcutHelp
+          isOpen={showShortcuts}
+          onClose={() => setShowShortcuts(false)}
+        />
+      </DndContext>
+    </div>
   );
 }
