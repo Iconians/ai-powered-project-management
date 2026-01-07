@@ -156,6 +156,36 @@ export function TaskCard({
   const canEdit =
     !isViewer && (userBoardRole === "ADMIN" || userBoardRole === "MEMBER");
 
+  const duplicateTaskMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `${task.title} (Copy)`,
+          description: task.description,
+          boardId,
+          status: task.status,
+          priority: task.priority,
+          assigneeId: null, // Don't copy assignee
+        }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to duplicate task");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+    },
+  });
+
+  const handleDuplicate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    duplicateTaskMutation.mutate();
+  };
+
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowEditModal(true);
@@ -193,21 +223,32 @@ export function TaskCard({
         </div>
         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
           {canEdit && (
-            <button
-              onClick={handleEdit}
-              onTouchStart={(e) => e.stopPropagation()}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm"
-              title="Edit task"
-            >
-              ✏️
-            </button>
+            <>
+              <button
+                onClick={handleEdit}
+                onTouchStart={(e) => e.stopPropagation()}
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                title="Edit task"
+              >
+                ✏️
+              </button>
+              <button
+                onClick={handleDuplicate}
+                onTouchStart={(e) => e.stopPropagation()}
+                disabled={duplicateTaskMutation.isPending}
+                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
+                title="Duplicate task"
+              >
+                📋
+              </button>
+            </>
           )}
           {canDelete && (
             <button
               onClick={handleDelete}
               onTouchStart={(e) => e.stopPropagation()}
               disabled={deleteTaskMutation.isPending}
-              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm disabled:opacity-50"
+              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
               title="Delete task"
             >
               🗑️
