@@ -46,7 +46,11 @@ export async function logActivity(
 
     // Trigger real-time update
     if (options.boardId) {
-      await triggerPusherEvent(`board-${options.boardId}`, "activity-created", activity);
+      await triggerPusherEvent(
+        `board-${options.boardId}`,
+        "activity-created",
+        activity
+      );
     }
 
     return activity;
@@ -56,4 +60,3 @@ export async function logActivity(
     return null;
   }
 }
-

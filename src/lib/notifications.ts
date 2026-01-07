@@ -24,7 +24,11 @@ export async function createNotification(data: NotificationData) {
     });
 
     // Trigger real-time update
-    await triggerPusherEvent(`user-${data.userId}`, "notification-created", notification);
+    await triggerPusherEvent(
+      `user-${data.userId}`,
+      "notification-created",
+      notification
+    );
 
     return notification;
   } catch (error) {
@@ -59,4 +63,3 @@ export async function notifyTaskWatchers(
     console.error("Failed to notify task watchers:", error);
   }
 }
-
