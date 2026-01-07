@@ -208,16 +208,17 @@ model TaskStatusColumn {
 }
 
 model Sprint {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  boardId     String
-  startDate   DateTime
-  endDate     DateTime
-  goal        String?
-  isActive    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  boardId      String
+  startDate    DateTime
+  endDate      DateTime
+  goal         String?
+  capacityHours Float?  // Maximum hours capacity for the sprint
+  isActive     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   board Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
   tasks Task[]

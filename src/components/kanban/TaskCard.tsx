@@ -75,6 +75,7 @@ export function TaskCard({
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [justClosedEditModal, setJustClosedEditModal] = useState(false);
   const queryClient = useQueryClient();
 
   // Check if task is blocked by dependencies
@@ -191,6 +192,22 @@ export function TaskCard({
     setShowEditModal(true);
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't open detail modal if clicking on action buttons or if modals are open
+    if (
+      (e.target as HTMLElement).closest("button") ||
+      showEditModal ||
+      showAssignModal ||
+      showDetailModal ||
+      justClosedEditModal
+    ) {
+      return;
+    }
+    if (organizationId) {
+      setShowDetailModal(true);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -208,7 +225,7 @@ export function TaskCard({
       } ${isViewer ? "cursor-default" : "cursor-grab active:cursor-grabbing"} ${
         isBlocked ? "border-l-4 border-yellow-500" : ""
       }`}
-      onClick={() => setShowDetailModal(true)}
+      onClick={handleCardClick}
     >
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
@@ -334,9 +351,17 @@ export function TaskCard({
         <EditTaskModal
           taskId={task.id}
           boardId={boardId}
+          organizationId={organizationId}
           currentTitle={task.title}
           currentDescription={task.description}
-          onClose={() => setShowEditModal(false)}
+          onClose={() => {
+            setShowEditModal(false);
+            // Prevent detail modal from opening immediately after closing edit modal
+            setJustClosedEditModal(true);
+            setTimeout(() => {
+              setJustClosedEditModal(false);
+            }, 300);
+          }}
         />
       )}
 
@@ -346,7 +371,9 @@ export function TaskCard({
           boardId={boardId}
           organizationId={organizationId}
           userBoardRole={userBoardRole}
-          onClose={() => setShowDetailModal(false)}
+          onClose={() => {
+            setShowDetailModal(false);
+          }}
         />
       )}
     </div>

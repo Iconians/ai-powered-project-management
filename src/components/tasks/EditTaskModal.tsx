@@ -1,11 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface TaskTag {
+  tag: Tag;
+}
 
 interface EditTaskModalProps {
   taskId: string;
   boardId: string;
+  organizationId?: string;
   currentTitle: string;
   currentDescription: string | null;
   onClose: () => void;
@@ -14,6 +25,7 @@ interface EditTaskModalProps {
 export function EditTaskModal({
   taskId,
   boardId,
+  organizationId,
   currentTitle,
   currentDescription,
   onClose,
@@ -23,16 +35,74 @@ export function EditTaskModal({
     currentDescription ?? ""
   );
   const [error, setError] = useState<string | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [dueDate, setDueDate] = useState("");
+  const [estimatedHours, setEstimatedHours] = useState("");
 
   const queryClient = useQueryClient();
+
+  // Fetch full task data to get dueDate and estimatedHours
+  const { data: task } = useQuery({
+    queryKey: ["task", taskId],
+    queryFn: async () => {
+      const res = await fetch(`/api/tasks/${taskId}`);
+      if (!res.ok) return null;
+      return res.json();
+    },
+  });
+
+  useEffect(() => {
+    if (task) {
+      setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : "");
+      setEstimatedHours(task.estimatedHours?.toString() || "");
+    }
+  }, [task]);
+
+  // Fetch current task tags
+  const { data: taskTags = [] } = useQuery<TaskTag[]>({
+    queryKey: ["task-tags", taskId],
+    queryFn: async () => {
+      const res = await fetch(`/api/tasks/${taskId}/tags`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+  });
+
+  // Fetch available tags
+  const { data: availableTags = [] } = useQuery<Tag[]>({
+    queryKey: ["tags", boardId, organizationId],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (organizationId) params.append("organizationId", organizationId);
+      if (boardId) params.append("boardId", boardId);
+      const res = await fetch(`/api/tags?${params.toString()}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!organizationId || !!boardId,
+  });
+
+  // Update selected tags when task tags load
+  useEffect(() => {
+    if (taskTags && taskTags.length > 0) {
+      const tagIds = taskTags
+        .map((tt) => tt?.tag?.id)
+        .filter((id): id is string => !!id);
+      setSelectedTagIds(tagIds);
+    }
+  }, [taskTags]);
 
   const updateTaskMutation = useMutation({
     mutationFn: async ({
       title,
       description,
+      dueDate,
+      estimatedHours,
     }: {
       title: string;
       description: string;
+      dueDate?: string;
+      estimatedHours?: number;
     }) => {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
@@ -40,6 +110,8 @@ export function EditTaskModal({
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || null,
+          dueDate: dueDate || undefined,
+          estimatedHours: estimatedHours || undefined,
         }),
       });
       if (!res.ok) {
@@ -48,8 +120,36 @@ export function EditTaskModal({
       }
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Update tags
+      const currentTagIds = (taskTags || [])
+        .map((tt) => tt?.tag?.id)
+        .filter((id): id is string => !!id);
+      const tagsToAdd = selectedTagIds.filter((id) => !currentTagIds.includes(id));
+      const tagsToRemove = currentTagIds.filter((id) => !selectedTagIds.includes(id));
+
+      // Add new tags
+      await Promise.all(
+        tagsToAdd.map((tagId) =>
+          fetch(`/api/tasks/${taskId}/tags`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tagId }),
+          }).catch((err) => console.error("Failed to add tag:", err))
+        )
+      );
+
+      // Remove tags
+      await Promise.all(
+        tagsToRemove.map((tagId) =>
+          fetch(`/api/tasks/${taskId}/tags?tagId=${tagId}`, {
+            method: "DELETE",
+          }).catch((err) => console.error("Failed to remove tag:", err))
+        )
+      );
+
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+      queryClient.invalidateQueries({ queryKey: ["task-tags", taskId] });
       onClose();
     },
     onError: (error: Error) => {
@@ -87,6 +187,8 @@ export function EditTaskModal({
     updateTaskMutation.mutate({
       title: title.trim(),
       description: descriptionValue,
+      dueDate: dueDate || undefined,
+      estimatedHours: estimatedHours ? parseFloat(estimatedHours) : undefined,
     });
   };
 
@@ -134,6 +236,80 @@ export function EditTaskModal({
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {descriptionValue.length}/10000 characters
             </p>
+          </div>
+
+          {availableTags.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Tags
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {availableTags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTagIds((prev) =>
+                        prev.includes(tag.id)
+                          ? prev.filter((id) => id !== tag.id)
+                          : [...prev, tag.id]
+                      );
+                    }}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      selectedTagIds.includes(tag.id)
+                        ? "ring-2 ring-offset-2"
+                        : "opacity-60 hover:opacity-100"
+                    }`}
+                    style={{
+                      backgroundColor: selectedTagIds.includes(tag.id)
+                        ? tag.color
+                        : `${tag.color}20`,
+                      color: selectedTagIds.includes(tag.id)
+                        ? "#fff"
+                        : tag.color,
+                      borderColor: tag.color,
+                    }}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label
+              htmlFor="dueDate"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Due Date
+            </label>
+            <input
+              id="dueDate"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="estimatedHours"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Estimated Hours
+            </label>
+            <input
+              id="estimatedHours"
+              type="number"
+              min="0"
+              step="0.5"
+              value={estimatedHours}
+              onChange={(e) => setEstimatedHours(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="e.g., 4.5"
+            />
           </div>
 
           {error && (

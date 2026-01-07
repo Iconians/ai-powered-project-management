@@ -43,14 +43,18 @@ export function TaskDependencies({
     },
   });
 
-  const { data: boardTasks } = useQuery({
-    queryKey: ["board", boardId],
+  const { data: boardTasks, isLoading: isLoadingTasks } = useQuery({
+    queryKey: ["board-tasks", boardId],
     queryFn: async () => {
       const res = await fetch(`/api/boards/${boardId}`);
       if (!res.ok) throw new Error("Failed to fetch board");
       const board = await res.json();
-      return board.tasks || [];
+      // Ensure we always return an array
+      const tasks = Array.isArray(board?.tasks) ? board.tasks : [];
+      console.log("Fetched tasks for dependencies:", tasks.length, tasks);
+      return tasks;
     },
+    enabled: !!boardId,
   });
 
   const createDependencyMutation = useMutation({
@@ -74,7 +78,9 @@ export function TaskDependencies({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["task-dependencies", taskId] });
-      queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+      // Use refetchQueries instead of invalidateQueries to ensure data is fresh
+      queryClient.refetchQueries({ queryKey: ["board", boardId] });
+      queryClient.invalidateQueries({ queryKey: ["board-tasks", boardId] });
       setShowAddModal(false);
       setSelectedTaskId("");
     },
@@ -110,8 +116,11 @@ export function TaskDependencies({
   const blockedBy = data?.blockedBy || [];
 
   // Filter out current task from available tasks
-  const availableTasks =
-    boardTasks?.filter((t: { id: string }) => t.id !== taskId) || [];
+  const availableTasks = Array.isArray(boardTasks)
+    ? boardTasks.filter((t: { id: string }) => t.id !== taskId)
+    : [];
+
+  console.log("Available tasks for dependency:", availableTasks.length, availableTasks);
 
   return (
     <div className="space-y-4">
@@ -224,8 +233,11 @@ export function TaskDependencies({
                   value={selectedTaskId}
                   onChange={(e) => setSelectedTaskId(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  disabled={isLoadingTasks}
                 >
-                  <option value="">Select a task</option>
+                  <option value="">
+                    {isLoadingTasks ? "Loading tasks..." : "Select a task"}
+                  </option>
                   {availableTasks.map((task: { id: string; title: string }) => (
                     <option key={task.id} value={task.id}>
                       {task.title}

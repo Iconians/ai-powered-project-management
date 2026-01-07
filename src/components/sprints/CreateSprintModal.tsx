@@ -21,6 +21,7 @@ export function CreateSprintModal({
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [goal, setGoal] = useState("");
+  const [capacityHours, setCapacityHours] = useState("");
   const [isActive, setIsActive] = useState(false);
   const queryClient = useQueryClient();
 
@@ -50,6 +51,7 @@ export function CreateSprintModal({
           startDate: startDate.toISOString(),
           endDate: endDate.toISOString(),
           goal,
+          capacityHours: capacityHours ? parseFloat(capacityHours) : undefined,
           isActive,
         }),
       });
@@ -179,6 +181,27 @@ export function CreateSprintModal({
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="What do we want to achieve in this sprint?"
             />
+          </div>
+          <div>
+            <label
+              htmlFor="capacityHours"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Capacity Hours (Optional)
+            </label>
+            <input
+              id="capacityHours"
+              type="number"
+              min="0"
+              step="0.5"
+              value={capacityHours}
+              onChange={(e) => setCapacityHours(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="e.g., 40 (for 40 hours capacity)"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Maximum hours this sprint can handle. Used for capacity risk analysis.
+            </p>
           </div>
           <div className="flex items-center">
             <input

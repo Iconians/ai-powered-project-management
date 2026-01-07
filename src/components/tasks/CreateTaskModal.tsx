@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import type { TaskPriority, TaskStatus } from "@prisma/client";
 
 interface Board {
@@ -34,21 +34,60 @@ interface Board {
   }>;
 }
 
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface CreateTaskModalProps {
   boardId: string;
+  organizationId?: string;
   defaultStatus?: string;
   onClose: () => void;
 }
 
 export function CreateTaskModal({
   boardId,
+  organizationId,
   defaultStatus,
   onClose,
 }: CreateTaskModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("MEDIUM");
+  const [dueDate, setDueDate] = useState("");
+  const [estimatedHours, setEstimatedHours] = useState("");
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const queryClient = useQueryClient();
+
+  // Fetch available tags (both board and organization tags)
+  const { data: boardTags = [], isLoading: boardTagsLoading } = useQuery<Tag[]>({
+    queryKey: ["tags", boardId],
+    queryFn: async () => {
+      const res = await fetch(`/api/tags?boardId=${boardId}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!boardId,
+  });
+
+  const { data: orgTags = [], isLoading: orgTagsLoading } = useQuery<Tag[]>({
+    queryKey: ["tags", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const res = await fetch(`/api/tags?organizationId=${organizationId}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!organizationId,
+  });
+
+  // Combine board and organization tags, removing duplicates
+  const tags = Array.from(
+    new Map([...orgTags, ...boardTags].map((tag) => [tag.id, tag])).values()
+  );
+  const tagsLoading = boardTagsLoading || orgTagsLoading;
 
   const generateDescriptionMutation = useMutation({
     mutationFn: async () => {
@@ -79,13 +118,30 @@ export function CreateTaskModal({
           boardId,
           status: defaultStatus,
           priority,
+          dueDate: dueDate || undefined,
+          estimatedHours: estimatedHours ? parseFloat(estimatedHours) : undefined,
         }),
       });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Failed to create task");
       }
-      return res.json();
+      const task = await res.json();
+      
+      // Add tags if any selected
+      if (selectedTagIds.length > 0 && task.id) {
+        await Promise.all(
+          selectedTagIds.map((tagId) =>
+            fetch(`/api/tasks/${task.id}/tags`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tagId }),
+            })
+          )
+        );
+      }
+      
+      return task;
     },
     onMutate: async () => {
       
@@ -146,6 +202,9 @@ export function CreateTaskModal({
       });
       
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+      setSelectedTagIds([]);
+      setDueDate("");
+      setEstimatedHours("");
       onClose();
     },
     onSettled: () => {
@@ -234,6 +293,85 @@ export function CreateTaskModal({
               <option value="HIGH">High</option>
               <option value="URGENT">Urgent</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tags
+            </label>
+            {tagsLoading ? (
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Loading tags...
+              </div>
+            ) : tags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTagIds((prev) =>
+                        prev.includes(tag.id)
+                          ? prev.filter((id) => id !== tag.id)
+                          : [...prev, tag.id]
+                      );
+                    }}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+                      selectedTagIds.includes(tag.id)
+                        ? "ring-2 ring-offset-2 ring-blue-500"
+                        : "opacity-70 hover:opacity-100"
+                    }`}
+                    style={{
+                      backgroundColor: selectedTagIds.includes(tag.id)
+                        ? tag.color
+                        : `${tag.color}20`,
+                      color: selectedTagIds.includes(tag.id)
+                        ? "#fff"
+                        : tag.color,
+                      borderColor: tag.color,
+                    }}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+                No tags available. Create tags in board settings to organize tasks.
+              </div>
+            )}
+          </div>
+          <div>
+            <label
+              htmlFor="dueDate"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Due Date
+            </label>
+            <input
+              id="dueDate"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="estimatedHours"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Estimated Hours
+            </label>
+            <input
+              id="estimatedHours"
+              type="number"
+              min="0"
+              step="0.5"
+              value={estimatedHours}
+              onChange={(e) => setEstimatedHours(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="e.g., 4.5"
+            />
           </div>
           <div className="flex gap-3 justify-end">
             <button

@@ -21,7 +21,8 @@ export async function POST(request: NextRequest) {
         tasks: {
           include: {
             dependencies: {
-              include: {
+              select: {
+                type: true,
                 dependsOn: {
                   select: {
                     id: true,
@@ -65,8 +66,9 @@ export async function POST(request: NextRequest) {
     );
 
     const blockedTasks = board.tasks.filter((task) => {
+      // Only consider BLOCKS type dependencies, not RELATED or DUPLICATE
       return task.dependencies.some(
-        (dep) => dep.dependsOn.status !== "DONE"
+        (dep) => dep.type === "BLOCKS" && dep.dependsOn.status !== "DONE"
       );
     });
 
@@ -74,6 +76,10 @@ export async function POST(request: NextRequest) {
     const sprintCapacity = activeSprint
       ? activeSprint.tasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0)
       : 0;
+    const sprintCapacityLimit = activeSprint?.capacityHours || null;
+    const isOverCapacity = sprintCapacityLimit 
+      ? sprintCapacity > sprintCapacityLimit 
+      : false;
 
     const systemPrompt = `You are a project management assistant. Analyze project data and identify potential risks. Return a JSON array of risks with:
 - type: RISK type (OVERDUE, BLOCKED, OVERCAPACITY, LOW_COMPLETION)
@@ -86,7 +92,8 @@ Board: ${board.name}
 Total Tasks: ${board.tasks.length}
 Overdue Tasks: ${overdueTasks.length}
 Blocked Tasks: ${blockedTasks.length}
-Active Sprint Capacity: ${sprintCapacity} hours
+Active Sprint Capacity: ${sprintCapacity} hours${sprintCapacityLimit ? ` / ${sprintCapacityLimit} hours limit` : ''}
+${isOverCapacity ? '⚠️ Sprint is OVER CAPACITY' : ''}
 `;
 
     const userPrompt = `Analyze risks for this project:\n\n${projectData}`;
@@ -116,6 +123,14 @@ Active Sprint Capacity: ${sprintCapacity} hours
           severity: "MEDIUM",
           description: `${blockedTasks.length} tasks are blocked by incomplete dependencies`,
           recommendation: "Prioritize blocking tasks to unblock dependent work",
+        });
+      }
+      if (isOverCapacity && sprintCapacityLimit) {
+        risks.push({
+          type: "OVERCAPACITY",
+          severity: "HIGH",
+          description: `Sprint capacity exceeded: ${sprintCapacity.toFixed(1)}h / ${sprintCapacityLimit}h`,
+          recommendation: "Remove tasks from sprint or increase capacity limit",
         });
       }
       return NextResponse.json({ risks });

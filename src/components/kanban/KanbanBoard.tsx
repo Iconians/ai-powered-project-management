@@ -112,18 +112,27 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
     })
   );
 
-  const { data: board, isLoading } = useQuery<Board>({
+  const { data: board, isLoading, error: boardError } = useQuery<Board>({
     queryKey: ["board", boardId],
     queryFn: async () => {
       const res = await fetch(`/api/boards/${boardId}`);
-      if (!res.ok) throw new Error("Failed to fetch board");
-      return res.json();
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: "Failed to fetch board" }));
+        throw new Error(error.error || "Failed to fetch board");
+      }
+      const data = await res.json();
+      // Ensure statuses and tasks are arrays
+      return {
+        ...data,
+        statuses: Array.isArray(data.statuses) ? data.statuses : [],
+        tasks: Array.isArray(data.tasks) ? data.tasks : [],
+      };
     },
-
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
-
     refetchInterval: false,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   useRealtime({
@@ -223,20 +232,20 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
     const taskId = active.id as string;
     const overId = over.id as string;
 
-    const statusColumn = board.statuses.find((s) => s.id === overId);
+    const statusColumn = board?.statuses?.find((s) => s.id === overId);
 
     if (!statusColumn) {
-      const droppedOnTask = board.tasks.find((t) => t.id === overId);
+      const droppedOnTask = board?.tasks?.find((t) => t.id === overId);
       if (droppedOnTask) {
-        const targetStatus = board.statuses.find(
+        const targetStatus = board?.statuses?.find(
           (s) => s.status === droppedOnTask.status
         );
         if (targetStatus) {
-          const task = board.tasks.find((t) => t.id === taskId);
+          const task = board?.tasks?.find((t) => t.id === taskId);
           if (task && task.status !== targetStatus.status) {
-            const tasksInNewStatus = board.tasks.filter(
-              (t) => t.status === targetStatus.status
-            );
+            const tasksInNewStatus = Array.isArray(board?.tasks)
+              ? board.tasks.filter((t) => t.status === targetStatus.status)
+              : [];
             const newOrder = tasksInNewStatus.length;
 
             updateTaskMutation.mutate({
@@ -250,7 +259,7 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
       return;
     }
 
-    const task = board.tasks.find((t) => t.id === taskId);
+    const task = board?.tasks?.find((t) => t.id === taskId);
     if (!task) {
       return;
     }
@@ -259,9 +268,9 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
       return;
     }
 
-    const tasksInNewStatus = board.tasks.filter(
-      (t) => t.status === statusColumn.status
-    );
+    const tasksInNewStatus = Array.isArray(board?.tasks)
+      ? board.tasks.filter((t) => t.status === statusColumn.status)
+      : [];
     const newOrder = tasksInNewStatus.length;
 
     updateTaskMutation.mutate({
@@ -279,6 +288,20 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
     );
   }
 
+  if (boardError) {
+    return (
+      <div className="p-8 text-red-600 dark:text-red-400">
+        Error loading board: {boardError instanceof Error ? boardError.message : "Unknown error"}
+        <button
+          onClick={() => queryClient.invalidateQueries({ queryKey: ["board", boardId] })}
+          className="ml-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   if (!board) {
     return (
       <div className="p-8 text-gray-600 dark:text-gray-400">
@@ -287,8 +310,10 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
     );
   }
 
-  const sortedStatuses = [...board.statuses].sort((a, b) => a.order - b.order);
-  const activeTask = board.tasks.find((t) => t.id === activeId);
+  const sortedStatuses = Array.isArray(board?.statuses)
+    ? [...board.statuses].sort((a, b) => a.order - b.order)
+    : [];
+  const activeTask = board?.tasks?.find((t) => t.id === activeId);
 
   const handleDragOver = () => {};
 
@@ -304,9 +329,11 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
       >
         <div className="flex flex-col md:flex-row gap-2 sm:gap-4 p-2 sm:p-4 overflow-y-auto md:overflow-x-auto md:overflow-y-visible flex-1 md:justify-center">
         {sortedStatuses.map((status) => {
-          const columnTasks = board.tasks
-            .filter((t) => t.status === status.status)
-            .sort((a, b) => a.order - b.order);
+          const columnTasks = Array.isArray(board?.tasks)
+            ? board.tasks
+                .filter((t) => t.status === status.status)
+                .sort((a, b) => a.order - b.order)
+            : [];
 
           return (
             <KanbanColumn

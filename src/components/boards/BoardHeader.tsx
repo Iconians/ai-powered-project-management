@@ -9,6 +9,7 @@ import { CreateSprintModal } from "../sprints/CreateSprintModal";
 import { BoardMembersModal } from "./BoardMembersModal";
 import { GitHubRepoModal } from "./GitHubRepoModal";
 import { ManageColumnsModal } from "./ManageColumnsModal";
+import { TagManagerModal } from "../tags/TagManagerModal";
 import { TaskSearch } from "../tasks/TaskSearch";
 import { TaskFilters } from "../tasks/TaskFilters";
 import { ExportModal } from "./ExportModal";
@@ -39,6 +40,7 @@ export function BoardHeader({
   const [showBoardMembers, setShowBoardMembers] = useState(false);
   const [showGitHubRepo, setShowGitHubRepo] = useState(false);
   const [showManageColumns, setShowManageColumns] = useState(false);
+  const [showTagManager, setShowTagManager] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -253,6 +255,14 @@ export function BoardHeader({
                   <span>📊</span>
                   <span className="hidden sm:inline">Columns</span>
                 </button>
+                <button
+                  onClick={() => setShowTagManager(true)}
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  title="Manage Tags"
+                >
+                  <span>🏷️</span>
+                  <span className="hidden sm:inline">Tags</span>
+                </button>
               </>
             )}
             {userBoardRole === "ADMIN" && (
@@ -431,6 +441,15 @@ export function BoardHeader({
           boardId={boardId}
           userBoardRole={userBoardRole}
           onClose={() => setShowManageColumns(false)}
+        />
+      )}
+
+      {showTagManager && (
+        <TagManagerModal
+          boardId={boardId}
+          organizationId={organizationId}
+          userBoardRole={userBoardRole}
+          onClose={() => setShowTagManager(false)}
         />
       )}
 

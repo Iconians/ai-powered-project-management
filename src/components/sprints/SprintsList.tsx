@@ -8,6 +8,7 @@ import { EditSprintModal } from "./EditSprintModal";
 
 interface Sprint {
   id: string;
+  capacityHours: number | null;
   name: string;
   description: string | null;
   startDate: string;

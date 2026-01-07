@@ -92,6 +92,7 @@ export async function PATCH(
         startDate: body.startDate ? new Date(body.startDate) : undefined,
         endDate: body.endDate ? new Date(body.endDate) : undefined,
         goal: body.goal,
+        capacityHours: body.capacityHours !== undefined ? (body.capacityHours ? parseFloat(body.capacityHours) : null) : undefined,
         isActive: body.isActive,
       },
       include: {

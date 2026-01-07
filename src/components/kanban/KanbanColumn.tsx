@@ -108,6 +108,7 @@ export function KanbanColumn({
       {showCreateModal && (
         <CreateTaskModal
           boardId={boardId}
+          organizationId={organizationId}
           defaultStatus={status.status}
           onClose={() => setShowCreateModal(false)}
         />
