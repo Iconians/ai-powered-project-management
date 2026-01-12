@@ -1,5 +1,3 @@
-import { IntegrationProvider } from "@prisma/client";
-
 export interface JiraConfig {
   baseUrl: string; // e.g., https://yourcompany.atlassian.net
   apiToken: string;

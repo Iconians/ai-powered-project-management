@@ -3,16 +3,28 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+interface FilterState {
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  tagId?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  searchQuery?: string;
+}
+
 interface TimelineViewProps {
   boardId: string;
   organizationId?: string;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
+  filters?: FilterState;
 }
 
 export function TimelineView({
   boardId,
   organizationId: _organizationId,
   userBoardRole: _userBoardRole,
+  filters: _filters,
 }: TimelineViewProps) {
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(() => {

@@ -7,7 +7,6 @@ import { syncTaskToGitHub } from "@/lib/github-sync";
 import { getGitHubClient } from "@/lib/github";
 import { TaskStatus } from "@prisma/client";
 import { createNotification, notifyTaskWatchers } from "@/lib/notifications";
-import { triggerIntegrations } from "@/lib/integration-trigger";
 
 export async function GET(
   _request: NextRequest,
@@ -146,25 +145,6 @@ export async function PATCH(
         },
       },
       include: {
-        board: {
-          select: {
-            id: true,
-            organizationId: true,
-            name: true,
-          },
-        },
-        assignee: {
-          include: {
-            user: {
-              select: {
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-      include: {
         assignee: {
           include: {
             user: {
@@ -180,6 +160,7 @@ export async function PATCH(
         board: {
           select: {
             id: true,
+            organizationId: true,
             name: true,
             githubSyncEnabled: true,
             githubAccessToken: true,

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { TaskStatus, TaskPriority } from "@prisma/client";
 
 interface FilterState {
   assigneeId?: string;

@@ -7,7 +7,6 @@ import { TaskStatus } from "@prisma/client";
 import { executeAutomations } from "@/lib/automation-engine";
 import { logActivity } from "@/lib/activity-logger";
 import { createNotification } from "@/lib/notifications";
-import { triggerIntegrations } from "@/lib/integration-trigger";
 
 export async function POST(request: NextRequest) {
   try {

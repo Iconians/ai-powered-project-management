@@ -207,7 +207,6 @@ async function triggerLinearIntegration(config: any, event: IntegrationEvent) {
     title: task.title,
     description: task.description || "",
     priority: priorityMap[task.priority] || 2,
-    teamId: config.teamId,
   });
 
   if (result) {

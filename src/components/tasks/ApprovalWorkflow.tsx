@@ -31,7 +31,7 @@ interface ApprovalWorkflowProps {
 export function ApprovalWorkflow({
   taskId,
   boardId,
-  organizationId,
+  organizationId: _organizationId,
 }: ApprovalWorkflowProps) {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [approverId, setApproverId] = useState("");
@@ -89,7 +89,7 @@ export function ApprovalWorkflow({
       comment,
     }: {
       approvalId: string;
-      status: ApprovalStatus.APPROVED | ApprovalStatus.REJECTED;
+      status: "APPROVED" | "REJECTED";
       comment?: string;
     }) => {
       const res = await fetch(`/api/tasks/${taskId}/approvals/${approvalId}`, {

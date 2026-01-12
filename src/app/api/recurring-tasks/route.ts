@@ -86,7 +86,6 @@ export async function POST(request: NextRequest) {
 
     // Calculate next occurrence based on pattern
     const start = new Date(startDate);
-    let nextOccurrence = new Date(start);
 
     const recurringTask = await prisma.recurringTask.create({
       data: {

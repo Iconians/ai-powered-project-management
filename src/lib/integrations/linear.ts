@@ -1,5 +1,3 @@
-import { IntegrationProvider } from "@prisma/client";
-
 export interface LinearConfig {
   apiKey: string;
   teamId: string;

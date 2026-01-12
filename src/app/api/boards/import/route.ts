@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       // Handle Kanban-style format (tasks in status columns)
       if (isKanbanFormat) {
         // Process each column (status)
-        normalizedHeaders.forEach((normalizedHeader, colIndex) => {
+        normalizedHeaders.forEach((_normalizedHeader, colIndex) => {
           const status = columnToStatusMap[colIndex];
           if (status) {
             // Process each row in this column

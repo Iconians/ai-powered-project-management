@@ -31,7 +31,7 @@ interface RecurringTaskModalProps {
 
 export function RecurringTaskModal({
   boardId,
-  organizationId,
+  organizationId: _organizationId,
   task,
   onClose,
 }: RecurringTaskModalProps) {

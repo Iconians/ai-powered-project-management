@@ -3,16 +3,28 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+interface FilterState {
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  tagId?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  searchQuery?: string;
+}
+
 interface CalendarViewProps {
   boardId: string;
   organizationId?: string;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
+  filters?: FilterState;
 }
 
 export function CalendarView({
   boardId,
   organizationId: _organizationId,
   userBoardRole: _userBoardRole,
+  filters: _filters,
 }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"month" | "week">("month");
