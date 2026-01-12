@@ -8,16 +8,28 @@ import { TimelineView } from "../views/TimelineView";
 
 type ViewType = "kanban" | "list" | "calendar" | "timeline";
 
+interface FilterState {
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  tagId?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  searchQuery?: string;
+}
+
 interface BoardViewSelectorProps {
   boardId: string;
   organizationId?: string;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
+  filters?: FilterState;
 }
 
 export function BoardViewSelector({
   boardId,
   organizationId,
   userBoardRole,
+  filters = {},
 }: BoardViewSelectorProps) {
   const [currentView, setCurrentView] = useState<ViewType>("kanban");
 
@@ -57,6 +69,7 @@ export function BoardViewSelector({
             boardId={boardId}
             organizationId={organizationId}
             userBoardRole={userBoardRole}
+            filters={filters}
           />
         )}
         {currentView === "list" && (
@@ -64,6 +77,7 @@ export function BoardViewSelector({
             boardId={boardId}
             organizationId={organizationId}
             userBoardRole={userBoardRole}
+            filters={filters}
           />
         )}
         {currentView === "calendar" && (
@@ -71,6 +85,7 @@ export function BoardViewSelector({
             boardId={boardId}
             organizationId={organizationId}
             userBoardRole={userBoardRole}
+            filters={filters}
           />
         )}
         {currentView === "timeline" && (
@@ -78,6 +93,7 @@ export function BoardViewSelector({
             boardId={boardId}
             organizationId={organizationId}
             userBoardRole={userBoardRole}
+            filters={filters}
           />
         )}
       </div>

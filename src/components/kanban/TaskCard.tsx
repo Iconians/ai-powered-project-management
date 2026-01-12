@@ -56,6 +56,8 @@ interface TaskCardProps {
   boardId: string;
   organizationId?: string;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
+  isSelected?: boolean;
+  onSelect?: () => void;
 }
 
 const priorityColors = {
@@ -71,11 +73,12 @@ export function TaskCard({
   boardId,
   organizationId,
   userBoardRole,
+  isSelected = false,
+  onSelect,
 }: TaskCardProps) {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [justClosedEditModal, setJustClosedEditModal] = useState(false);
   const queryClient = useQueryClient();
 
   // Check if task is blocked by dependencies
@@ -157,52 +160,13 @@ export function TaskCard({
   const canEdit =
     !isViewer && (userBoardRole === "ADMIN" || userBoardRole === "MEMBER");
 
-  const duplicateTaskMutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: `${task.title} (Copy)`,
-          description: task.description,
-          boardId,
-          status: task.status,
-          priority: task.priority,
-          assigneeId: null, // Don't copy assignee
-        }),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to duplicate task");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["board", boardId] });
-    },
-  });
-
-  const handleDuplicate = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    duplicateTaskMutation.mutate();
-  };
-
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowEditModal(true);
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    // Don't open detail modal if clicking on action buttons or if modals are open
-    if (
-      (e.target as HTMLElement).closest("button") ||
-      showEditModal ||
-      showAssignModal ||
-      showDetailModal ||
-      justClosedEditModal
-    ) {
-      return;
-    }
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (organizationId) {
       setShowDetailModal(true);
     }
@@ -224,19 +188,31 @@ export function TaskCard({
         isDragging ? "opacity-50" : ""
       } ${isViewer ? "cursor-default" : "cursor-grab active:cursor-grabbing"} ${
         isBlocked ? "border-l-4 border-yellow-500" : ""
+      } ${
+        isSelected ? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20" : ""
       }`}
-      onClick={handleCardClick}
     >
       <div className="flex items-start justify-between mb-2">
-        <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
-            {task.title}
-          </h4>
-          {task.description && (
-            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-              {task.description}
-            </p>
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          {onSelect && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={onSelect}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-1 h-4 w-4 text-blue-600 rounded focus:ring-blue-500 flex-shrink-0"
+            />
           )}
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
+              {task.title}
+            </h4>
+            {task.description && (
+              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                {task.description}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
           {canEdit && (
@@ -250,11 +226,10 @@ export function TaskCard({
                 ✏️
               </button>
               <button
-                onClick={handleDuplicate}
+                onClick={handleViewDetails}
                 onTouchStart={(e) => e.stopPropagation()}
-                disabled={duplicateTaskMutation.isPending}
-                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
-                title="Duplicate task"
+                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                title="View task details"
               >
                 📋
               </button>
@@ -356,11 +331,6 @@ export function TaskCard({
           currentDescription={task.description}
           onClose={() => {
             setShowEditModal(false);
-            // Prevent detail modal from opening immediately after closing edit modal
-            setJustClosedEditModal(true);
-            setTimeout(() => {
-              setJustClosedEditModal(false);
-            }, 300);
           }}
         />
       )}

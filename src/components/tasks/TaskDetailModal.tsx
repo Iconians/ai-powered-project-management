@@ -8,6 +8,7 @@ import { TagSelector } from "./TagSelector";
 import { TaskChecklist } from "./TaskChecklist";
 import { TaskDependencies } from "./TaskDependencies";
 import { TimeTracker } from "./TimeTracker";
+import { ApprovalWorkflow } from "./ApprovalWorkflow";
 import { CustomFieldsDisplay } from "./CustomFieldsDisplay";
 
 interface TaskDetailModalProps {
@@ -27,7 +28,7 @@ export function TaskDetailModal({
 }: TaskDetailModalProps) {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"details" | "checklist" | "dependencies" | "time">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "checklist" | "dependencies" | "time" | "approvals">("details");
   const [showEditModal, setShowEditModal] = useState(false);
 
   const { data: task, isLoading } = useQuery({
@@ -202,7 +203,7 @@ export function TaskDetailModal({
           {/* Tabs */}
           <div className="border-b border-gray-200 dark:border-gray-700 px-4">
             <div className="flex gap-4">
-              {["details", "checklist", "dependencies", "time"].map((tab) => (
+              {["details", "checklist", "dependencies", "time", "approvals"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as any)}
@@ -297,6 +298,14 @@ export function TaskDetailModal({
                 taskId={taskId}
                 boardId={boardId}
                 userBoardRole={userBoardRole}
+              />
+            )}
+
+            {activeTab === "approvals" && (
+              <ApprovalWorkflow
+                taskId={taskId}
+                boardId={boardId}
+                organizationId={organizationId}
               />
             )}
 

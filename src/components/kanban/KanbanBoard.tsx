@@ -19,6 +19,7 @@ import { useRealtime } from "@/hooks/useRealtime";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ShortcutHelp } from "../shared/ShortcutHelp";
 import { RiskAlerts } from "../ai/RiskAlerts";
+import { BulkEditModal } from "../tasks/BulkEditModal";
 import type { TaskStatus } from "@prisma/client";
 
 interface Board {
@@ -48,18 +49,95 @@ interface Board {
       };
     } | null;
     order: number;
+    tags?: Array<{
+      tag: {
+        id: string;
+        name: string;
+        color: string;
+      };
+    }>;
+    dueDate?: string | null;
   }>;
+}
+
+interface FilterState {
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  tagId?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  searchQuery?: string;
 }
 
 interface KanbanBoardProps {
   boardId: string;
   organizationId?: string;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
+  filters?: FilterState;
 }
 
-export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBoardProps) {
+function filterTasks(tasks: Board["tasks"], filters: FilterState): Board["tasks"] {
+  return tasks.filter((task) => {
+    // Filter by status
+    if (filters.status && task.status !== filters.status) {
+      return false;
+    }
+
+    // Filter by priority
+    if (filters.priority && task.priority !== filters.priority) {
+      return false;
+    }
+
+    // Filter by assignee
+    if (filters.assigneeId && task.assignee?.id !== filters.assigneeId) {
+      return false;
+    }
+
+    // Filter by tag (if tags are included in the task)
+    if (filters.tagId && task.tags) {
+      const hasTag = task.tags.some((tt) => tt.tag?.id === filters.tagId);
+      if (!hasTag) {
+        return false;
+      }
+    }
+
+    // Filter by due date
+    if (filters.dueDateFrom && task.dueDate) {
+      const dueDate = new Date(task.dueDate);
+      const fromDate = new Date(filters.dueDateFrom);
+      if (dueDate < fromDate) {
+        return false;
+      }
+    }
+    if (filters.dueDateTo && task.dueDate) {
+      const dueDate = new Date(task.dueDate);
+      const toDate = new Date(filters.dueDateTo);
+      toDate.setHours(23, 59, 59, 999); // Include entire day
+      if (dueDate > toDate) {
+        return false;
+      }
+    }
+
+    // Filter by search query
+    if (filters.searchQuery && filters.searchQuery.trim().length > 0) {
+      const query = filters.searchQuery.toLowerCase();
+      const titleMatch = task.title?.toLowerCase().includes(query);
+      const descMatch = task.description?.toLowerCase().includes(query);
+      if (!titleMatch && !descMatch) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+}
+
+export function KanbanBoard({ boardId, organizationId, userBoardRole, filters = {} }: KanbanBoardProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
   const queryClient = useQueryClient();
 
   // Keyboard shortcuts
@@ -68,15 +146,19 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
       key: "k",
       meta: true,
       handler: () => {
-        // Quick task creation - could open modal
-        console.log("Quick task creation");
+        // Focus search (Cmd+K or Ctrl+K)
+        const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
       },
     },
     {
       key: "f",
       meta: true,
       handler: () => {
-        // Focus search
+        // Focus search (alternative shortcut)
         const searchInput = document.querySelector('input[placeholder*="Search"]') as HTMLInputElement;
         searchInput?.focus();
       },
@@ -315,11 +397,55 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
     : [];
   const activeTask = board?.tasks?.find((t) => t.id === activeId);
 
+  // Apply filters to tasks
+  const allTasks = Array.isArray(board?.tasks) ? board.tasks : [];
+  const filteredTasks = filterTasks(allTasks, filters);
+
   const handleDragOver = () => {};
+
+  const toggleTaskSelection = (taskId: string) => {
+    setSelectedTaskIds((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(taskId)) {
+        newSet.delete(taskId);
+      } else {
+        newSet.add(taskId);
+      }
+      return newSet;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedTaskIds(new Set());
+  };
 
   return (
     <div className="h-full flex flex-col">
       <RiskAlerts boardId={boardId} />
+      
+      {/* Bulk Actions Toolbar */}
+      {selectedTaskIds.size > 0 && !isViewer && (
+        <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between">
+          <span className="text-sm font-medium">
+            {selectedTaskIds.size} task{selectedTaskIds.size !== 1 ? "s" : ""} selected
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowBulkEdit(true)}
+              className="px-3 py-1 text-sm bg-white text-blue-600 rounded hover:bg-blue-50"
+            >
+              Edit Selected
+            </button>
+            <button
+              onClick={clearSelection}
+              className="px-3 py-1 text-sm bg-blue-700 rounded hover:bg-blue-800"
+            >
+              Clear Selection
+            </button>
+          </div>
+        </div>
+      )}
+
       <DndContext
         sensors={sensors}
         collisionDetection={rectIntersection}
@@ -329,11 +455,9 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
       >
         <div className="flex flex-col md:flex-row gap-2 sm:gap-4 p-2 sm:p-4 overflow-y-auto md:overflow-x-auto md:overflow-y-visible flex-1 md:justify-center">
         {sortedStatuses.map((status) => {
-          const columnTasks = Array.isArray(board?.tasks)
-            ? board.tasks
-                .filter((t) => t.status === status.status)
-                .sort((a, b) => a.order - b.order)
-            : [];
+          const columnTasks = filteredTasks
+            .filter((t) => t.status === status.status)
+            .sort((a, b) => a.order - b.order);
 
           return (
             <KanbanColumn
@@ -344,6 +468,8 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
               boardId={boardId}
               organizationId={organizationId}
               userBoardRole={userBoardRole}
+              selectedTaskIds={selectedTaskIds}
+              onTaskSelect={toggleTaskSelection}
             />
           );
         })}
@@ -365,6 +491,17 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole }: KanbanBo
           onClose={() => setShowShortcuts(false)}
         />
       </DndContext>
+
+      {showBulkEdit && (
+        <BulkEditModal
+          taskIds={Array.from(selectedTaskIds)}
+          boardId={boardId}
+          onClose={() => {
+            setShowBulkEdit(false);
+            clearSelection();
+          }}
+        />
+      )}
     </div>
   );
 }

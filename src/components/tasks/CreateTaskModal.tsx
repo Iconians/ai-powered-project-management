@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import type { TaskPriority, TaskStatus } from "@prisma/client";
+import { TemplateSelector } from "../templates/TemplateSelector";
 
 interface Board {
   id: string;
@@ -59,6 +60,7 @@ export function CreateTaskModal({
   const [dueDate, setDueDate] = useState("");
   const [estimatedHours, setEstimatedHours] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch available tags (both board and organization tags)
@@ -213,6 +215,15 @@ export function CreateTaskModal({
     },
   });
 
+  const handleTemplateSelect = (template: any) => {
+    setTitle(template.title);
+    setDescription(template.taskDescription || "");
+    setPriority(template.priority);
+    setEstimatedHours(template.estimatedHours?.toString() || "");
+    // Note: Tags and checklist items would need to be handled separately
+    // since they require API calls after task creation
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -222,9 +233,18 @@ export function CreateTaskModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Create Task
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Create Task
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowTemplateSelector(true)}
+            className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+          >
+            📋 Use Template
+          </button>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
@@ -400,6 +420,15 @@ export function CreateTaskModal({
           </div>
         )}
       </div>
+
+      {showTemplateSelector && (
+        <TemplateSelector
+          boardId={boardId}
+          organizationId={organizationId}
+          onSelect={handleTemplateSelect}
+          onClose={() => setShowTemplateSelector(false)}
+        />
+      )}
     </div>
   );
 }

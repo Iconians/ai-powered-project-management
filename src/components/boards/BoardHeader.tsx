@@ -14,6 +14,18 @@ import { TaskSearch } from "../tasks/TaskSearch";
 import { TaskFilters } from "../tasks/TaskFilters";
 import { ExportModal } from "./ExportModal";
 import { ImportModal } from "./ImportModal";
+import { TemplateEditor } from "../templates/TemplateEditor";
+import { RecurringTaskManager } from "../recurring-tasks/RecurringTaskManager";
+
+interface FilterState {
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  tagId?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  searchQuery?: string;
+}
 
 interface BoardHeaderProps {
   boardId: string;
@@ -23,6 +35,8 @@ interface BoardHeaderProps {
   onTabChange?: (tab: "board" | "sprints") => void;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
   organizationId?: string;
+  filters?: FilterState;
+  onFiltersChange?: (filters: FilterState) => void;
 }
 
 export function BoardHeader({
@@ -33,6 +47,8 @@ export function BoardHeader({
   onTabChange,
   userBoardRole,
   organizationId,
+  filters = {},
+  onFiltersChange,
 }: BoardHeaderProps) {
   const [showTaskGenerator, setShowTaskGenerator] = useState(false);
   const [showSprintPlanner, setShowSprintPlanner] = useState(false);
@@ -43,13 +59,16 @@ export function BoardHeader({
   const [showTagManager, setShowTagManager] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [showRecurringTasks, setShowRecurringTasks] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(boardName);
   const queryClient = useQueryClient();
   
-  // TaskFilters manages its own state, we just need a callback
-  const handleFilterChange = (_filters: any) => {
-    // Filters are managed internally by TaskFilters component
+  const handleFilterChange = (newFilters: FilterState) => {
+    if (onFiltersChange) {
+      onFiltersChange(newFilters);
+    }
   };
 
   const updateBoardTitleMutation = useMutation({
@@ -391,9 +410,13 @@ export function BoardHeader({
                   // Could open task detail modal here
                   console.log("Selected task:", taskId);
                 }}
+                onSearchChange={(searchQuery) => {
+                  handleFilterChange({ ...filters, searchQuery });
+                }}
+                searchQuery={filters.searchQuery}
               />
             </div>
-            <TaskFilters boardId={boardId} onFilterChange={handleFilterChange} />
+            <TaskFilters boardId={boardId} onFilterChange={handleFilterChange} filters={filters} />
           </div>
         )}
       </div>
@@ -465,6 +488,22 @@ export function BoardHeader({
         <ImportModal
           boardId={boardId}
           onClose={() => setShowImportModal(false)}
+        />
+      )}
+
+      {showTemplateEditor && (
+        <TemplateEditor
+          boardId={boardId}
+          organizationId={organizationId}
+          onClose={() => setShowTemplateEditor(false)}
+        />
+      )}
+
+      {showRecurringTasks && (
+        <RecurringTaskManager
+          boardId={boardId}
+          organizationId={organizationId}
+          onClose={() => setShowRecurringTasks(false)}
         />
       )}
     </>

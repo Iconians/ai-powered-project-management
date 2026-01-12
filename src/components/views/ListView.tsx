@@ -4,10 +4,21 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { TaskStatus, TaskPriority } from "@prisma/client";
 
+interface FilterState {
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  tagId?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  searchQuery?: string;
+}
+
 interface ListViewProps {
   boardId: string;
   organizationId?: string;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
+  filters?: FilterState;
 }
 
 type SortField = "title" | "status" | "priority" | "dueDate" | "createdAt";
@@ -17,11 +28,10 @@ export function ListView({
   boardId,
   organizationId: _organizationId,
   userBoardRole: _userBoardRole,
+  filters = {},
 }: ListViewProps) {
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
-  const [selectedPriority, setSelectedPriority] = useState<string>("all");
 
   const { data: board, isLoading } = useQuery({
     queryKey: ["board", boardId],
@@ -42,14 +52,43 @@ export function ListView({
 
   let tasks = [...(board.tasks || [])];
 
-  // Filter by status
-  if (selectedStatus !== "all") {
-    tasks = tasks.filter((task) => task.status === selectedStatus);
+  // Apply filters
+  if (filters.status) {
+    tasks = tasks.filter((task) => task.status === filters.status);
   }
-
-  // Filter by priority
-  if (selectedPriority !== "all") {
-    tasks = tasks.filter((task) => task.priority === selectedPriority);
+  if (filters.priority) {
+    tasks = tasks.filter((task) => task.priority === filters.priority);
+  }
+  if (filters.assigneeId) {
+    tasks = tasks.filter((task) => task.assignee?.id === filters.assigneeId);
+  }
+  if (filters.tagId && tasks[0]?.tags) {
+    tasks = tasks.filter((task: any) => 
+      task.tags?.some((tt: any) => tt.tag?.id === filters.tagId)
+    );
+  }
+  if (filters.dueDateFrom) {
+    const fromDate = new Date(filters.dueDateFrom);
+    tasks = tasks.filter((task) => {
+      if (!task.dueDate) return false;
+      return new Date(task.dueDate) >= fromDate;
+    });
+  }
+  if (filters.dueDateTo) {
+    const toDate = new Date(filters.dueDateTo);
+    toDate.setHours(23, 59, 59, 999);
+    tasks = tasks.filter((task) => {
+      if (!task.dueDate) return false;
+      return new Date(task.dueDate) <= toDate;
+    });
+  }
+  if (filters.searchQuery && filters.searchQuery.trim().length > 0) {
+    const query = filters.searchQuery.toLowerCase();
+    tasks = tasks.filter((task) => {
+      const titleMatch = task.title?.toLowerCase().includes(query);
+      const descMatch = task.description?.toLowerCase().includes(query);
+      return titleMatch || descMatch;
+    });
   }
 
   // Sort tasks
@@ -88,45 +127,6 @@ export function ListView({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Filters */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div className="flex flex-wrap gap-4 items-center">
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">
-              Status:
-            </label>
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-            >
-              <option value="all">All</option>
-              {Object.values(TaskStatus).map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-2">
-              Priority:
-            </label>
-            <select
-              value={selectedPriority}
-              onChange={(e) => setSelectedPriority(e.target.value)}
-              className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-            >
-              <option value="all">All</option>
-              {Object.values(TaskPriority).map((priority) => (
-                <option key={priority} value={priority}>
-                  {priority}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
 
       {/* Table */}
       <div className="flex-1 overflow-auto">

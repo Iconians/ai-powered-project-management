@@ -8,24 +8,19 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-
     await requireMember(id, "VIEWER");
 
     const settings = await prisma.organizationSettings.findUnique({
       where: { organizationId: id },
     });
 
-    if (!settings) {
-      // Return default settings
-      return NextResponse.json({
-        logoUrl: null,
-        primaryColor: null,
-        secondaryColor: null,
-        customDomain: null,
-      });
-    }
-
-    return NextResponse.json(settings);
+    return NextResponse.json(settings || {
+      organizationId: id,
+      logoUrl: null,
+      primaryColor: null,
+      secondaryColor: null,
+      customDomain: null,
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to fetch settings";
@@ -39,18 +34,17 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
+    await requireMember(id, "ADMIN");
+
     const body = await request.json();
     const { logoUrl, primaryColor, secondaryColor, customDomain } = body;
-
-    await requireMember(id, "ADMIN");
 
     const settings = await prisma.organizationSettings.upsert({
       where: { organizationId: id },
       update: {
         logoUrl: logoUrl !== undefined ? logoUrl : undefined,
         primaryColor: primaryColor !== undefined ? primaryColor : undefined,
-        secondaryColor:
-          secondaryColor !== undefined ? secondaryColor : undefined,
+        secondaryColor: secondaryColor !== undefined ? secondaryColor : undefined,
         customDomain: customDomain !== undefined ? customDomain : undefined,
       },
       create: {
@@ -69,4 +63,3 @@ export async function PATCH(
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

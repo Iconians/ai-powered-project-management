@@ -17,12 +17,18 @@ export async function GET(request: NextRequest) {
 
     await requireMember(organizationId, "VIEWER");
 
-    const integrations = await prisma.integration.findMany({
-      where: { organizationId },
-      orderBy: { createdAt: "desc" },
-    });
+    try {
+      const integrations = await prisma.integration.findMany({
+        where: { organizationId },
+        orderBy: { createdAt: "desc" },
+      });
 
-    return NextResponse.json(integrations);
+      return NextResponse.json(integrations);
+    } catch (error) {
+      // If there's an error (e.g., table doesn't exist), return empty array
+      console.error("Error fetching integrations:", error);
+      return NextResponse.json([]);
+    }
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to fetch integrations";
@@ -52,36 +58,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if integration already exists
-    const existing = await prisma.integration.findUnique({
-      where: {
-        organizationId_provider: {
-          organizationId,
-          provider,
+    try {
+      // Check if integration already exists
+      const existing = await prisma.integration.findUnique({
+        where: {
+          organizationId_provider: {
+            organizationId,
+            provider,
+          },
         },
-      },
-    });
+      });
 
-    let integration;
-    if (existing) {
-      integration = await prisma.integration.update({
-        where: { id: existing.id },
-        data: {
-          config: config || {},
-          isActive: true,
-        },
-      });
-    } else {
-      integration = await prisma.integration.create({
-        data: {
-          organizationId,
-          provider,
-          config: config || {},
-        },
-      });
+      let integration;
+      if (existing) {
+        integration = await prisma.integration.update({
+          where: { id: existing.id },
+          data: {
+            config: config || {},
+            isActive: true,
+          },
+        });
+      } else {
+        integration = await prisma.integration.create({
+          data: {
+            organizationId,
+            provider,
+            config: config || {},
+          },
+        });
+      }
+
+      return NextResponse.json(integration);
+    } catch (error) {
+      // Handle database errors gracefully (e.g., table doesn't exist)
+      console.error("Error creating/updating integration:", error);
+      return NextResponse.json(
+        { error: "Integration feature not available. Database migration may be needed." },
+        { status: 503 }
+      );
     }
-
-    return NextResponse.json(integration);
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to create integration";

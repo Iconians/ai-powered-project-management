@@ -6,6 +6,8 @@ import { getGitHubClient } from "@/lib/github";
 import { TaskStatus } from "@prisma/client";
 import { executeAutomations } from "@/lib/automation-engine";
 import { logActivity } from "@/lib/activity-logger";
+import { createNotification } from "@/lib/notifications";
+import { triggerIntegrations } from "@/lib/integration-trigger";
 
 export async function POST(request: NextRequest) {
   try {
@@ -121,6 +123,8 @@ export async function POST(request: NextRequest) {
         board: {
           select: {
             id: true,
+            organizationId: true,
+            name: true,
             githubSyncEnabled: true,
             githubAccessToken: true,
             githubRepoName: true,
@@ -253,6 +257,21 @@ export async function POST(request: NextRequest) {
       });
     } catch (pusherError) {
       console.error("Failed to trigger Pusher event:", pusherError);
+    }
+
+    // Create notification if task is assigned
+    if (task.assignee?.user) {
+      try {
+        await createNotification({
+          userId: task.assignee.user.id,
+          type: "task_assigned",
+          title: "New task assigned to you",
+          message: `"${task.title}" has been assigned to you`,
+          link: `/boards/${task.boardId}?task=${task.id}`,
+        });
+      } catch (notificationError) {
+        console.error("Failed to create assignment notification:", notificationError);
+      }
     }
 
     return NextResponse.json(task, { status: 201 });

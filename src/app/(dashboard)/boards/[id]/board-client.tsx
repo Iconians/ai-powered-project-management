@@ -5,6 +5,16 @@ import { BoardViewSelector } from "@/components/boards/BoardViewSelector";
 import { BoardHeader } from "@/components/boards/BoardHeader";
 import { SprintsView } from "@/components/sprints/SprintsView";
 
+interface FilterState {
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  tagId?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  searchQuery?: string;
+}
+
 interface BoardPageClientProps {
   boardId: string;
   boardName: string;
@@ -21,6 +31,7 @@ export function BoardPageClient({
   organizationId,
 }: BoardPageClientProps) {
   const [activeTab, setActiveTab] = useState<"board" | "sprints">("board");
+  const [filters, setFilters] = useState<FilterState>({});
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
@@ -32,6 +43,8 @@ export function BoardPageClient({
         onTabChange={setActiveTab}
         userBoardRole={userBoardRole}
         organizationId={organizationId}
+        filters={filters}
+        onFiltersChange={setFilters}
       />
       <div className="flex-1 overflow-hidden">
         {activeTab === "board" ? (
@@ -39,6 +52,7 @@ export function BoardPageClient({
             boardId={boardId}
             organizationId={organizationId}
             userBoardRole={userBoardRole}
+            filters={filters}
           />
         ) : (
           <div className="h-full overflow-y-auto">
