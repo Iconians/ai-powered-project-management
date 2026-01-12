@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import type { TaskStatus } from "@prisma/client";
 import { AssignTaskModal } from "../tasks/AssignTaskModal";
 import { EditTaskModal } from "../tasks/EditTaskModal";
+import { TaskDetailModal } from "../tasks/TaskDetailModal";
 
 interface Task {
   id: string;
@@ -26,13 +27,37 @@ interface Task {
     };
   } | null;
   order: number;
+  tags?: Array<{
+    tag: {
+      id: string;
+      name: string;
+      color: string;
+    };
+  }>;
+  dependencies?: Array<{
+    dependsOn: {
+      id: string;
+      title: string;
+      status: string;
+    };
+  }>;
+  dependsOn?: Array<{
+    task: {
+      id: string;
+      title: string;
+      status: string;
+    };
+  }>;
 }
 
 interface TaskCardProps {
   task: Task;
   isDragging?: boolean;
   boardId: string;
+  organizationId?: string;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
+  isSelected?: boolean;
+  onSelect?: () => void;
 }
 
 const priorityColors = {
@@ -46,11 +71,32 @@ export function TaskCard({
   task,
   isDragging = false,
   boardId,
+  organizationId,
   userBoardRole,
+  isSelected = false,
+  onSelect,
 }: TaskCardProps) {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const queryClient = useQueryClient();
+
+  // Check if task is blocked by dependencies
+  const { data: dependencies } = useQuery({
+    queryKey: ["task-dependencies", task.id],
+    queryFn: async () => {
+      const res = await fetch(`/api/tasks/${task.id}/dependencies`);
+      if (!res.ok) return { dependencies: [], blockedBy: [] };
+      return res.json();
+    },
+    enabled: showDetailModal,
+  });
+
+  const isBlocked =
+    dependencies?.blockedBy?.some(
+      (dep: { dependsOn: { status: string } }) =>
+        dep.dependsOn.status !== "DONE"
+    ) || false;
   const {
     attributes,
     listeners,
@@ -119,50 +165,82 @@ export function TaskCard({
     setShowEditModal(true);
   };
 
+  const handleViewDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (organizationId) {
+      setShowDetailModal(true);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={{
         ...style,
-        
-        touchAction: isViewer ? "auto" : "pan-y", 
-        WebkitTouchCallout: "none", 
-        WebkitUserSelect: "none", 
-        userSelect: "none", 
+
+        touchAction: isViewer ? "auto" : "pan-y",
+        WebkitTouchCallout: "none",
+        WebkitUserSelect: "none",
+        userSelect: "none",
       }}
       {...(isViewer ? {} : { ...attributes, ...listeners })}
       className={`bg-white dark:bg-gray-700 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
         isDragging ? "opacity-50" : ""
-      } ${isViewer ? "cursor-default" : "cursor-grab active:cursor-grabbing"}`}
+      } ${isViewer ? "cursor-default" : "cursor-grab active:cursor-grabbing"} ${
+        isBlocked ? "border-l-4 border-yellow-500" : ""
+      } ${
+        isSelected ? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20" : ""
+      }`}
     >
       <div className="flex items-start justify-between mb-2">
-        <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
-            {task.title}
-          </h4>
-          {task.description && (
-            <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-              {task.description}
-            </p>
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          {onSelect && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={onSelect}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-1 h-4 w-4 text-blue-600 rounded focus:ring-blue-500 flex-shrink-0"
+            />
           )}
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-gray-900 dark:text-white text-sm mb-1">
+              {task.title}
+            </h4>
+            {task.description && (
+              <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                {task.description}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1 ml-2 flex-shrink-0">
           {canEdit && (
-            <button
-              onClick={handleEdit}
-              onTouchStart={(e) => e.stopPropagation()}
-              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm"
-              title="Edit task"
-            >
-              ✏️
-            </button>
+            <>
+              <button
+                onClick={handleEdit}
+                onTouchStart={(e) => e.stopPropagation()}
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm p-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                title="Edit task"
+              >
+                ✏️
+              </button>
+              <button
+                onClick={handleViewDetails}
+                onTouchStart={(e) => e.stopPropagation()}
+                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 text-sm p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                title="View task details"
+              >
+                📋
+              </button>
+            </>
           )}
           {canDelete && (
             <button
               onClick={handleDelete}
               onTouchStart={(e) => e.stopPropagation()}
               disabled={deleteTaskMutation.isPending}
-              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm disabled:opacity-50"
+              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
               title="Delete task"
             >
               🗑️
@@ -179,12 +257,42 @@ export function TaskCard({
         >
           {task.priority}
         </span>
+        {isBlocked && (
+          <span
+            className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+            title="Blocked by dependencies"
+          >
+            ⏳ Blocked
+          </span>
+        )}
+        {task.tags && Array.isArray(task.tags) && task.tags.length > 0 && (
+          <div className="flex items-center gap-1">
+            {task.tags.slice(0, 2).map((taskTag) => (
+              <span
+                key={taskTag.tag.id}
+                className="text-xs px-1.5 py-0.5 rounded"
+                style={{
+                  backgroundColor: `${taskTag.tag.color}20`,
+                  color: taskTag.tag.color,
+                  border: `1px solid ${taskTag.tag.color}40`,
+                }}
+              >
+                {taskTag.tag.name}
+              </span>
+            ))}
+            {task.tags.length > 2 && (
+              <span className="text-xs text-gray-500">
+                +{task.tags.length - 2}
+              </span>
+            )}
+          </div>
+        )}
         {canAssign && (
           <>
             {showAssignee ? (
               <button
                 onClick={handleAssigneeClick}
-                onTouchStart={(e) => e.stopPropagation()} 
+                onTouchStart={(e) => e.stopPropagation()}
                 className="text-xs px-2 py-1 rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 flex items-center gap-1 hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors cursor-pointer"
                 title="Click to change assignee"
               >
@@ -194,7 +302,7 @@ export function TaskCard({
             ) : (
               <button
                 onClick={handleAssigneeClick}
-                onTouchStart={(e) => e.stopPropagation()} 
+                onTouchStart={(e) => e.stopPropagation()}
                 className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 hover:bg-yellow-200 dark:hover:bg-yellow-800 transition-colors cursor-pointer"
                 title="Click to assign"
               >
@@ -218,9 +326,24 @@ export function TaskCard({
         <EditTaskModal
           taskId={task.id}
           boardId={boardId}
+          organizationId={organizationId}
           currentTitle={task.title}
           currentDescription={task.description}
-          onClose={() => setShowEditModal(false)}
+          onClose={() => {
+            setShowEditModal(false);
+          }}
+        />
+      )}
+
+      {showDetailModal && organizationId && (
+        <TaskDetailModal
+          taskId={task.id}
+          boardId={boardId}
+          organizationId={organizationId}
+          userBoardRole={userBoardRole}
+          onClose={() => {
+            setShowDetailModal(false);
+          }}
         />
       )}
     </div>

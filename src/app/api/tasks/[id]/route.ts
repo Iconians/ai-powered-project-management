@@ -6,6 +6,7 @@ import { sendTaskAssignmentEmail } from "@/lib/email";
 import { syncTaskToGitHub } from "@/lib/github-sync";
 import { getGitHubClient } from "@/lib/github";
 import { TaskStatus } from "@prisma/client";
+import { createNotification, notifyTaskWatchers } from "@/lib/notifications";
 
 export async function GET(
   _request: NextRequest,
@@ -80,10 +81,22 @@ export async function PATCH(
         board: {
           select: {
             id: true,
+            organizationId: true,
+            name: true,
             githubSyncEnabled: true,
             githubAccessToken: true,
             githubRepoName: true,
             githubProjectId: true,
+          },
+        },
+        assignee: {
+          include: {
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
           },
         },
       },
@@ -98,7 +111,8 @@ export async function PATCH(
 
     
     let statusColumnId = task.statusColumnId;
-    if (body.status && body.status !== task.status) {
+    const statusChanged = body.status && body.status !== task.status;
+    if (statusChanged) {
       const statusColumn = await prisma.taskStatusColumn.findFirst({
         where: {
           boardId: task.boardId,
@@ -146,6 +160,7 @@ export async function PATCH(
         board: {
           select: {
             id: true,
+            organizationId: true,
             name: true,
             githubSyncEnabled: true,
             githubAccessToken: true,
@@ -167,6 +182,66 @@ export async function PATCH(
       } catch (emailError) {
         console.error("Failed to send task assignment email:", emailError);
         
+      }
+
+      // Create in-app notification for task assignment
+      try {
+        await createNotification({
+          userId: updatedTask.assignee.user.id,
+          type: "task_assigned",
+          title: "Task assigned to you",
+          message: `"${updatedTask.title}" has been assigned to you`,
+          link: `/boards/${task.boardId}?task=${updatedTask.id}`,
+        });
+      } catch (notificationError) {
+        console.error("Failed to create assignment notification:", notificationError);
+      }
+    }
+
+    // Notify about status changes
+    if (statusChanged && updatedTask.status) {
+      // Notify assignee
+      if (updatedTask.assignee?.user) {
+        try {
+          await createNotification({
+            userId: updatedTask.assignee.user.id,
+            type: "task_status_changed",
+            title: "Task status updated",
+            message: `"${updatedTask.title}" status changed to ${updatedTask.status}`,
+            link: `/boards/${task.boardId}?task=${updatedTask.id}`,
+          });
+        } catch (notificationError) {
+          console.error("Failed to create status change notification:", notificationError);
+        }
+      }
+
+      // Notify task watchers
+      try {
+        await notifyTaskWatchers(
+          updatedTask.id,
+          "task_status_changed",
+          "Task status updated",
+          `"${updatedTask.title}" status changed to ${updatedTask.status}`,
+          `/boards/${task.boardId}?task=${updatedTask.id}`
+        );
+      } catch (watcherError) {
+        console.error("Failed to notify task watchers:", watcherError);
+      }
+    }
+
+    // Notify watchers about general updates (if significant fields changed)
+    const significantUpdate = body.title || body.description || body.priority || body.dueDate;
+    if (significantUpdate && !statusChanged && !assigneeChanged) {
+      try {
+        await notifyTaskWatchers(
+          updatedTask.id,
+          "task_updated",
+          "Task updated",
+          `"${updatedTask.title}" has been updated`,
+          `/boards/${task.boardId}?task=${updatedTask.id}`
+        );
+      } catch (watcherError) {
+        console.error("Failed to notify task watchers:", watcherError);
       }
     }
 

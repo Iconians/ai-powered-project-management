@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import type { TaskPriority, TaskStatus } from "@prisma/client";
+import { TemplateSelector } from "../templates/TemplateSelector";
 
 interface Board {
   id: string;
@@ -34,21 +35,79 @@ interface Board {
   }>;
 }
 
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface CreateTaskModalProps {
   boardId: string;
+  organizationId?: string;
   defaultStatus?: string;
   onClose: () => void;
 }
 
 export function CreateTaskModal({
   boardId,
+  organizationId,
   defaultStatus,
   onClose,
 }: CreateTaskModalProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("MEDIUM");
+  const [dueDate, setDueDate] = useState("");
+  const [estimatedHours, setEstimatedHours] = useState("");
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const queryClient = useQueryClient();
+
+  // Fetch available tags (both board and organization tags)
+  const { data: boardTags = [], isLoading: boardTagsLoading } = useQuery<Tag[]>({
+    queryKey: ["tags", boardId],
+    queryFn: async () => {
+      const res = await fetch(`/api/tags?boardId=${boardId}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!boardId,
+  });
+
+  const { data: orgTags = [], isLoading: orgTagsLoading } = useQuery<Tag[]>({
+    queryKey: ["tags", organizationId],
+    queryFn: async () => {
+      if (!organizationId) return [];
+      const res = await fetch(`/api/tags?organizationId=${organizationId}`);
+      if (!res.ok) return [];
+      return res.json();
+    },
+    enabled: !!organizationId,
+  });
+
+  // Combine board and organization tags, removing duplicates
+  const tags = Array.from(
+    new Map([...orgTags, ...boardTags].map((tag) => [tag.id, tag])).values()
+  );
+  const tagsLoading = boardTagsLoading || orgTagsLoading;
+
+  const generateDescriptionMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/ai/describe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, boardId }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to generate description");
+      }
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setDescription(data.description || "");
+    },
+  });
 
   const createTaskMutation = useMutation({
     mutationFn: async () => {
@@ -61,13 +120,30 @@ export function CreateTaskModal({
           boardId,
           status: defaultStatus,
           priority,
+          dueDate: dueDate || undefined,
+          estimatedHours: estimatedHours ? parseFloat(estimatedHours) : undefined,
         }),
       });
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Failed to create task");
       }
-      return res.json();
+      const task = await res.json();
+      
+      // Add tags if any selected
+      if (selectedTagIds.length > 0 && task.id) {
+        await Promise.all(
+          selectedTagIds.map((tagId) =>
+            fetch(`/api/tasks/${task.id}/tags`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ tagId }),
+            })
+          )
+        );
+      }
+      
+      return task;
     },
     onMutate: async () => {
       
@@ -128,6 +204,9 @@ export function CreateTaskModal({
       });
       
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
+      setSelectedTagIds([]);
+      setDueDate("");
+      setEstimatedHours("");
       onClose();
     },
     onSettled: () => {
@@ -135,6 +214,15 @@ export function CreateTaskModal({
       queryClient.invalidateQueries({ queryKey: ["board", boardId] });
     },
   });
+
+  const handleTemplateSelect = (template: any) => {
+    setTitle(template.title);
+    setDescription(template.taskDescription || "");
+    setPriority(template.priority);
+    setEstimatedHours(template.estimatedHours?.toString() || "");
+    // Note: Tags and checklist items would need to be handled separately
+    // since they require API calls after task creation
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,9 +233,18 @@ export function CreateTaskModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-          Create Task
-        </h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Create Task
+          </h2>
+          <button
+            type="button"
+            onClick={() => setShowTemplateSelector(true)}
+            className="px-3 py-1 text-sm bg-purple-600 text-white rounded hover:bg-purple-700"
+          >
+            📋 Use Template
+          </button>
+        </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
@@ -167,12 +264,28 @@ export function CreateTaskModal({
             />
           </div>
           <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Description
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Description
+              </label>
+              {title.trim() && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    generateDescriptionMutation.mutate();
+                  }}
+                  disabled={generateDescriptionMutation.isPending}
+                  className="text-xs px-2 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {generateDescriptionMutation.isPending
+                    ? "Generating..."
+                    : "✨ AI Generate"}
+                </button>
+              )}
+            </div>
             <textarea
               id="description"
               value={description}
@@ -201,6 +314,85 @@ export function CreateTaskModal({
               <option value="URGENT">Urgent</option>
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tags
+            </label>
+            {tagsLoading ? (
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Loading tags...
+              </div>
+            ) : tags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedTagIds((prev) =>
+                        prev.includes(tag.id)
+                          ? prev.filter((id) => id !== tag.id)
+                          : [...prev, tag.id]
+                      );
+                    }}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border ${
+                      selectedTagIds.includes(tag.id)
+                        ? "ring-2 ring-offset-2 ring-blue-500"
+                        : "opacity-70 hover:opacity-100"
+                    }`}
+                    style={{
+                      backgroundColor: selectedTagIds.includes(tag.id)
+                        ? tag.color
+                        : `${tag.color}20`,
+                      color: selectedTagIds.includes(tag.id)
+                        ? "#fff"
+                        : tag.color,
+                      borderColor: tag.color,
+                    }}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500 dark:text-gray-400 italic">
+                No tags available. Create tags in board settings to organize tasks.
+              </div>
+            )}
+          </div>
+          <div>
+            <label
+              htmlFor="dueDate"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Due Date
+            </label>
+            <input
+              id="dueDate"
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="estimatedHours"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            >
+              Estimated Hours
+            </label>
+            <input
+              id="estimatedHours"
+              type="number"
+              min="0"
+              step="0.5"
+              value={estimatedHours}
+              onChange={(e) => setEstimatedHours(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              placeholder="e.g., 4.5"
+            />
+          </div>
           <div className="flex gap-3 justify-end">
             <button
               type="button"
@@ -228,6 +420,15 @@ export function CreateTaskModal({
           </div>
         )}
       </div>
+
+      {showTemplateSelector && (
+        <TemplateSelector
+          boardId={boardId}
+          organizationId={organizationId}
+          onSelect={handleTemplateSelect}
+          onClose={() => setShowTemplateSelector(false)}
+        />
+      )}
     </div>
   );
 }

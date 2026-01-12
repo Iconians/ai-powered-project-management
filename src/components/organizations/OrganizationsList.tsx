@@ -63,7 +63,8 @@ export function OrganizationsList({
 
         <div className="space-y-4">
           {organizations.map((org) => {
-            const isAdmin = org.members[0]?.role === "ADMIN";
+            const userRole = org.members[0]?.role as "ADMIN" | "MEMBER" | "VIEWER" | undefined;
+            const isAdmin = userRole === "ADMIN";
             const isExpanded = expandedOrgId === org.id;
 
             return (
@@ -109,6 +110,7 @@ export function OrganizationsList({
                       <OrganizationSettings
                         organizationId={org.id}
                         organizationName={org.name}
+                        userRole={userRole}
                       />
                     )}
                   </div>

@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await requireMember(id); 
+    await requireMember(id);
 
     const organization = await prisma.organization.findUnique({
       where: { id },
@@ -58,14 +58,12 @@ export async function PATCH(
     const body = await request.json();
     const { name } = body;
 
-    
     await requireMember(id, "ADMIN");
 
     if (!name) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
 
-    
     if (name.length > 100) {
       return NextResponse.json(
         { error: "Organization name must be less than 100 characters" },
@@ -73,7 +71,6 @@ export async function PATCH(
       );
     }
 
-    
     if (/[<>\"'&]/.test(name)) {
       return NextResponse.json(
         { error: "Organization name contains invalid characters" },
@@ -101,10 +98,8 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    
     await requireMember(id, "ADMIN");
 
-    
     const organization = await prisma.organization.findUnique({
       where: { id },
       include: {

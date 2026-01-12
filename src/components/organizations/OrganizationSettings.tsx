@@ -3,18 +3,25 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { BrandingButton } from "./BrandingButton";
+import { IntegrationSettings } from "../integrations/IntegrationSettings";
 
 interface OrganizationSettingsProps {
   organizationId: string;
   organizationName: string;
+  userRole?: "ADMIN" | "MEMBER" | "VIEWER";
 }
 
 export function OrganizationSettings({
   organizationId,
   organizationName,
+  userRole,
 }: OrganizationSettingsProps) {
   const [showModal, setShowModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeTab, setActiveTab] = useState<"general" | "integrations">(
+    "general"
+  );
   const [name, setName] = useState(organizationName);
   const [error, setError] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -95,71 +102,131 @@ export function OrganizationSettings({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
-          Organization Settings
-        </h2>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-4xl w-full mx-4 my-8 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            Organization Settings
+          </h2>
+          <button
+            onClick={() => {
+              setShowModal(false);
+              setError(null);
+              setName(organizationName);
+              setActiveTab("general");
+            }}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          >
+            ✕
+          </button>
+        </div>
 
         {!showDeleteConfirm ? (
           <>
-            <form onSubmit={handleUpdate} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="orgName"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-                >
-                  Organization Name
-                </label>
-                <input
-                  id="orgName"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded text-sm">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex gap-3 justify-end">
+            {/* Tabs */}
+            <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+              <div className="flex gap-4">
                 <button
-                  type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    setError(null);
-                    setName(organizationName);
-                  }}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+                  onClick={() => setActiveTab("general")}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                    activeTab === "general"
+                      ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  }`}
                 >
-                  Cancel
+                  General
                 </button>
                 <button
-                  type="submit"
-                  disabled={updateMutation.isPending}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  onClick={() => setActiveTab("integrations")}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                    activeTab === "integrations"
+                      ? "border-blue-600 text-blue-600 dark:text-blue-400"
+                      : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  }`}
                 >
-                  {updateMutation.isPending ? "Saving..." : "Save"}
+                  Integrations
                 </button>
               </div>
-            </form>
-
-            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
-                Danger Zone
-              </h3>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
-              >
-                Delete Organization
-              </button>
             </div>
+
+            {/* Tab Content */}
+            {activeTab === "general" && (
+              <>
+                <form onSubmit={handleUpdate} className="space-y-4">
+                  <div>
+                    <label
+                      htmlFor="orgName"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                    >
+                      Organization Name
+                    </label>
+                    <input
+                      id="orgName"
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
+                    />
+                  </div>
+
+                  {error && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded text-sm">
+                      {error}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowModal(false);
+                        setError(null);
+                        setName(organizationName);
+                      }}
+                      className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={updateMutation.isPending}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {updateMutation.isPending ? "Saving..." : "Save"}
+                    </button>
+                  </div>
+                </form>
+
+                {userRole === "ADMIN" && (
+                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <BrandingButton organizationId={organizationId} />
+                  </div>
+                )}
+
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                    Danger Zone
+                  </h3>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                  >
+                    Delete Organization
+                  </button>
+                </div>
+              </>
+            )}
+
+            {activeTab === "integrations" && userRole === "ADMIN" && (
+              <IntegrationSettings organizationId={organizationId} />
+            )}
+
+            {activeTab === "integrations" && userRole !== "ADMIN" && (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                You need to be an Admin to manage integrations.
+              </div>
+            )}
           </>
         ) : (
           <div>

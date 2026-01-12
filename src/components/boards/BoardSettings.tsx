@@ -3,18 +3,21 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { CustomFieldEditor } from "../fields/CustomFieldEditor";
 
 interface BoardSettingsProps {
   boardId: string;
   boardName: string;
-  organizationId?: string; 
+  organizationId?: string;
+  userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
   isOrgAdmin: boolean;
 }
 
 export function BoardSettings({
   boardId,
   boardName,
-  organizationId: _organizationId, 
+  organizationId: _organizationId,
+  userBoardRole,
   isOrgAdmin,
 }: BoardSettingsProps) {
   const [showModal, setShowModal] = useState(false);
@@ -157,6 +160,15 @@ export function BoardSettings({
                 </button>
               </div>
             </form>
+
+            {userBoardRole === "ADMIN" && (
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <CustomFieldEditor
+                  boardId={boardId}
+                  userBoardRole={userBoardRole}
+                />
+              </div>
+            )}
 
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">

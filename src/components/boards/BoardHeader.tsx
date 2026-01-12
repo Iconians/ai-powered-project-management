@@ -9,6 +9,23 @@ import { CreateSprintModal } from "../sprints/CreateSprintModal";
 import { BoardMembersModal } from "./BoardMembersModal";
 import { GitHubRepoModal } from "./GitHubRepoModal";
 import { ManageColumnsModal } from "./ManageColumnsModal";
+import { TagManagerModal } from "../tags/TagManagerModal";
+import { TaskSearch } from "../tasks/TaskSearch";
+import { TaskFilters } from "../tasks/TaskFilters";
+import { ExportModal } from "./ExportModal";
+import { ImportModal } from "./ImportModal";
+import { TemplateEditor } from "../templates/TemplateEditor";
+import { RecurringTaskManager } from "../recurring-tasks/RecurringTaskManager";
+
+interface FilterState {
+  assigneeId?: string;
+  status?: string;
+  priority?: string;
+  tagId?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+  searchQuery?: string;
+}
 
 interface BoardHeaderProps {
   boardId: string;
@@ -18,6 +35,8 @@ interface BoardHeaderProps {
   onTabChange?: (tab: "board" | "sprints") => void;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
   organizationId?: string;
+  filters?: FilterState;
+  onFiltersChange?: (filters: FilterState) => void;
 }
 
 export function BoardHeader({
@@ -28,6 +47,8 @@ export function BoardHeader({
   onTabChange,
   userBoardRole,
   organizationId,
+  filters = {},
+  onFiltersChange,
 }: BoardHeaderProps) {
   const [showTaskGenerator, setShowTaskGenerator] = useState(false);
   const [showSprintPlanner, setShowSprintPlanner] = useState(false);
@@ -35,9 +56,20 @@ export function BoardHeader({
   const [showBoardMembers, setShowBoardMembers] = useState(false);
   const [showGitHubRepo, setShowGitHubRepo] = useState(false);
   const [showManageColumns, setShowManageColumns] = useState(false);
+  const [showTagManager, setShowTagManager] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [showRecurringTasks, setShowRecurringTasks] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(boardName);
   const queryClient = useQueryClient();
+  
+  const handleFilterChange = (newFilters: FilterState) => {
+    if (onFiltersChange) {
+      onFiltersChange(newFilters);
+    }
+  };
 
   const updateBoardTitleMutation = useMutation({
     mutationFn: async (name: string) => {
@@ -217,14 +249,40 @@ export function BoardHeader({
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
-              <button
-                onClick={() => setShowManageColumns(true)}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
-                title="Manage Columns"
-              >
-                <span>📊</span>
-                <span className="hidden sm:inline">Columns</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  title="Export Board"
+                >
+                  <span>📥</span>
+                  <span className="hidden sm:inline">Export</span>
+                </button>
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  title="Import Tasks"
+                >
+                  <span>📤</span>
+                  <span className="hidden sm:inline">Import</span>
+                </button>
+                <button
+                  onClick={() => setShowManageColumns(true)}
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  title="Manage Columns"
+                >
+                  <span>📊</span>
+                  <span className="hidden sm:inline">Columns</span>
+                </button>
+                <button
+                  onClick={() => setShowTagManager(true)}
+                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  title="Manage Tags"
+                >
+                  <span>🏷️</span>
+                  <span className="hidden sm:inline">Tags</span>
+                </button>
+              </>
             )}
             {userBoardRole === "ADMIN" && (
               <>
@@ -342,6 +400,25 @@ export function BoardHeader({
             </button>
           </div>
         )}
+
+        {activeTab === "board" && (
+          <div className="mt-4 space-y-2">
+            <div className="max-w-md">
+              <TaskSearch
+                boardId={boardId}
+                onTaskSelect={(taskId) => {
+                  // Could open task detail modal here
+                  console.log("Selected task:", taskId);
+                }}
+                onSearchChange={(searchQuery) => {
+                  handleFilterChange({ ...filters, searchQuery });
+                }}
+                searchQuery={filters.searchQuery}
+              />
+            </div>
+            <TaskFilters boardId={boardId} onFilterChange={handleFilterChange} filters={filters} />
+          </div>
+        )}
       </div>
 
       {showTaskGenerator && (
@@ -387,6 +464,46 @@ export function BoardHeader({
           boardId={boardId}
           userBoardRole={userBoardRole}
           onClose={() => setShowManageColumns(false)}
+        />
+      )}
+
+      {showTagManager && (
+        <TagManagerModal
+          boardId={boardId}
+          organizationId={organizationId}
+          userBoardRole={userBoardRole}
+          onClose={() => setShowTagManager(false)}
+        />
+      )}
+
+      {showExportModal && (
+        <ExportModal
+          boardId={boardId}
+          boardName={boardName}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
+
+      {showImportModal && (
+        <ImportModal
+          boardId={boardId}
+          onClose={() => setShowImportModal(false)}
+        />
+      )}
+
+      {showTemplateEditor && (
+        <TemplateEditor
+          boardId={boardId}
+          organizationId={organizationId}
+          onClose={() => setShowTemplateEditor(false)}
+        />
+      )}
+
+      {showRecurringTasks && (
+        <RecurringTaskManager
+          boardId={boardId}
+          organizationId={organizationId}
+          onClose={() => setShowRecurringTasks(false)}
         />
       )}
     </>

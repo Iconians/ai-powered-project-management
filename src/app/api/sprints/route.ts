@@ -6,7 +6,7 @@ import { pusherServer } from "@/lib/pusher";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, description, boardId, startDate, endDate, goal } = body;
+    const { name, description, boardId, startDate, endDate, goal, capacityHours } = body;
 
     if (!name || !boardId || !startDate || !endDate) {
       return NextResponse.json(
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         goal: goal || null,
+        capacityHours: capacityHours ? parseFloat(capacityHours) : null,
         isActive,
       },
       include: {

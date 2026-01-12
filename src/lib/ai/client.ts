@@ -180,37 +180,95 @@ async function generateWithGemini(
     );
   }
 
-  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY);
-
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-    generationConfig: {
-      temperature: 0.7,
-      topP: 0.8,
-      topK: 40,
-    },
-  });
-
-  const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
-
-  try {
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    return response.text();
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes("API_KEY")) {
-      throw new Error(
-        "Invalid Gemini API key. Please check your GOOGLE_GEMINI_API_KEY."
-      );
-    }
-    if (errorMessage.includes("quota") || errorMessage.includes("rate limit")) {
-      throw new Error(
-        "Gemini API rate limit reached. Free tier allows 15 requests per minute."
-      );
-    }
-    throw error;
+  // Validate API key format (Gemini keys typically start with "AIza")
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY.trim();
+  if (!apiKey.startsWith("AIza") && apiKey.length < 30) {
+    throw new Error(
+      "Invalid Gemini API key format. Please check your GOOGLE_GEMINI_API_KEY. Get a free key at https://makersuite.google.com/app/apikey"
+    );
   }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+
+  // Try different model names in order of preference
+  // Note: For v1beta API, use model names without version suffixes
+  const modelNames = [
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
+    "gemini-pro",
+  ];
+
+  let lastError: Error | null = null;
+  
+  for (const modelName of modelNames) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: modelName,
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.8,
+          topK: 40,
+        },
+      });
+
+      const fullPrompt = systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt;
+      const result = await model.generateContent(fullPrompt);
+      const response = await result.response;
+      return response.text();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      const errorMessage = lastError.message;
+      
+      // If it's a model not found error, try the next model
+      if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+        console.warn(`Model ${modelName} not available, trying next...`);
+        continue;
+      }
+      
+      // For other errors, break and handle them
+      break;
+    }
+  }
+
+  // If we get here, all models failed
+  if (lastError) {
+    const errorMessage = lastError.message;
+    
+    // Check if it's an API key issue
+    if (errorMessage.includes("API_KEY") || errorMessage.includes("401") || errorMessage.includes("403")) {
+      throw new Error(
+        "Invalid or missing Gemini API key. Please check your GOOGLE_GEMINI_API_KEY environment variable. Get a free key at https://makersuite.google.com/app/apikey"
+      );
+    }
+    
+    // Check if it's a quota/rate limit issue
+    if (errorMessage.includes("quota") || errorMessage.includes("rate limit") || errorMessage.includes("429")) {
+      throw new Error(
+        "Gemini API rate limit reached. Free tier allows 15 requests per minute. Please wait and try again."
+      );
+    }
+    
+    // Check if all models are not found (likely API key or endpoint issue)
+    if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+      throw new Error(
+        `Gemini API models not available. This could mean:\n` +
+        `1. Your API key is invalid or expired\n` +
+        `2. The API endpoint is incorrect\n` +
+        `3. Your API key doesn't have access to these models\n\n` +
+        `Please verify your GOOGLE_GEMINI_API_KEY at https://makersuite.google.com/app/apikey\n` +
+        `Original error: ${errorMessage}`
+      );
+    }
+    
+    throw new Error(
+      `Gemini API error: ${errorMessage}. Please check your API key and model availability.`
+    );
+  }
+  
+  // If we get here, all models failed and no error was thrown
+  throw new Error(
+    "All Gemini models failed. Please check your API key and try again."
+  );
 }
 
 async function generateWithOllama(

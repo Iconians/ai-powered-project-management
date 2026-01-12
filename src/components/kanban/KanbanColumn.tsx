@@ -42,7 +42,10 @@ interface KanbanColumnProps {
   status: Status;
   tasks: Task[];
   boardId: string;
+  organizationId?: string;
   userBoardRole?: "ADMIN" | "MEMBER" | "VIEWER";
+  selectedTaskIds?: Set<string>;
+  onTaskSelect?: (taskId: string) => void;
 }
 
 export function KanbanColumn({
@@ -50,7 +53,10 @@ export function KanbanColumn({
   status,
   tasks,
   boardId,
+  organizationId,
   userBoardRole,
+  selectedTaskIds = new Set(),
+  onTaskSelect,
 }: KanbanColumnProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { setNodeRef, isOver } = useDroppable({
@@ -91,7 +97,10 @@ export function KanbanColumn({
                 key={task.id}
                 task={task}
                 boardId={boardId}
+                organizationId={organizationId}
                 userBoardRole={userBoardRole}
+                isSelected={selectedTaskIds.has(task.id)}
+                onSelect={onTaskSelect ? () => onTaskSelect(task.id) : undefined}
               />
             ))}
             {tasks.length === 0 && (
@@ -105,6 +114,7 @@ export function KanbanColumn({
       {showCreateModal && (
         <CreateTaskModal
           boardId={boardId}
+          organizationId={organizationId}
           defaultStatus={status.status}
           onClose={() => setShowCreateModal(false)}
         />

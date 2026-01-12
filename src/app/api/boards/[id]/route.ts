@@ -31,6 +31,45 @@ export async function GET(
               },
             },
             statusColumn: true,
+            tags: {
+              include: {
+                tag: true,
+              },
+            },
+            dependencies: {
+              include: {
+                dependsOn: {
+                  select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                  },
+                },
+              },
+            },
+            dependsOn: {
+              include: {
+                task: {
+                  select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                  },
+                },
+              },
+            },
+            checklistItems: {
+              orderBy: { order: "asc" },
+            },
+            taskWatchers: {
+              select: {
+                userId: true,
+              },
+            },
+            timeEntries: {
+              take: 1,
+              orderBy: { startTime: "desc" },
+            },
           },
           orderBy: { order: "asc" },
         },
@@ -43,7 +82,6 @@ export async function GET(
       return NextResponse.json({ error: "Board not found" }, { status: 404 });
     }
 
-    
     await requireBoardAccess(id);
 
     return NextResponse.json(board);
@@ -100,7 +138,6 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    
     const { orgMember } = await requireBoardAccess(id);
     if (orgMember.role !== "ADMIN") {
       return NextResponse.json(
