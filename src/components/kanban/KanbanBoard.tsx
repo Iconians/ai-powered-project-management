@@ -453,7 +453,7 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole, filters = 
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex flex-col md:flex-row gap-2 sm:gap-4 p-2 sm:p-4 overflow-y-auto md:overflow-x-auto md:overflow-y-visible flex-1 md:justify-center">
+        <div className="flex flex-col md:flex-row gap-2 xs:gap-3 sm:gap-4 p-1 xs:p-2 sm:p-4 overflow-y-auto md:overflow-x-auto md:overflow-y-visible flex-1 md:justify-center min-w-0">
         {sortedStatuses.map((status) => {
           const columnTasks = filteredTasks
             .filter((t) => t.status === status.status)

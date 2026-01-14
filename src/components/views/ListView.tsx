@@ -128,35 +128,35 @@ export function ListView({
     <div className="h-full flex flex-col">
 
       {/* Table */}
-      <div className="flex-1 overflow-auto">
-        <table className="w-full">
+      <div className="flex-1 overflow-x-auto overflow-y-auto min-w-0">
+        <table className="w-full min-w-[640px]">
           <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
             <tr>
               <th
-                className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
                 onClick={() => handleSort("title")}
               >
                 Title <SortIcon field="title" />
               </th>
               <th
-                className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
                 onClick={() => handleSort("status")}
               >
                 Status <SortIcon field="status" />
               </th>
               <th
-                className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
                 onClick={() => handleSort("priority")}
               >
                 Priority <SortIcon field="priority" />
               </th>
               <th
-                className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800"
                 onClick={() => handleSort("dueDate")}
               >
                 Due Date <SortIcon field="dueDate" />
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              <th className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Assignee
               </th>
             </tr>
@@ -174,32 +174,32 @@ export function ListView({
                   key={task.id}
                   className="hover:bg-gray-50 dark:hover:bg-gray-700"
                 >
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                  <td className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3 whitespace-nowrap">
+                    <div className="text-xs xs:text-sm font-medium text-gray-900 dark:text-white">
                       {task.title}
                     </div>
                     {task.description && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-xs">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px] xs:max-w-xs">
                         {task.description}
                       </div>
                     )}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                  <td className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3 whitespace-nowrap">
+                    <span className="text-xs px-1.5 xs:px-2 py-0.5 xs:py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                       {task.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="text-xs px-2 py-1 rounded bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
+                  <td className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3 whitespace-nowrap">
+                    <span className="text-xs px-1.5 xs:px-2 py-0.5 xs:py-1 rounded bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
                       {task.priority}
                     </span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3 whitespace-nowrap text-xs xs:text-sm text-gray-500 dark:text-gray-400">
                     {task.dueDate
                       ? new Date(task.dueDate).toLocaleDateString()
                       : "-"}
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                  <td className="px-2 xs:px-3 sm:px-4 py-2 xs:py-3 whitespace-nowrap text-xs xs:text-sm text-gray-500 dark:text-gray-400">
                     {task.assignee?.user?.name ||
                       task.assignee?.user?.email?.split("@")[0] ||
                       "Unassigned"}

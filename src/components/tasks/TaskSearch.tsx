@@ -74,7 +74,7 @@ export function TaskSearch({ boardId, onTaskSelect, onSearchChange, searchQuery:
             setTimeout(() => setIsOpen(false), 200);
           }}
           placeholder="Search tasks... (Cmd/Ctrl+K)"
-          className="w-full px-4 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 xs:px-4 py-1.5 xs:py-2 pl-8 xs:pl-10 text-sm xs:text-base border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
       </div>

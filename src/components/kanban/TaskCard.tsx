@@ -184,7 +184,7 @@ export function TaskCard({
         userSelect: "none",
       }}
       {...(isViewer ? {} : { ...attributes, ...listeners })}
-      className={`bg-white dark:bg-gray-700 rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
+      className={`bg-white dark:bg-gray-700 rounded-lg p-2 xs:p-3 shadow-sm hover:shadow-md transition-shadow ${
         isDragging ? "opacity-50" : ""
       } ${isViewer ? "cursor-default" : "cursor-grab active:cursor-grabbing"} ${
         isBlocked ? "border-l-4 border-yellow-500" : ""

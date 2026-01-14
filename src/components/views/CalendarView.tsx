@@ -158,7 +158,7 @@ export function CalendarView({
 
       {/* Calendar Grid */}
       <div className="flex-1 overflow-auto">
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5 xs:gap-1">
           {/* Day headers */}
           {dayNames.map((day) => (
             <div

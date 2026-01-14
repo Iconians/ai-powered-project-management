@@ -27,7 +27,7 @@ export function Navbar() {
 
   return (
     <nav className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-2 xs:px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center gap-4">
             <Link
@@ -103,7 +103,7 @@ export function Navbar() {
                       className="fixed inset-0 z-10"
                       onClick={() => setShowMenu(false)}
                     />
-                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl py-1 z-20 border border-gray-200 dark:border-gray-700 backdrop-blur-sm">
+                    <div className="absolute right-0 mt-2 w-48 xs:w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl py-1 z-20 border border-gray-200 dark:border-gray-700 backdrop-blur-sm max-w-[calc(100vw-2rem)]">
                       <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                         <div className="font-medium">
                           {session.user.name || "User"}

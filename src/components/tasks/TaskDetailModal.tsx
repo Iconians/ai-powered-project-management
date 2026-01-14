@@ -110,8 +110,8 @@ export function TaskDetailModal({
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 xs:p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 xs:p-4 sm:p-6 max-w-2xl w-full mx-2 xs:mx-4 max-h-[95vh] overflow-y-auto">
           <div className="text-center">Loading task...</div>
         </div>
       </div>
@@ -127,7 +127,7 @@ export function TaskDetailModal({
   return (
     <>
       <div 
-        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto p-4"
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto p-2 xs:p-4"
         onClick={(e) => {
           // Close modal when clicking backdrop
           if (e.target === e.currentTarget) {
@@ -136,7 +136,7 @@ export function TaskDetailModal({
         }}
       >
         <div 
-          className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full my-8 max-h-[90vh] overflow-y-auto"
+          className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full my-2 xs:my-4 sm:my-8 max-h-[95vh] xs:max-h-[90vh] overflow-y-auto mx-2 xs:mx-4"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

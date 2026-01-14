@@ -73,22 +73,26 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const systemPrompt = `You are a sprint planning assistant. Analyze the backlog and suggest which tasks should be included in the sprint based on:
-- Task priority
+    const systemPrompt = `You are a versatile sprint planning assistant that works across all industries and business types. Analyze the backlog and suggest which tasks should be included in the sprint based on:
+- Task priority and business value
 - Estimated hours
 - Team capacity (${capacity} hours)
 - Task dependencies
+- Strategic alignment
+- Customer/stakeholder impact
+
+Consider the context of the business domain when planning. The sprint goal should reflect meaningful progress toward business objectives, whether technical, operational, marketing, sales, HR, or any other type of work.
 
 Return a JSON object with:
-- goal: Sprint goal statement
+- goal: Sprint goal statement (domain-appropriate, not just technical)
 - taskIds: Array of task IDs to include in sprint
 - reasoning: Brief explanation of the selection
 
 Example:
 {
-  "goal": "Complete user authentication and profile management",
+  "goal": "Launch Q1 marketing campaign and establish customer feedback process",
   "taskIds": ["task1", "task2"],
-  "reasoning": "Selected high-priority tasks that fit within capacity"
+  "reasoning": "Selected high-priority tasks that fit within capacity and deliver measurable business value"
 }`;
 
     const tasksDescription = backlogTasks
