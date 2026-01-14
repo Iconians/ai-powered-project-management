@@ -7,6 +7,8 @@ import { prisma } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 import { generateWithAI } from "@/lib/ai/client";
 import { TaskStatus } from "@prisma/client";
+import { getGitHubClient } from "@/lib/github";
+import { syncTaskToGitHub } from "@/lib/github-sync";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +28,14 @@ export async function POST(request: NextRequest) {
 
     const board = await prisma.board.findUnique({
       where: { id: boardId },
+      select: {
+        id: true,
+        organizationId: true,
+        githubSyncEnabled: true,
+        githubAccessToken: true,
+        githubRepoName: true,
+        githubProjectId: true,
+      },
     });
 
     if (!board) {
@@ -50,18 +60,41 @@ export async function POST(request: NextRequest) {
     
     await requireBoardAccess(boardId, "MEMBER");
 
-    const systemPrompt = `You are a project management assistant. Given a project description or requirements, break it down into actionable tasks. 
+    const systemPrompt = `You are a versatile project management assistant that works across all industries and business types. Given any project description, initiative, or goal, break it down into actionable tasks.
+
+Your task breakdowns should work for ANY domain:
+- Business operations (marketing, sales, HR, finance)
+- Product development (physical products, services, digital products)
+- Events and campaigns
+- Process improvements
+- Strategic initiatives
+- Content creation
+- Customer service improvements
+- And any other business activity
+
 Return a JSON array of tasks, each with:
-- title: A clear, concise task title
+- title: A clear, concise task title (use domain-appropriate language)
 - description: Detailed description of what needs to be done
 - priority: One of LOW, MEDIUM, HIGH, URGENT
 - estimatedHours: Estimated hours to complete (number)
 
-Example format:
+Example formats (showing diversity):
 [
   {
-    "title": "Set up database schema",
-    "description": "Create Prisma schema with User, Post, and Comment models",
+    "title": "Research target market demographics",
+    "description": "Conduct market research to identify primary customer segments, their needs, and purchasing behaviors",
+    "priority": "HIGH",
+    "estimatedHours": 8
+  },
+  {
+    "title": "Design product packaging",
+    "description": "Create packaging design that aligns with brand identity and protects product during shipping",
+    "priority": "MEDIUM",
+    "estimatedHours": 6
+  },
+  {
+    "title": "Schedule vendor meetings",
+    "description": "Coordinate with 3 potential suppliers to discuss pricing, delivery terms, and quality standards",
     "priority": "HIGH",
     "estimatedHours": 4
   }
@@ -152,10 +185,42 @@ Example format:
               },
             },
             statusColumn: true,
+            board: {
+              select: {
+                id: true,
+                organizationId: true,
+                githubSyncEnabled: true,
+                githubAccessToken: true,
+                githubRepoName: true,
+                githubProjectId: true,
+              },
+            },
           },
         })
       )
     );
+
+    // Sync each task to GitHub if GitHub sync is enabled
+    for (const task of createdTasks) {
+      if (
+        task.board.githubSyncEnabled &&
+        task.board.githubAccessToken &&
+        task.board.githubRepoName
+      ) {
+        try {
+          await syncTaskToGitHub(task.id);
+          console.log(
+            `✅ Synced AI-generated task ${task.id} to GitHub`
+          );
+        } catch (githubError) {
+          console.error(
+            `❌ Failed to sync AI-generated task ${task.id} to GitHub:`,
+            githubError
+          );
+          // Continue with other tasks even if one fails
+        }
+      }
+    }
 
     
     try {

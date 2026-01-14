@@ -50,8 +50,8 @@ export function TaskGenerator({ boardId, onClose }: TaskGeneratorProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 xs:p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-3 xs:p-4 sm:p-6 w-full max-w-2xl max-h-[95vh] xs:max-h-[90vh] overflow-y-auto mx-2 xs:mx-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <span className="text-2xl">✨</span>
@@ -66,8 +66,9 @@ export function TaskGenerator({ boardId, onClose }: TaskGeneratorProps) {
         </div>
 
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Describe your project or feature, and AI will break it down into
-          actionable tasks with priorities and time estimates.
+          Describe any project, initiative, or goal from any business area, and AI will break it down into
+          actionable tasks with priorities and time estimates. Works for marketing campaigns, product launches, 
+          process improvements, events, content creation, and more.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -85,7 +86,7 @@ export function TaskGenerator({ boardId, onClose }: TaskGeneratorProps) {
               onChange={(e) => setDescription(e.target.value)}
               rows={8}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Example: Build a user authentication system with email/password login, password reset, and social login options..."
+              placeholder="Examples: Launch a new product line, organize a company event, improve customer onboarding process, create a marketing campaign, implement a new HR policy, design a training program..."
             />
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Be as detailed as possible for better task breakdown

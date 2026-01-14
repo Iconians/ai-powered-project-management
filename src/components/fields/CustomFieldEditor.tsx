@@ -209,8 +209,8 @@ export function CustomFieldEditor({
       </div>
 
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 xs:p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-3 xs:p-4 sm:p-6 max-w-md w-full mx-2 xs:mx-4 max-h-[95vh] overflow-y-auto">
             <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">
               {editingField ? "Edit Custom Field" : "Add Custom Field"}
             </h3>

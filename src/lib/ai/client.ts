@@ -15,7 +15,219 @@ function generateDemoTasks(description: string) {
     estimatedHours: number;
   }> = [];
 
-  if (keywords.includes("website") || keywords.includes("web")) {
+  // Marketing & Campaigns
+  if (keywords.includes("marketing") || keywords.includes("campaign") || keywords.includes("promotion")) {
+    tasks.push(
+      {
+        title: "Define target audience and personas",
+        description: "Research and document primary customer segments and their characteristics",
+        priority: "HIGH",
+        estimatedHours: 6,
+      },
+      {
+        title: "Develop campaign messaging",
+        description: "Create key messages and value propositions for the campaign",
+        priority: "HIGH",
+        estimatedHours: 8,
+      },
+      {
+        title: "Design marketing materials",
+        description: "Create visuals, graphics, and promotional content",
+        priority: "MEDIUM",
+        estimatedHours: 12,
+      },
+      {
+        title: "Plan distribution channels",
+        description: "Identify and schedule social media, email, and advertising channels",
+        priority: "MEDIUM",
+        estimatedHours: 6,
+      },
+      {
+        title: "Set up tracking and analytics",
+        description: "Implement metrics tracking and reporting dashboards",
+        priority: "MEDIUM",
+        estimatedHours: 4,
+      },
+      {
+        title: "Launch and monitor campaign",
+        description: "Execute campaign and track performance metrics",
+        priority: "HIGH",
+        estimatedHours: 8,
+      }
+    );
+  } 
+  // Events
+  else if (keywords.includes("event") || keywords.includes("conference") || keywords.includes("meeting") || keywords.includes("workshop")) {
+    tasks.push(
+      {
+        title: "Define event objectives and goals",
+        description: "Establish clear success metrics and desired outcomes",
+        priority: "HIGH",
+        estimatedHours: 4,
+      },
+      {
+        title: "Select venue and date",
+        description: "Research and book appropriate location with required amenities",
+        priority: "HIGH",
+        estimatedHours: 6,
+      },
+      {
+        title: "Create event budget",
+        description: "Estimate costs for venue, catering, speakers, and materials",
+        priority: "HIGH",
+        estimatedHours: 4,
+      },
+      {
+        title: "Plan agenda and schedule",
+        description: "Develop detailed timeline with sessions, breaks, and activities",
+        priority: "MEDIUM",
+        estimatedHours: 6,
+      },
+      {
+        title: "Coordinate speakers and vendors",
+        description: "Confirm participants, arrange contracts, and logistics",
+        priority: "MEDIUM",
+        estimatedHours: 8,
+      },
+      {
+        title: "Promote and manage registrations",
+        description: "Create registration system and marketing materials",
+        priority: "MEDIUM",
+        estimatedHours: 8,
+      },
+      {
+        title: "Prepare materials and supplies",
+        description: "Order name tags, handouts, signage, and equipment",
+        priority: "LOW",
+        estimatedHours: 6,
+      }
+    );
+  }
+  // Product Launch
+  else if (keywords.includes("product launch") || keywords.includes("launch product") || keywords.includes("new product")) {
+    tasks.push(
+      {
+        title: "Conduct market research",
+        description: "Analyze market demand, competition, and customer needs",
+        priority: "HIGH",
+        estimatedHours: 12,
+      },
+      {
+        title: "Develop product positioning",
+        description: "Define unique value proposition and target market",
+        priority: "HIGH",
+        estimatedHours: 6,
+      },
+      {
+        title: "Create marketing strategy",
+        description: "Plan launch campaign, pricing, and distribution channels",
+        priority: "HIGH",
+        estimatedHours: 10,
+      },
+      {
+        title: "Develop sales materials",
+        description: "Create product sheets, presentations, and training materials",
+        priority: "MEDIUM",
+        estimatedHours: 8,
+      },
+      {
+        title: "Plan launch event or announcement",
+        description: "Organize press release, demo, or launch event",
+        priority: "MEDIUM",
+        estimatedHours: 8,
+      },
+      {
+        title: "Train sales and support teams",
+        description: "Educate teams on product features and customer questions",
+        priority: "MEDIUM",
+        estimatedHours: 6,
+      }
+    );
+  }
+  // Operations & Process Improvement
+  else if (keywords.includes("process") || keywords.includes("operations") || keywords.includes("workflow") || keywords.includes("improve")) {
+    tasks.push(
+      {
+        title: "Map current process",
+        description: "Document existing workflow, steps, and pain points",
+        priority: "HIGH",
+        estimatedHours: 8,
+      },
+      {
+        title: "Identify improvement opportunities",
+        description: "Analyze bottlenecks, inefficiencies, and areas for optimization",
+        priority: "HIGH",
+        estimatedHours: 6,
+      },
+      {
+        title: "Design improved process",
+        description: "Create new workflow with streamlined steps and automation",
+        priority: "HIGH",
+        estimatedHours: 10,
+      },
+      {
+        title: "Get stakeholder approval",
+        description: "Present proposal and gather feedback from key stakeholders",
+        priority: "MEDIUM",
+        estimatedHours: 4,
+      },
+      {
+        title: "Implement changes",
+        description: "Roll out new process with training and documentation",
+        priority: "MEDIUM",
+        estimatedHours: 12,
+      },
+      {
+        title: "Monitor and measure results",
+        description: "Track metrics and gather feedback to ensure improvements",
+        priority: "LOW",
+        estimatedHours: 4,
+      }
+    );
+  }
+  // HR & Training
+  else if (keywords.includes("training") || keywords.includes("onboarding") || keywords.includes("hr") || keywords.includes("employee")) {
+    tasks.push(
+      {
+        title: "Assess training needs",
+        description: "Identify skills gaps and learning objectives",
+        priority: "HIGH",
+        estimatedHours: 6,
+      },
+      {
+        title: "Develop training curriculum",
+        description: "Create learning modules, materials, and assessments",
+        priority: "HIGH",
+        estimatedHours: 12,
+      },
+      {
+        title: "Design training materials",
+        description: "Create presentations, handouts, videos, and exercises",
+        priority: "MEDIUM",
+        estimatedHours: 10,
+      },
+      {
+        title: "Schedule training sessions",
+        description: "Coordinate dates, times, and participant availability",
+        priority: "MEDIUM",
+        estimatedHours: 4,
+      },
+      {
+        title: "Deliver training program",
+        description: "Conduct sessions and facilitate learning activities",
+        priority: "HIGH",
+        estimatedHours: 8,
+      },
+      {
+        title: "Evaluate effectiveness",
+        description: "Gather feedback and measure learning outcomes",
+        priority: "LOW",
+        estimatedHours: 4,
+      }
+    );
+  }
+  // Website/Web Development (keep for technical users)
+  else if (keywords.includes("website") || keywords.includes("web")) {
     tasks.push(
       {
         title: "Design UI/UX mockups",
@@ -133,35 +345,42 @@ function generateDemoTasks(description: string) {
       }
     );
   } else {
+    // Generic fallback for any other project type
     tasks.push(
       {
-        title: "Project planning and setup",
-        description: "Define requirements and set up project structure",
+        title: "Define project scope and objectives",
+        description: "Clarify goals, deliverables, and success criteria",
         priority: "HIGH",
         estimatedHours: 4,
       },
       {
-        title: "Core feature development",
-        description: "Implement main functionality",
+        title: "Research and planning",
+        description: "Gather information, analyze requirements, and create project plan",
+        priority: "HIGH",
+        estimatedHours: 8,
+      },
+      {
+        title: "Execute core activities",
+        description: "Implement main project work and deliverables",
         priority: "HIGH",
         estimatedHours: 16,
       },
       {
-        title: "Testing and quality assurance",
-        description: "Write tests and fix bugs",
+        title: "Review and quality check",
+        description: "Validate deliverables meet requirements and standards",
         priority: "MEDIUM",
-        estimatedHours: 8,
+        estimatedHours: 6,
       },
       {
-        title: "Documentation",
-        description: "Write user and technical documentation",
-        priority: "LOW",
+        title: "Finalize and deliver",
+        description: "Complete remaining tasks and present final results",
+        priority: "MEDIUM",
         estimatedHours: 4,
       },
       {
-        title: "Deployment",
-        description: "Deploy to production environment",
-        priority: "MEDIUM",
+        title: "Documentation and handoff",
+        description: "Create documentation and transfer knowledge to stakeholders",
+        priority: "LOW",
         estimatedHours: 4,
       }
     );

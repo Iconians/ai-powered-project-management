@@ -201,9 +201,9 @@ export function BoardHeader({
 
   return (
     <>
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
-          <div className="flex-1 min-w-0">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-2 xs:px-4 sm:px-6 lg:px-8 py-2 xs:py-3 sm:py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 xs:gap-3 sm:gap-4 mb-2 xs:mb-3 sm:mb-4">
+          <div className="flex-1 min-w-0 w-full">
             {isEditingTitle &&
             (userBoardRole === "ADMIN" || userBoardRole === "MEMBER") ? (
               <input
@@ -247,40 +247,40 @@ export function BoardHeader({
               </p>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 sm:gap-3 w-full sm:w-auto">
             {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
               <>
                 <button
                   onClick={() => setShowExportModal(true)}
-                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
                   title="Export Board"
                 >
-                  <span>📥</span>
-                  <span className="hidden sm:inline">Export</span>
+                  <span className="text-sm xs:text-base">📥</span>
+                  <span className="hidden xs:inline sm:ml-1">Export</span>
                 </button>
                 <button
                   onClick={() => setShowImportModal(true)}
-                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
                   title="Import Tasks"
                 >
-                  <span>📤</span>
-                  <span className="hidden sm:inline">Import</span>
+                  <span className="text-sm xs:text-base">📤</span>
+                  <span className="hidden xs:inline sm:ml-1">Import</span>
                 </button>
                 <button
                   onClick={() => setShowManageColumns(true)}
-                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
                   title="Manage Columns"
                 >
-                  <span>📊</span>
-                  <span className="hidden sm:inline">Columns</span>
+                  <span className="text-sm xs:text-base">📊</span>
+                  <span className="hidden xs:inline sm:ml-1">Columns</span>
                 </button>
                 <button
                   onClick={() => setShowTagManager(true)}
-                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
                   title="Manage Tags"
                 >
-                  <span>🏷️</span>
-                  <span className="hidden sm:inline">Tags</span>
+                  <span className="text-sm xs:text-base">🏷️</span>
+                  <span className="hidden xs:inline sm:ml-1">Tags</span>
                 </button>
               </>
             )}
@@ -288,25 +288,25 @@ export function BoardHeader({
               <>
                 <button
                   onClick={() => setShowBoardMembers(true)}
-                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
                   title="Manage Board Members"
                 >
-                  <span>👥</span>
-                  <span className="hidden sm:inline">Members</span>
+                  <span className="text-sm xs:text-base">👥</span>
+                  <span className="hidden xs:inline sm:ml-1">Members</span>
                 </button>
                 {needsRepoName ? (
                   <button
                     onClick={() => setShowGitHubRepo(true)}
-                    className="px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500"
+                    className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500 flex-shrink-0"
                     title="Set GitHub Repository"
                   >
-                    <span>🔗</span>
-                    <span className="hidden sm:inline">Set GitHub Repo</span>
+                    <span className="text-sm xs:text-base">🔗</span>
+                    <span className="hidden xs:inline sm:ml-1">Set GitHub Repo</span>
                   </button>
                 ) : canConnectGitHub ? (
                   <a
                     href={`/api/github/connect?boardId=${boardId}`}
-                    className={`px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm ${
+                    className={`px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0 ${
                       isGitHubConnected
                         ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
                         : "bg-gray-700 text-white hover:bg-gray-800 focus:ring-gray-500"
@@ -315,23 +315,23 @@ export function BoardHeader({
                       isGitHubConnected ? "GitHub Connected" : "Connect GitHub"
                     }
                   >
-                    <span>🔗</span>
-                    <span className="hidden sm:inline">
+                    <span className="text-sm xs:text-base">🔗</span>
+                    <span className="hidden xs:inline sm:ml-1">
                       {isGitHubConnected ? "GitHub" : "Connect GitHub"}
                     </span>
                   </a>
                 ) : (
                   <button
                     disabled
-                    className="px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg bg-gray-400 text-white cursor-not-allowed flex items-center gap-1 sm:gap-2 shadow-md text-xs sm:text-sm"
+                    className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 rounded-lg bg-gray-400 text-white cursor-not-allowed flex items-center gap-1 shadow-md text-xs sm:text-sm flex-shrink-0"
                     title={
                       githubLimit?.limit === 1
                         ? `GitHub integration limit reached (${githubLimit.current}/1). Upgrade to Pro or Enterprise for unlimited integrations.`
                         : `GitHub integration limit reached. Please upgrade your plan.`
                     }
                   >
-                    <span>🔗</span>
-                    <span className="hidden sm:inline">Connect GitHub</span>
+                    <span className="text-sm xs:text-base">🔗</span>
+                    <span className="hidden xs:inline sm:ml-1">Connect GitHub</span>
                   </button>
                 )}
               </>
@@ -340,28 +340,28 @@ export function BoardHeader({
               <>
                 <button
                   onClick={() => setShowCreateSprint(true)}
-                  className="px-2 sm:px-4 py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
                 >
-                  <span>📅</span>
-                  <span className="hidden xs:inline">Create Sprint</span>
+                  <span className="text-sm xs:text-base">📅</span>
+                  <span className="hidden xs:inline sm:ml-1">Create Sprint</span>
                 </button>
                 {hasPaidSubscription && (
                   <>
                     <button
                       onClick={() => setShowTaskGenerator(true)}
-                      className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                      className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
                     >
-                      <span>✨</span>
-                      <span className="hidden sm:inline">
-                        AI Generate Tasks
+                      <span className="text-sm xs:text-base">✨</span>
+                      <span className="hidden xs:inline sm:ml-1">
+                        AI Generate
                       </span>
                     </button>
                     <button
                       onClick={() => setShowSprintPlanner(true)}
-                      className="px-2 sm:px-4 py-1.5 sm:py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-1 sm:gap-2 shadow-md transition-all text-xs sm:text-sm"
+                      className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
                     >
-                      <span>🚀</span>
-                      <span className="hidden sm:inline">AI Plan Sprint</span>
+                      <span className="text-sm xs:text-base">🚀</span>
+                      <span className="hidden xs:inline sm:ml-1">AI Plan</span>
                     </button>
                   </>
                 )}
@@ -369,7 +369,7 @@ export function BoardHeader({
             )}
             <Link
               href="/boards"
-              className="px-2 sm:px-4 py-1.5 sm:py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors text-xs sm:text-sm whitespace-nowrap"
+              className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors text-xs sm:text-sm whitespace-nowrap flex-shrink-0"
             >
               ← Back
             </Link>
@@ -377,10 +377,10 @@ export function BoardHeader({
         </div>
 
         {onTabChange && (
-          <div className="flex gap-1 border-gray-200 dark:border-gray-700 overflow-x-auto">
+          <div className="flex gap-1 border-gray-200 dark:border-gray-700 overflow-x-auto -mx-2 xs:-mx-4 sm:-mx-6 lg:-mx-8 px-2 xs:px-4 sm:px-6 lg:px-8">
             <button
               onClick={() => onTabChange("board")}
-              className={`px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+              className={`px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === "board"
                   ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
@@ -390,7 +390,7 @@ export function BoardHeader({
             </button>
             <button
               onClick={() => onTabChange("sprints")}
-              className={`px-3 sm:px-4 py-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
+              className={`px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${
                 activeTab === "sprints"
                   ? "text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
