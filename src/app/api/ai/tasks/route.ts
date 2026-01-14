@@ -7,7 +7,6 @@ import { prisma } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 import { generateWithAI } from "@/lib/ai/client";
 import { TaskStatus } from "@prisma/client";
-import { getGitHubClient } from "@/lib/github";
 import { syncTaskToGitHub } from "@/lib/github-sync";
 
 export async function POST(request: NextRequest) {
