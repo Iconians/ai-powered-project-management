@@ -140,26 +140,26 @@ export function TaskDetailModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-start justify-between z-10">
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2 xs:p-3 sm:p-4 flex flex-col xs:flex-row items-start xs:items-start justify-between gap-2 xs:gap-4 z-10">
+            <div className="flex-1 min-w-0 w-full xs:w-auto">
+              <h2 className="text-lg xs:text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2 break-words">
                 {task.title}
               </h2>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+              <div className="flex items-center gap-1.5 xs:gap-2 flex-wrap">
+                <span className="text-xs px-1.5 xs:px-2 py-0.5 xs:py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                   {task.status}
                 </span>
-                <span className="text-xs px-2 py-1 rounded bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
+                <span className="text-xs px-1.5 xs:px-2 py-0.5 xs:py-1 rounded bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200">
                   {task.priority}
                 </span>
                 {task.assignee && (
-                  <span className="text-xs px-2 py-1 rounded bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                  <span className="text-xs px-1.5 xs:px-2 py-0.5 xs:py-1 rounded bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 truncate max-w-[120px] xs:max-w-none">
                     👤 {task.assignee.user?.name || task.assignee.user?.email}
                   </span>
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 ml-4">
+            <div className="flex items-center gap-1 xs:gap-2 flex-shrink-0 w-full xs:w-auto justify-end">
               {canEdit && (
                 <>
                   <button
@@ -170,22 +170,24 @@ export function TaskDetailModal({
                         watchMutation.mutate();
                       }
                     }}
-                    className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                    className="px-2 xs:px-3 py-1 text-xs xs:text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 whitespace-nowrap"
                     title={userIsWatching ? "Unwatch" : "Watch"}
                   >
-                    {userIsWatching ? "👁️ Watching" : "👁️ Watch"}
+                    <span className="hidden xs:inline">{userIsWatching ? "👁️ Watching" : "👁️ Watch"}</span>
+                    <span className="xs:hidden">👁️</span>
                   </button>
                   <button
                     onClick={() => cloneMutation.mutate()}
                     disabled={cloneMutation.isPending}
-                    className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
+                    className="px-2 xs:px-3 py-1 text-xs xs:text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 whitespace-nowrap"
                     title="Clone task"
                   >
-                    📋 Clone
+                    <span className="hidden xs:inline">📋 Clone</span>
+                    <span className="xs:hidden">📋</span>
                   </button>
                   <button
                     onClick={() => setShowEditModal(true)}
-                    className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                    className="px-2 xs:px-3 py-1 text-xs xs:text-sm bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
                   >
                     Edit
                   </button>
@@ -193,7 +195,7 @@ export function TaskDetailModal({
               )}
               <button
                 onClick={onClose}
-                className="px-3 py-1 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                className="px-2 xs:px-3 py-1 text-xs xs:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               >
                 ✕
               </button>
@@ -201,13 +203,13 @@ export function TaskDetailModal({
           </div>
 
           {/* Tabs */}
-          <div className="border-b border-gray-200 dark:border-gray-700 px-4">
-            <div className="flex gap-4">
+          <div className="border-b border-gray-200 dark:border-gray-700 px-2 xs:px-4 overflow-x-auto">
+            <div className="flex gap-1 xs:gap-2 sm:gap-4 min-w-max">
               {["details", "checklist", "dependencies", "time", "approvals"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab as any)}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                  className={`px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 text-xs xs:text-sm font-medium border-b-2 whitespace-nowrap flex-shrink-0 ${
                     activeTab === tab
                       ? "border-blue-600 text-blue-600 dark:text-blue-400"
                       : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
@@ -220,7 +222,7 @@ export function TaskDetailModal({
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-6">
+          <div className="p-3 xs:p-4 sm:p-6 space-y-4 xs:space-y-6">
             {activeTab === "details" && (
               <div className="space-y-6">
                 {task.description && (
