@@ -43,20 +43,20 @@ export function BoardViewSelector({
   return (
     <div className="h-full flex flex-col">
       {/* View Selector */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2">
-        <div className="flex gap-2">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-2 xs:px-3 sm:px-4 py-2 overflow-x-auto scrollbar-hide">
+        <div className="flex gap-1 xs:gap-2 min-w-max">
           {views.map((view) => (
             <button
               key={view.id}
               onClick={() => setCurrentView(view.id)}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              className={`px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 text-xs xs:text-sm font-medium rounded-lg transition-colors whitespace-nowrap flex-shrink-0 ${
                 currentView === view.id
                   ? "bg-blue-600 text-white"
                   : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
               }`}
             >
-              <span className="mr-2">{view.icon}</span>
-              {view.name}
+              <span className="mr-1 xs:mr-2">{view.icon}</span>
+              <span className="hidden xs:inline">{view.name}</span>
             </button>
           ))}
         </div>

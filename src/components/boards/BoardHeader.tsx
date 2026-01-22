@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { TaskGenerator } from "../ai/TaskGenerator";
@@ -63,7 +63,26 @@ export function BoardHeader({
   const [showRecurringTasks, setShowRecurringTasks] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState(boardName);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    if (showMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showMenu]);
   
   const handleFilterChange = (newFilters: FilterState) => {
     if (onFiltersChange) {
@@ -247,137 +266,179 @@ export function BoardHeader({
               </p>
             )}
           </div>
-          <div className="flex flex-wrap items-center gap-1.5 xs:gap-2 sm:gap-3 w-full sm:w-auto">
-            {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
-              <>
-                <button
-                  onClick={() => setShowExportModal(true)}
-                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
-                  title="Export Board"
-                >
-                  <span className="text-sm xs:text-base">📥</span>
-                  <span className="hidden xs:inline sm:ml-1">Export</span>
-                </button>
-                <button
-                  onClick={() => setShowImportModal(true)}
-                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
-                  title="Import Tasks"
-                >
-                  <span className="text-sm xs:text-base">📤</span>
-                  <span className="hidden xs:inline sm:ml-1">Import</span>
-                </button>
-                <button
-                  onClick={() => setShowManageColumns(true)}
-                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
-                  title="Manage Columns"
-                >
-                  <span className="text-sm xs:text-base">📊</span>
-                  <span className="hidden xs:inline sm:ml-1">Columns</span>
-                </button>
-                <button
-                  onClick={() => setShowTagManager(true)}
-                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
-                  title="Manage Tags"
-                >
-                  <span className="text-sm xs:text-base">🏷️</span>
-                  <span className="hidden xs:inline sm:ml-1">Tags</span>
-                </button>
-                <button
-                  onClick={() => setShowTemplateEditor(true)}
-                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
-                  title="Manage Templates"
-                >
-                  <span className="text-sm xs:text-base">📋</span>
-                  <span className="hidden xs:inline sm:ml-1">Templates</span>
-                </button>
-              </>
-            )}
-            {userBoardRole === "ADMIN" && (
-              <>
-                <button
-                  onClick={() => setShowBoardMembers(true)}
-                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
-                  title="Manage Board Members"
-                >
-                  <span className="text-sm xs:text-base">👥</span>
-                  <span className="hidden xs:inline sm:ml-1">Members</span>
-                </button>
-                {needsRepoName ? (
-                  <button
-                    onClick={() => setShowGitHubRepo(true)}
-                    className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm bg-yellow-600 text-white hover:bg-yellow-700 focus:ring-yellow-500 flex-shrink-0"
-                    title="Set GitHub Repository"
-                  >
-                    <span className="text-sm xs:text-base">🔗</span>
-                    <span className="hidden xs:inline sm:ml-1">Set GitHub Repo</span>
-                  </button>
-                ) : canConnectGitHub ? (
-                  <a
-                    href={`/api/github/connect?boardId=${boardId}`}
-                    className={`px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0 ${
-                      isGitHubConnected
-                        ? "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500"
-                        : "bg-gray-700 text-white hover:bg-gray-800 focus:ring-gray-500"
-                    }`}
-                    title={
-                      isGitHubConnected ? "GitHub Connected" : "Connect GitHub"
-                    }
-                  >
-                    <span className="text-sm xs:text-base">🔗</span>
-                    <span className="hidden xs:inline sm:ml-1">
-                      {isGitHubConnected ? "GitHub" : "Connect GitHub"}
-                    </span>
-                  </a>
-                ) : (
-                  <button
-                    disabled
-                    className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 rounded-lg bg-gray-400 text-white cursor-not-allowed flex items-center gap-1 shadow-md text-xs sm:text-sm flex-shrink-0"
-                    title={
-                      githubLimit?.limit === 1
-                        ? `GitHub integration limit reached (${githubLimit.current}/1). Upgrade to Pro or Enterprise for unlimited integrations.`
-                        : `GitHub integration limit reached. Please upgrade your plan.`
-                    }
-                  >
-                    <span className="text-sm xs:text-base">🔗</span>
-                    <span className="hidden xs:inline sm:ml-1">Connect GitHub</span>
-                  </button>
-                )}
-              </>
-            )}
-            {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
-              <>
-                <button
-                  onClick={() => setShowCreateSprint(true)}
-                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
-                >
-                  <span className="text-sm xs:text-base">📅</span>
-                  <span className="hidden xs:inline sm:ml-1">Create Sprint</span>
-                </button>
-                {hasPaidSubscription && (
-                  <>
-                    <button
-                      onClick={() => setShowTaskGenerator(true)}
-                      className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
-                    >
-                      <span className="text-sm xs:text-base">✨</span>
-                      <span className="hidden xs:inline sm:ml-1">
-                        AI Generate
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => setShowSprintPlanner(true)}
-                      className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-lg hover:from-green-700 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
-                    >
-                      <span className="text-sm xs:text-base">🚀</span>
-                      <span className="hidden xs:inline sm:ml-1">AI Plan</span>
-                    </button>
-                  </>
-                )}
-              </>
-            )}
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <div className="relative" ref={menuRef}>
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-2.5 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-1.5 xs:gap-2 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
+                title="Board Actions"
+              >
+                <span className="text-base xs:text-lg">⚙️</span>
+                <span className="hidden xs:inline">Actions</span>
+                <span className="text-xs xs:text-sm">▼</span>
+              </button>
+              
+              {showMenu && (
+                <div className="absolute right-0 mt-1 w-56 xs:w-64 sm:w-72 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 z-50 max-h-[calc(100vh-8rem)] overflow-y-auto">
+                  <div className="py-1">
+                    {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
+                      <>
+                        <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700">
+                          Board Management
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowExportModal(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                        >
+                          <span>📥</span>
+                          <span>Export Board</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowImportModal(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                        >
+                          <span>📤</span>
+                          <span>Import Tasks</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowManageColumns(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                        >
+                          <span>📊</span>
+                          <span>Manage Columns</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowTagManager(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                        >
+                          <span>🏷️</span>
+                          <span>Manage Tags</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowTemplateEditor(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                        >
+                          <span>📋</span>
+                          <span>Manage Templates</span>
+                        </button>
+                      </>
+                    )}
+                    
+                    {userBoardRole === "ADMIN" && (
+                      <>
+                        <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 mt-1">
+                          Team & Integration
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowBoardMembers(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                        >
+                          <span>👥</span>
+                          <span>Manage Members</span>
+                        </button>
+                        {needsRepoName ? (
+                          <button
+                            onClick={() => {
+                              setShowGitHubRepo(true);
+                              setShowMenu(false);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-yellow-700 dark:text-yellow-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                          >
+                            <span>🔗</span>
+                            <span>Set GitHub Repo</span>
+                          </button>
+                        ) : canConnectGitHub ? (
+                          <a
+                            href={`/api/github/connect?boardId=${boardId}`}
+                            className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                            onClick={() => setShowMenu(false)}
+                          >
+                            <span>🔗</span>
+                            <span>{isGitHubConnected ? "GitHub Connected" : "Connect GitHub"}</span>
+                          </a>
+                        ) : (
+                          <div
+                            className="w-full px-4 py-2 text-left text-sm text-gray-400 dark:text-gray-500 cursor-not-allowed flex items-center gap-2"
+                            title={
+                              githubLimit?.limit === 1
+                                ? `GitHub integration limit reached (${githubLimit.current}/1). Upgrade to Pro or Enterprise for unlimited integrations.`
+                                : `GitHub integration limit reached. Please upgrade your plan.`
+                            }
+                          >
+                            <span>🔗</span>
+                            <span>Connect GitHub (Limit Reached)</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {(userBoardRole === "ADMIN" || userBoardRole === "MEMBER") && (
+                      <>
+                        <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-b border-gray-200 dark:border-gray-700 mt-1">
+                          Sprint & AI
+                        </div>
+                        <button
+                          onClick={() => {
+                            setShowCreateSprint(true);
+                            setShowMenu(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                        >
+                          <span>📅</span>
+                          <span>Create Sprint</span>
+                        </button>
+                        {hasPaidSubscription && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setShowTaskGenerator(true);
+                                setShowMenu(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                            >
+                              <span>✨</span>
+                              <span>AI Generate Tasks</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowSprintPlanner(true);
+                                setShowMenu(false);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                            >
+                              <span>🚀</span>
+                              <span>AI Plan Sprint</span>
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            
             <Link
               href="/boards"
-              className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors text-xs sm:text-sm whitespace-nowrap flex-shrink-0"
+              className="px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 sm:py-2.5 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors text-xs sm:text-sm whitespace-nowrap flex-shrink-0"
             >
               ← Back
             </Link>
@@ -385,7 +446,7 @@ export function BoardHeader({
         </div>
 
         {onTabChange && (
-          <div className="flex gap-1 border-gray-200 dark:border-gray-700 overflow-x-auto -mx-2 xs:-mx-4 sm:-mx-6 lg:-mx-8 px-2 xs:px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-1 border-gray-200 dark:border-gray-700 overflow-x-auto -mx-2 xs:-mx-4 sm:-mx-6 lg:-mx-8 px-2 xs:px-4 sm:px-6 lg:px-8 scrollbar-hide">
             <button
               onClick={() => onTabChange("board")}
               className={`px-2 xs:px-3 sm:px-4 py-1.5 xs:py-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap flex-shrink-0 ${

@@ -425,20 +425,20 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole, filters = 
       
       {/* Bulk Actions Toolbar */}
       {selectedTaskIds.size > 0 && !isViewer && (
-        <div className="bg-blue-600 text-white px-4 py-2 flex items-center justify-between">
-          <span className="text-sm font-medium">
+        <div className="bg-blue-600 text-white px-2 xs:px-3 sm:px-4 py-2 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2 xs:gap-0">
+          <span className="text-xs xs:text-sm font-medium">
             {selectedTaskIds.size} task{selectedTaskIds.size !== 1 ? "s" : ""} selected
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 xs:gap-2 w-full xs:w-auto">
             <button
               onClick={() => setShowBulkEdit(true)}
-              className="px-3 py-1 text-sm bg-white text-blue-600 rounded hover:bg-blue-50"
+              className="px-2 xs:px-3 py-1 text-xs xs:text-sm bg-white text-blue-600 rounded hover:bg-blue-50 flex-1 xs:flex-none whitespace-nowrap"
             >
               Edit Selected
             </button>
             <button
               onClick={clearSelection}
-              className="px-3 py-1 text-sm bg-blue-700 rounded hover:bg-blue-800"
+              className="px-2 xs:px-3 py-1 text-xs xs:text-sm bg-blue-700 rounded hover:bg-blue-800 flex-1 xs:flex-none whitespace-nowrap"
             >
               Clear Selection
             </button>
@@ -453,7 +453,7 @@ export function KanbanBoard({ boardId, organizationId, userBoardRole, filters = 
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex flex-col md:flex-row gap-2 xs:gap-3 sm:gap-4 p-1 xs:p-2 sm:p-4 overflow-y-auto md:overflow-x-auto md:overflow-y-visible flex-1 md:justify-center min-w-0">
+        <div className="flex flex-col md:flex-row gap-2 xs:gap-3 sm:gap-4 p-1 xs:p-2 sm:p-4 overflow-y-auto md:overflow-x-auto md:overflow-y-visible flex-1 md:justify-start min-w-0 scrollbar-hide md:scrollbar-thin">
         {sortedStatuses.map((status) => {
           const columnTasks = filteredTasks
             .filter((t) => t.status === status.status)
