@@ -282,6 +282,14 @@ export function BoardHeader({
                   <span className="text-sm xs:text-base">🏷️</span>
                   <span className="hidden xs:inline sm:ml-1">Tags</span>
                 </button>
+                <button
+                  onClick={() => setShowTemplateEditor(true)}
+                  className="px-1.5 xs:px-2 sm:px-4 py-1 xs:py-1.5 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 flex items-center gap-1 shadow-md transition-all text-xs sm:text-sm flex-shrink-0"
+                  title="Manage Templates"
+                >
+                  <span className="text-sm xs:text-base">📋</span>
+                  <span className="hidden xs:inline sm:ml-1">Templates</span>
+                </button>
               </>
             )}
             {userBoardRole === "ADMIN" && (
