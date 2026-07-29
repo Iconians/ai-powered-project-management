@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type {
   PlanForBilling,
   SerializedSubscriptionForBilling,
@@ -9,9 +9,6 @@ import type {
 import {
   fetchSubscriptionForOrg,
   fetchUsageForOrg,
-  patchManageSubscription,
-  patchSyncSubscription,
-  postCreateSubscription,
 } from "@/lib/subscription-client";
 
 export function usePlans(initialData?: PlanForBilling[]) {
@@ -59,37 +56,5 @@ export function useUsage(
         : fetchUsageForOrg(organizationId),
     initialData: isDefault ? (initialData ?? undefined) : undefined,
     enabled: !!organizationId,
-  });
-}
-
-export function useCreateSubscription() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: postCreateSubscription,
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["subscription", variables.organizationId],
-      });
-    },
-  });
-}
-
-export function useManageSubscription() {
-  return useMutation({
-    mutationFn: patchManageSubscription,
-  });
-}
-
-export function useSyncSubscription() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: patchSyncSubscription,
-    onSuccess: (_, organizationId) => {
-      queryClient.invalidateQueries({
-        queryKey: ["subscription", organizationId],
-      });
-    },
   });
 }

@@ -3,18 +3,26 @@ import type { UseBillingPageResult } from "@/hooks/useBillingPage";
 
 type BillingPageViewProps = UseBillingPageResult;
 
+const CONTACT_EMAIL =
+  process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@example.com";
+
+function contactHref(planName: string): string {
+  const subject = encodeURIComponent(`${planName} plan inquiry`);
+  const body = encodeURIComponent(
+    `Hi,\n\nI'm interested in the ${planName} plan for my organization.\n\n`
+  );
+  return `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
+}
+
 export function BillingPageView(props: BillingPageViewProps) {
   const {
     organizations,
     plans,
     selectedOrgId,
     setSelectedOrgId,
-    subscription,
     isLoadingSubscription,
     currentPlan,
     actualCounts,
-    createSubscriptionMutation,
-    manageSubscriptionMutation,
   } = props;
 
   return (
@@ -60,7 +68,7 @@ export function BillingPageView(props: BillingPageViewProps) {
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                   Current Plan: {currentPlan.name}
                 </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
                       Boards
@@ -95,31 +103,6 @@ export function BillingPageView(props: BillingPageViewProps) {
                     </div>
                   </div>
                 </div>
-                {subscription?.currentPeriodEnd && (
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    Renews:{" "}
-                    {new Date(
-                      subscription.currentPeriodEnd as string,
-                    ).toLocaleDateString()}
-                  </div>
-                )}
-                <div className="flex flex-col sm:flex-row gap-2">
-                  {currentPlan.price > 0 &&
-                    subscription?.stripeSubscriptionId && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          manageSubscriptionMutation.mutate(selectedOrgId)
-                        }
-                        disabled={manageSubscriptionMutation.isPending}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                      >
-                        {manageSubscriptionMutation.isPending
-                          ? "Loading..."
-                          : "Manage Subscription"}
-                      </button>
-                    )}
-                </div>
               </div>
             )}
 
@@ -131,6 +114,7 @@ export function BillingPageView(props: BillingPageViewProps) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {plans.map((plan) => {
                     const isCurrentPlan = currentPlan?.id === plan.id;
+                    const isFreePlan = plan.price === 0;
                     return (
                       <div
                         key={plan.id}
@@ -220,25 +204,21 @@ export function BillingPageView(props: BillingPageViewProps) {
                           >
                             Current Plan
                           </button>
-                        ) : (
+                        ) : isFreePlan ? (
                           <button
                             type="button"
-                            onClick={() =>
-                              createSubscriptionMutation.mutate({
-                                organizationId: selectedOrgId,
-                                planId: plan.id,
-                              })
-                            }
-                            disabled={
-                              createSubscriptionMutation.isPending ||
-                              !selectedOrgId
-                            }
-                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            disabled
+                            className="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-lg cursor-not-allowed font-medium"
                           >
-                            {createSubscriptionMutation.isPending
-                              ? "Processing..."
-                              : "Subscribe"}
+                            Included
                           </button>
+                        ) : (
+                          <a
+                            href={contactHref(plan.name)}
+                            className="block w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-center"
+                          >
+                            Contact Us
+                          </a>
                         )}
                       </div>
                     );

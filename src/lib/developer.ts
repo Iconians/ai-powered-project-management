@@ -1,6 +1,6 @@
 /**
  * Developer mode: organizations listed in DEVELOPER_ORGANIZATION_IDS get
- * full app access (unlimited limits, all AI features) without a paid Stripe subscription.
+ * full app access (unlimited limits, all AI features) without a paid plan.
  * Set in .env: DEVELOPER_ORGANIZATION_IDS=org-id-1,org-id-2
  */
 

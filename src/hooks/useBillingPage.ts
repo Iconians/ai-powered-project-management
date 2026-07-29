@@ -1,20 +1,15 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { useRealtime } from "@/hooks/useRealtime";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import type {
   PlanForBilling,
   SerializedSubscriptionForBilling,
   UsageForBilling,
 } from "@/lib/data/billing";
 import {
-  applySyncSubscriptionOnSuccess,
   fetchSubscriptionForOrg,
   fetchUsageForOrg,
-  patchManageSubscription,
-  patchSyncSubscription,
-  postCreateSubscription,
 } from "@/lib/subscription-client";
 
 export interface BillingPageClientProps {
@@ -25,22 +20,6 @@ export interface BillingPageClientProps {
   defaultOrgId: string;
 }
 
-function shouldAutoSyncStripeSubscription(
-  subscription: {
-    stripeSubscriptionId?: string | null;
-    plan?: { name?: string | null } | null;
-  } | null | undefined,
-  syncPending: boolean,
-  syncSuccess: boolean
-): boolean {
-  return Boolean(
-    subscription?.stripeSubscriptionId &&
-      subscription.plan?.name === "Free" &&
-      !syncPending &&
-      !syncSuccess
-  );
-}
-
 export function useBillingPage({
   organizations,
   plans,
@@ -48,7 +27,6 @@ export function useBillingPage({
   initialUsage,
   defaultOrgId,
 }: BillingPageClientProps) {
-  const queryClient = useQueryClient();
   const [selectedOrgId, setSelectedOrgId] = useState<string>(defaultOrgId);
 
   const { data: subscription, isLoading: isLoadingSubscription } = useQuery({
@@ -77,63 +55,9 @@ export function useBillingPage({
     enabled: !!selectedOrgId,
   });
 
-  const createSubscriptionMutation = useMutation({
-    mutationFn: postCreateSubscription,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["subscription", selectedOrgId],
-      });
-    },
-  });
-
-  const manageSubscriptionMutation = useMutation({
-    mutationFn: patchManageSubscription,
-    onError: (error: Error) => {
-      alert(`Failed to manage subscription: ${error.message}`);
-    },
-  });
-
-  const syncSubscriptionMutation = useMutation({
-    mutationFn: patchSyncSubscription,
-    onSuccess: (data) => {
-      applySyncSubscriptionOnSuccess(queryClient, selectedOrgId, data);
-    },
-    onError: (error: Error) => {
-      alert(`Failed to sync subscription: ${error.message}`);
-    },
-  });
-
-  useRealtime({
-    channelName: selectedOrgId ? `private-organization-${selectedOrgId}` : "",
-    eventName: "subscription-updated",
-    callback: () => {
-      if (!selectedOrgId) return;
-      queryClient.invalidateQueries({
-        queryKey: ["subscription", selectedOrgId],
-      });
-      queryClient.refetchQueries({
-        queryKey: ["subscription", selectedOrgId],
-      });
-    },
-  });
-
-  useEffect(() => {
-    if (
-      !selectedOrgId ||
-      !shouldAutoSyncStripeSubscription(
-        subscription,
-        syncSubscriptionMutation.isPending,
-        syncSubscriptionMutation.isSuccess
-      )
-    ) {
-      return;
-    }
-    syncSubscriptionMutation.mutate(selectedOrgId);
-  }, [subscription, selectedOrgId, syncSubscriptionMutation]);
-
   const currentPlan =
     subscription?.plan ||
-    (plans ? plans.find((p) => p.name === "Free") ?? null : null);
+    (plans ? (plans.find((p) => p.name === "Free") ?? null) : null);
   const actualCounts = usage?.actualCounts ?? {
     boards: 0,
     members: 0,
@@ -149,8 +73,6 @@ export function useBillingPage({
     isLoadingSubscription,
     currentPlan,
     actualCounts,
-    createSubscriptionMutation,
-    manageSubscriptionMutation,
   };
 }
 

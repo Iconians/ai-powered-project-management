@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireMember } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { cancelSubscription } from "@/lib/stripe";
 
 export async function GET(
   _request: NextRequest,
@@ -102,19 +101,6 @@ export async function DELETE(
 
     const organization = await prisma.organization.findUnique({
       where: { id },
-      include: {
-        members: {
-          where: { role: "ADMIN" },
-        },
-        subscriptions: {
-          where: {
-            stripeSubscriptionId: { not: null },
-            status: {
-              in: ["ACTIVE", "TRIALING", "PAST_DUE"],
-            },
-          },
-        },
-      },
     });
 
     if (!organization) {
@@ -122,24 +108,6 @@ export async function DELETE(
         { error: "Organization not found" },
         { status: 404 }
       );
-    }
-
-    if (organization.subscriptions.length > 0) {
-      for (const subscription of organization.subscriptions) {
-        if (subscription.stripeSubscriptionId) {
-          try {
-            await cancelSubscription(subscription.stripeSubscriptionId);
-            console.log(
-              `Cancelled Stripe subscription ${subscription.stripeSubscriptionId} for organization ${id}`
-            );
-          } catch (stripeError) {
-            console.error(
-              `Failed to cancel Stripe subscription ${subscription.stripeSubscriptionId}:`,
-              stripeError
-            );
-          }
-        }
-      }
     }
 
     await prisma.organization.delete({

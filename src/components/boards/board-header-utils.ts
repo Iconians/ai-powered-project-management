@@ -1,4 +1,4 @@
-/** Normalizes Stripe/Prisma plan price shapes for comparison. */
+/** Normalizes Prisma plan price shapes for comparison. */
 export function subscriptionPriceValue(planPrice: unknown): number {
   if (planPrice === null || planPrice === undefined) return 0;
   if (typeof planPrice === "number") return planPrice;

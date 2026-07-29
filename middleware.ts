@@ -32,6 +32,6 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/auth|api/github/webhook|api/stripe/webhook|login|signup|forgot-password|reset-password|home|invite/accept).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|api/auth|api/github/webhook|login|signup|forgot-password|reset-password|home|invite/accept).*)",
   ],
 };

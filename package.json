@@ -16,7 +16,6 @@
     "db:studio": "prisma studio",
     "migrate:grant-board-access": "bun prisma/migrations/grant_existing_board_access.ts",
     "db:seed": "bun prisma/seed.ts",
-    "update-stripe-prices": "bun scripts/update-stripe-prices.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
@@ -49,7 +48,6 @@
     "react-dom": "19.2.1",
     "redis": "^5.10.0",
     "resend": "^6.6.0",
-    "stripe": "^20.1.1",
     "tailwind-merge": "^2.6.0"
   },
   "overrides": {
@@ -65,6 +63,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.23",
+    "baseline-browser-mapping": "^2.10.9",
     "eslint": "^9.39.2",
     "eslint-config-next": "16.0.9",
     "eslint-plugin-jsx-a11y": "^6.10.2",
