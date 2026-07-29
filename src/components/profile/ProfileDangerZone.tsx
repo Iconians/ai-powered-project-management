@@ -17,7 +17,6 @@ export function ProfileDangerZone({ onOpenDelete }: ProfileDangerZoneProps) {
             Delete all your organizations (if you&apos;re the only member)
           </li>
           <li>Delete all boards and tasks you created</li>
-          <li>Cancel all active Stripe subscriptions</li>
           <li>Remove you from all organizations you&apos;re a member of</li>
         </ul>
         <p className="text-sm font-medium text-red-600 dark:text-red-400 mb-4">

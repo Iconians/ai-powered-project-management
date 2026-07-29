@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "eslint src --max-warnings 0 && prisma generate && next build",
-    "ci": "bun run build && bun run test:e2e",
+    "ci": "npm run build && npm run test:e2e",
     "start": "next start",
     "lint": "next lint",
     "lint:eslint": "eslint src --max-warnings 0",
@@ -16,7 +16,6 @@
     "db:studio": "prisma studio",
     "migrate:grant-board-access": "bun prisma/migrations/grant_existing_board_access.ts",
     "db:seed": "bun prisma/seed.ts",
-    "update-stripe-prices": "bun scripts/update-stripe-prices.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
@@ -49,7 +48,6 @@
     "react-dom": "19.2.1",
     "redis": "^5.10.0",
     "resend": "^6.6.0",
-    "stripe": "^20.1.1",
     "tailwind-merge": "^2.6.0"
   },
   "overrides": {

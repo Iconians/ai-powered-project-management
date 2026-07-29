@@ -27,6 +27,73 @@ description: >
 
 ---
 
+## Senior-Level Code Expectations
+
+* Write code at a senior engineer standard: prioritize maintainability, clarity, and separation of concerns over quick fixes
+* Do NOT produce junior-style code that only solves the immediate problem without considering structure, readability, and reuse
+* Prefer the cleanest reasonable implementation over the fastest implementation
+* Before writing code, determine the correct architectural location for the logic
+* Solutions must be easy for another experienced developer to understand, extend, and debug
+* Code should reduce complexity, not add to it
+
+### Architecture Expectations
+
+* Place logic where it naturally belongs, not wherever it is fastest to write
+* Prefer composable patterns over large monolithic files
+* Shared or repeated logic must be abstracted appropriately
+* Business logic must be separated from UI code
+* Avoid shallow abstractions that add indirection without improving clarity
+* Reuse existing patterns in the codebase when they are clean and aligned with these rules
+
+### Readability Expectations
+
+* Code should read clearly without requiring extra explanation
+* Names should reveal intent immediately
+* Avoid vague, generic, or placeholder naming
+* Prefer explicit and predictable logic over clever shortcuts
+* Optimize for the next developer reading the code, not just the current task
+
+### Implementation Decision Rule
+
+* Before generating or modifying code, determine:
+
+  * where the logic belongs
+  * whether it should be extracted
+  * whether an existing abstraction should be reused
+  * whether the change increases or reduces codebase complexity
+
+* Do NOT implement until the structure is clear
+
+### Refactoring Standard
+
+* Do NOT layer new code on top of poor structure without improving it
+* If existing code is messy, make reasonable structural improvements as part of the change
+* Refactor toward cleaner boundaries when modifying related code
+* Avoid temporary-looking code unless explicitly requested
+
+### Anti-Junior Patterns (Avoid These)
+
+* ❌ Solving the task in the fastest possible way without regard for structure
+* ❌ Putting business logic directly in components
+* ❌ Large handlers or functions that do many things
+* ❌ Repetition instead of extraction
+* ❌ Weak naming that hides intent
+* ❌ Overusing comments to explain confusing code instead of rewriting it clearly
+* ❌ Adding unnecessary abstractions “just in case”
+* ❌ Leaving obvious code smells in touched files
+
+### Output Quality Check
+
+Before completing a task, verify:
+
+* Is this the cleanest reasonable implementation?
+* Does the code fit the existing architecture and folder boundaries?
+* Would a senior engineer approve this in a PR?
+* Is the logic placed in the correct file and layer?
+* Did I reduce complexity instead of adding to it?
+
+If any answer is “no” → improve the implementation before finishing
+
 ## Project Structure (Next.js 13+/16+ compatible)
 
 ### Frontend (Routes & Pages)

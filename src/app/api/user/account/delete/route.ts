@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { cancelSubscription } from "@/lib/stripe";
 
 export async function DELETE(_request: NextRequest) {
   try {
@@ -14,13 +13,6 @@ export async function DELETE(_request: NextRequest) {
         organization: {
           include: {
             members: true,
-            subscriptions: {
-              where: {
-                status: {
-                  in: ["ACTIVE", "TRIALING", "PAST_DUE"],
-                },
-              },
-            },
           },
         },
       },
@@ -56,38 +48,6 @@ export async function DELETE(_request: NextRequest) {
       );
     }
 
-    
-    for (const membership of userMemberships) {
-      if (membership.role === "ADMIN") {
-        const organization = membership.organization;
-        for (const subscription of organization.subscriptions) {
-          if (
-            subscription.stripeSubscriptionId &&
-            subscription.status !== "CANCELED"
-          ) {
-            try {
-              await cancelSubscription(subscription.stripeSubscriptionId);
-              
-              await prisma.subscription.update({
-                where: { id: subscription.id },
-                data: {
-                  status: "CANCELED",
-                  cancelAtPeriodEnd: true,
-                },
-              });
-            } catch (stripeError) {
-              console.error(
-                `Failed to cancel Stripe subscription ${subscription.stripeSubscriptionId}:`,
-                stripeError
-              );
-              
-            }
-          }
-        }
-      }
-    }
-
-    
     const userOrganizationIds = userMemberships.map((m) => m.organizationId);
 
     

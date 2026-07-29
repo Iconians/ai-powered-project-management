@@ -7,9 +7,7 @@ interface EnvConfig {
 const envConfig: EnvConfig = {
   required: ["DATABASE_URL", "NEXTAUTH_SECRET", "NEXTAUTH_URL"],
   optional: [
-    "STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET",
-    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
+    "NEXT_PUBLIC_CONTACT_EMAIL",
     "PUSHER_APP_ID",
     "PUSHER_KEY",
     "PUSHER_SECRET",
@@ -37,11 +35,7 @@ const envConfig: EnvConfig = {
     "CRON_SECRET",
     "DEVELOPER_ORGANIZATION_IDS",
   ],
-  productionOnly: [
-    "STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET",
-    "NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY",
-  ],
+  productionOnly: [] as string[],
 };
 
 export function validateEnv() {

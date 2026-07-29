@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
-import { sendWelcomeEmail, sendSubscriptionRequiredEmail } from "@/lib/email";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -144,7 +144,6 @@ export async function POST(request: NextRequest) {
       const adminMember = organization.members.find((m) => m.role === "ADMIN");
       if (adminMember && adminMember.user) {
         await sendWelcomeEmail(adminMember.user, organization);
-        await sendSubscriptionRequiredEmail(adminMember.user, organization);
       }
     } catch (emailError) {
       console.error("Failed to send welcome emails:", emailError);
